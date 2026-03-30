@@ -6,17 +6,18 @@ public class CameraMovement : MonoBehaviour
     public float LerpTime;
     public Transform[] FollowGroup;
     public float DistanceOffset;
+    public float ZoomLimit = 10;
 
     private void Update()
     {
         Vector3 pos = Vector3.zero;
-        float dis = 0;
+        float dis = ZoomLimit;
 
         foreach (Transform t in FollowGroup)
         {
             pos += t.position;
             float d = Vector3.Distance(transform.position, t.position);
-            if (d > dis) dis = d;
+            if (d > dis && d > ZoomLimit) dis = d;
         }
 
         pos /= FollowGroup.Length;
