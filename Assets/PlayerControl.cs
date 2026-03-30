@@ -9,21 +9,63 @@ public class PlayerControl : MonoBehaviour
     Vector3 direction;
     bool front, left, back, right;
 
+    public KeyCode MoveUp    = KeyCode.W;
+    public KeyCode MoveLeft  = KeyCode.A;
+    public KeyCode MoveDown  = KeyCode.S;
+    public KeyCode MoveRight = KeyCode.D;
+
+    public KeyCode PrimaryAction   = KeyCode.F;
+    public KeyCode SecondaryAction = KeyCode.Space;
+    public KeyCode Run             = KeyCode.LeftShift;
+    public KeyCode DropItem        = KeyCode.Q;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
     }
 
+
+
+    //Singleton
+    public static PlayerControl Instance;
+    private void OnEnable()
+    {
+        Instance = this;
+    }
+
+
+
+    //Input Check
     private void Update()
     {
         if (rb == null) return;
-        front = Input.GetKey(KeyCode.W);
-        left  = Input.GetKey(KeyCode.A);
-        back  = Input.GetKey(KeyCode.S);
-        right = Input.GetKey(KeyCode.D);
+        front = Input.GetKey(MoveUp);
+        left  = Input.GetKey(MoveLeft);
+        back  = Input.GetKey(MoveDown);
+        right = Input.GetKey(MoveRight);
+
+
+
+        if (Input.GetKeyDown(PrimaryAction))
+        {
+            Debug.LogWarning("Not implemented");
+        }
+
+        if (Input.GetKeyDown(SecondaryAction))
+        {
+            Debug.LogWarning("Not implemented");
+        }
+
+        if (Input.GetKeyDown(DropItem))
+        {
+            Debug.LogWarning("Not implemented");
+        }
+
     }
 
+
+
+    //Movement
     private void FixedUpdate()
     {
         if (!doMove) return;
@@ -36,7 +78,10 @@ public class PlayerControl : MonoBehaviour
 
         if (front || left || back || right && direction != Vector3.zero)
         {
-            rb.AddForce(direction.normalized * speed * 10);
+            if (Input.GetKeyDown(Run))
+                rb.AddForce(direction.normalized * speed * 20);
+            else
+                rb.AddForce(direction.normalized * speed * 10);
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), speed/2 * Time.deltaTime);
         }
     }
