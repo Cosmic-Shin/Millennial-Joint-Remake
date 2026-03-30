@@ -921,10 +921,10 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
-  cloudProjectId: f0ebbe9f-6640-4210-8c4b-542ea6d2d9a0
+  cloudProjectId: 259b2f57-7f8c-4c03-a46c-c06ac5089c87
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: Millennial Burger Joint Simulator 2026-03-30_20-33-43
+  projectName: Millennial-Burger-Joint-Simulator
   organizationId: unity_8cddc2ae8992056798b5
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
