@@ -1,11 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Billboard : MonoBehaviour
 {
     Transform cam;
-    public float referenceDistance = 10f; // Distance at which the object appears at its original size
+    public float referenceDistance = 10f;
     public float scaleOffset;
     public bool DisableY;
     public bool DoScale;
@@ -26,6 +24,7 @@ public class Billboard : MonoBehaviour
         }
 
         transform.LookAt(transform.position + cam.forward);
+
         if (DisableY)
         {
             Vector3 euler = transform.rotation.eulerAngles;
