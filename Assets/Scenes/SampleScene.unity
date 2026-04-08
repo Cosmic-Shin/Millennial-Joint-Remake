@@ -131,7 +131,6 @@ GameObject:
   - component: {fileID: 11444744}
   - component: {fileID: 11444743}
   - component: {fileID: 11444742}
-  - component: {fileID: 11444741}
   - component: {fileID: 11444745}
   m_Layer: 3
   m_Name: Serve
@@ -156,20 +155,6 @@ Transform:
   - {fileID: 823523307}
   m_Father: {fileID: 665887491}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &11444741
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11444739}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b91869681c084c4c93edca8ae6a50ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Panel: {fileID: 823523313}
-  animationTime: 0.5
 --- !u!65 &11444742
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -256,6 +241,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 23a8f525287056240a0b38336f40ee57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  interactionPanel: {fileID: 0}
+  animationTime: 0.5
   totalServed: 0
 --- !u!1 &148922205
 GameObject:
@@ -355,7 +342,6 @@ GameObject:
   - component: {fileID: 188659250}
   - component: {fileID: 188659249}
   - component: {fileID: 188659248}
-  - component: {fileID: 188659247}
   - component: {fileID: 188659251}
   m_Layer: 3
   m_Name: Cook
@@ -380,20 +366,6 @@ Transform:
   - {fileID: 2130029899}
   m_Father: {fileID: 665887491}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &188659247
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 188659245}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b91869681c084c4c93edca8ae6a50ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Panel: {fileID: 2130029905}
-  animationTime: 0.5
 --- !u!65 &188659248
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -480,11 +452,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d085dc60b9d45f446bcdd0005693c06c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  interactionPanel: {fileID: 0}
+  animationTime: 0.5
   storedItem:
     type: 0
     plateHasBun: 0
-    plateHasVeggie: 0
     plateHasPatty: 0
+    plateHasVeggie: 0
 --- !u!1 &265309385
 GameObject:
   m_ObjectHideFlags: 0
@@ -644,8 +618,7 @@ MonoBehaviour:
   MoveLeft: 97
   MoveDown: 115
   MoveRight: 100
-  PrimaryAction: 101
-  SecondaryAction: 32
+  PrimaryAction: 102
   Run: 304
   DropItem: 113
   castRadius: 1.44
@@ -655,8 +628,9 @@ MonoBehaviour:
   heldItem:
     type: 0
     plateHasBun: 0
-    plateHasVeggie: 0
     plateHasPatty: 0
+    plateHasVeggie: 0
+  heldItemText: {fileID: 0}
 --- !u!1 &273454677
 GameObject:
   m_ObjectHideFlags: 0
@@ -2183,7 +2157,6 @@ GameObject:
   - component: {fileID: 775724061}
   - component: {fileID: 775724060}
   - component: {fileID: 775724059}
-  - component: {fileID: 775724058}
   - component: {fileID: 775724062}
   m_Layer: 3
   m_Name: Burger Buns
@@ -2208,20 +2181,6 @@ Transform:
   - {fileID: 1484528484}
   m_Father: {fileID: 665887491}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &775724058
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 775724056}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b91869681c084c4c93edca8ae6a50ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Panel: {fileID: 1484528490}
-  animationTime: 0.5
 --- !u!65 &775724059
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2308,6 +2267,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b0127abfd9c7b649b9045f5383029f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  interactionPanel: {fileID: 0}
+  animationTime: 0.5
   ingredientType: 2
 --- !u!1 &823523306
 GameObject:
@@ -3257,7 +3218,6 @@ GameObject:
   - component: {fileID: 1424247379}
   - component: {fileID: 1424247378}
   - component: {fileID: 1424247377}
-  - component: {fileID: 1424247376}
   - component: {fileID: 1424247380}
   m_Layer: 3
   m_Name: Veggie
@@ -3282,20 +3242,6 @@ Transform:
   - {fileID: 706023168}
   m_Father: {fileID: 665887491}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1424247376
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1424247374}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b91869681c084c4c93edca8ae6a50ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Panel: {fileID: 706023174}
-  animationTime: 0.5
 --- !u!65 &1424247377
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3382,6 +3328,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b0127abfd9c7b649b9045f5383029f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  interactionPanel: {fileID: 0}
+  animationTime: 0.5
   ingredientType: 3
 --- !u!1 &1480279506
 GameObject:
@@ -3864,7 +3812,6 @@ GameObject:
   - component: {fileID: 1511818286}
   - component: {fileID: 1511818285}
   - component: {fileID: 1511818284}
-  - component: {fileID: 1511818283}
   - component: {fileID: 1511818287}
   m_Layer: 3
   m_Name: Patty
@@ -3889,20 +3836,6 @@ Transform:
   - {fileID: 1751916733}
   m_Father: {fileID: 665887491}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1511818283
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1511818281}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b91869681c084c4c93edca8ae6a50ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Panel: {fileID: 1751916739}
-  animationTime: 0.5
 --- !u!65 &1511818284
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3989,6 +3922,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b0127abfd9c7b649b9045f5383029f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  interactionPanel: {fileID: 0}
+  animationTime: 0.5
   ingredientType: 5
 --- !u!1 &1521444650
 GameObject:
@@ -4155,18 +4090,18 @@ MonoBehaviour:
   MoveDown: 115
   MoveRight: 100
   PrimaryAction: 101
-  SecondaryAction: 32
   Run: 304
   DropItem: 113
   castRadius: 0.5
   hitMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 4294967295
   heldItem:
     type: 0
     plateHasBun: 0
-    plateHasVeggie: 0
     plateHasPatty: 0
+    plateHasVeggie: 0
+  heldItemText: {fileID: 0}
 --- !u!54 &1534800048
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4738,7 +4673,6 @@ GameObject:
   - component: {fileID: 1614920724}
   - component: {fileID: 1614920723}
   - component: {fileID: 1614920722}
-  - component: {fileID: 1614920721}
   - component: {fileID: 1614920725}
   m_Layer: 3
   m_Name: Plate
@@ -4763,20 +4697,6 @@ Transform:
   - {fileID: 1120649192}
   m_Father: {fileID: 665887491}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1614920721
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1614920719}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b91869681c084c4c93edca8ae6a50ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Panel: {fileID: 1120649198}
-  animationTime: 0.5
 --- !u!65 &1614920722
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4863,6 +4783,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9669fc0afaddf8a42a3d2619c674932a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  interactionPanel: {fileID: 0}
+  animationTime: 0.5
 --- !u!1 &1616047430
 GameObject:
   m_ObjectHideFlags: 0
@@ -4875,7 +4797,6 @@ GameObject:
   - component: {fileID: 1616047436}
   - component: {fileID: 1616047435}
   - component: {fileID: 1616047434}
-  - component: {fileID: 1616047433}
   - component: {fileID: 1616047432}
   m_Layer: 3
   m_Name: CounterTop
@@ -4912,25 +4833,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0db8d9e93a94534e9930d57f35be668, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  interactionPanel: {fileID: 0}
+  animationTime: 0.5
   storedItem:
     type: 0
     plateHasBun: 0
-    plateHasVeggie: 0
     plateHasPatty: 0
---- !u!114 &1616047433
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1616047430}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b91869681c084c4c93edca8ae6a50ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Panel: {fileID: 1829869235}
-  animationTime: 0.5
+    plateHasVeggie: 0
 --- !u!65 &1616047434
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -5366,7 +5275,6 @@ GameObject:
   - component: {fileID: 2044294008}
   - component: {fileID: 2044294007}
   - component: {fileID: 2044294006}
-  - component: {fileID: 2044294005}
   - component: {fileID: 2044294009}
   m_Layer: 3
   m_Name: Chop
@@ -5391,20 +5299,6 @@ Transform:
   - {fileID: 345314347}
   m_Father: {fileID: 665887491}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2044294005
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2044294003}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b91869681c084c4c93edca8ae6a50ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Panel: {fileID: 345314353}
-  animationTime: 0.5
 --- !u!65 &2044294006
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -5491,11 +5385,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 032d8ee524df6624095fc8affaff8002, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  interactionPanel: {fileID: 0}
+  animationTime: 0.5
   storedItem:
     type: 0
     plateHasBun: 0
-    plateHasVeggie: 0
     plateHasPatty: 0
+    plateHasVeggie: 0
 --- !u!1 &2130029898
 GameObject:
   m_ObjectHideFlags: 0

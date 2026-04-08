@@ -4,21 +4,17 @@ public class ServingCounter : BaseStation, IInteractable
 {
     public int totalServed;
 
+    // Only valid when player holds a complete sandwich
+    public bool CanInteractWith(PlayerControl player)
+    {
+        return player != null
+            && player.heldItem.IsPlate
+            && player.heldItem.IsCompleteSandwich;
+    }
+
     public void Interact(PlayerControl player)
     {
         if (player == null) return;
-
-        if (!player.heldItem.IsPlate)
-        {
-            Show(player, "Need a plated sandwich");
-            return;
-        }
-
-        if (!player.heldItem.IsCompleteSandwich)
-        {
-            Show(player, "Plate is not complete");
-            return;
-        }
 
         totalServed++;
         player.heldItem.Clear();
