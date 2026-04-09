@@ -7,37 +7,54 @@ public class CounterTop : BaseStation, IInteractable
     // ------------------------------------------------------------------
     // Valid interactions:
     //   - Counter empty + holding Plate → place plate
+    //   - Counter empty + holding complete Cup → place cup
     //   - Counter has Plate + holding valid ingredient → add ingredient
     //   - Counter has Plate + empty hands → pick up plate
+    //   - Counter has Cup + empty hands → pick up cup
     //      all that and bla bla bla
     // ------------------------------------------------------------------
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
 
-        // Place a plate onto empty counter
+        // Place a plate or cup onto empty counter
         if (storedItem.IsEmpty)
-            return player.heldItem.IsPlate;
+            return player.heldItem.IsPlate || player.heldItem.IsCompleteDrink;
 
-        // Counter must have a plate to do anything further
-        if (!storedItem.IsPlate) return false;
+        // Counter must have a plate to do anything further (burger/fries building)
+        if (storedItem.IsPlate)
+        {
+            // Pick up plate
+            if (player.heldItem.IsEmpty) return true;
 
-        // Pick up plate
-        if (player.heldItem.IsEmpty) return true;
+            // Add Bun (must not already have one)
+            if (player.heldItem.type == ItemType.Bun && !storedItem.plateHasBun)
+                return true;
 
-        // Add Bun (must not already have one)
-        if (player.heldItem.type == ItemType.Bun && !storedItem.plateHasBun)
-            return true;
+            // Add PattyCooked (requires Bun first, must not already have one)
+            if (player.heldItem.type == ItemType.PattyCooked
+                && storedItem.plateHasBun && !storedItem.plateHasPatty)
+                return true;
 
-        // Add PattyCooked (requires Bun first, must not already have one)
-        if (player.heldItem.type == ItemType.PattyCooked
-            && storedItem.plateHasBun && !storedItem.plateHasPatty)
-            return true;
+            // Add VeggieChopped (requires Bun + Patty, must not already have one)
+            if (player.heldItem.type == ItemType.VeggieChopped
+                && storedItem.plateHasBun && storedItem.plateHasPatty && !storedItem.plateHasVeggie)
+                return true;
 
-        // Add VeggieChopped (requires Bun + Patty, must not already have one)
-        if (player.heldItem.type == ItemType.VeggieChopped
-            && storedItem.plateHasBun && storedItem.plateHasPatty && !storedItem.plateHasVeggie)
-            return true;
+            // Add cooked fries to an empty plate
+            if (player.heldItem.type == ItemType.FriesCooked
+                && !storedItem.plateHasFries
+                && !storedItem.plateHasBun
+                && !storedItem.plateHasPatty
+                && !storedItem.plateHasVeggie)
+                return true;
+
+            return false;
+        }
+
+        // Counter has a cup - can only pick up if hands are empty
+        if (storedItem.IsCup)
+            return player.heldItem.IsEmpty;
 
         return false;
     }
@@ -48,27 +65,45 @@ public class CounterTop : BaseStation, IInteractable
 
         if (storedItem.IsEmpty)
         {
-            TryPlacePlate(player);
+            if (player.heldItem.IsPlate)
+            {
+                TryPlacePlate(player);
+            }
+            else if (player.heldItem.IsCompleteDrink)
+            {
+                TryPlaceCup(player);
+            }
             return;
         }
 
-        if (!storedItem.IsPlate)
+        if (storedItem.IsPlate)
         {
-            // Should never happen if CanInteractWith is working, but guard anyway
-            Show(player, "Countertop error: unexpected item on counter");
+            // Empty hands → pick up plate
+            if (player.heldItem.IsEmpty)
+            {
+                player.heldItem.CopyFrom(storedItem);
+                storedItem.Clear();
+                Show(player, "Picked up plate from countertop");
+                return;
+            }
+
+            TryAddIngredient(player);
             return;
         }
 
-        // Empty hands → pick up plate
-        if (player.heldItem.IsEmpty)
+        if (storedItem.IsCup)
         {
-            player.heldItem.CopyFrom(storedItem);
-            storedItem.Clear();
-            Show(player, "Picked up plate from countertop");
-            return;
+            // Empty hands → pick up cup
+            if (player.heldItem.IsEmpty)
+            {
+                player.heldItem.CopyFrom(storedItem);
+                storedItem.Clear();
+                Show(player, "Picked up cup from countertop");
+                return;
+            }
         }
 
-        TryAddIngredient(player);
+        Show(player, "Countertop error: invalid interaction");
     }
 
     // ------------------------------------------------------------------
@@ -86,6 +121,19 @@ public class CounterTop : BaseStation, IInteractable
         storedItem.CopyFrom(player.heldItem);
         player.heldItem.Clear();
         Show(player, "Placed plate on countertop");
+    }
+
+    private void TryPlaceCup(PlayerControl player)
+    {
+        if (!player.heldItem.IsCompleteDrink)
+        {
+            Show(player, "Complete the drink first");
+            return;
+        }
+
+        storedItem.CopyFrom(player.heldItem);
+        player.heldItem.Clear();
+        Show(player, "Placed cup on countertop");
     }
 
     private void TryAddIngredient(PlayerControl player)
@@ -138,6 +186,22 @@ public class CounterTop : BaseStation, IInteractable
                 storedItem.plateHasVeggie = true;
                 player.heldItem.Clear();
                 Show(player, "Placed chopped veggie on plate");
+                break;
+
+            case ItemType.FriesCooked:
+                if (storedItem.plateHasFries)
+                {
+                    Show(player, "Plate already has fries");
+                    return;
+                }
+                if (storedItem.plateHasBun || storedItem.plateHasPatty || storedItem.plateHasVeggie)
+                {
+                    Show(player, "Cannot add fries to a burger plate");
+                    return;
+                }
+                storedItem.plateHasFries = true;
+                player.heldItem.Clear();
+                Show(player, "Placed fries on plate");
                 break;
 
             case ItemType.PattyRaw:

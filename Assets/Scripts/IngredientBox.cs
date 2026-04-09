@@ -2,30 +2,26 @@ using UnityEngine;
 
 public class IngredientBox : BaseStation, IInteractable
 {
-    public ItemType ingredientType;
+    public IngredientSelectionPanel selectionPanel;
 
-    // Can only grab from a box when hands are empty
+    // Can only grab from a box when hands are empty and not holding a complete drink
     public bool CanInteractWith(PlayerControl player)
     {
-        return player != null && player.heldItem.IsEmpty;
+        if (player == null) return false;
+        if (player.heldItem.IsCompleteDrink) return false;
+        return player.heldItem.IsEmpty;
     }
 
     public void Interact(PlayerControl player)
     {
         if (player == null) return;
 
-        Debug.Log("IngredientBox.Interact called | player holding before: " + player.GetHeldItemDebug());
-
-        if (ingredientType != ItemType.Bun &&
-            ingredientType != ItemType.VeggieRaw &&
-            ingredientType != ItemType.PattyRaw)
+        if (selectionPanel == null)
         {
-            Show(player, "Invalid ingredient box setup");
+            Show(player, "Ingredient selection panel not configured");
             return;
         }
 
-        player.heldItem.Set(ingredientType);
-        Debug.Log("IngredientBox.Interact completed | player holding after: " + player.GetHeldItemDebug());
-        Show(player, "Picked up " + player.heldItem.GetDisplayName());
+        selectionPanel.ShowPanel(player, this);
     }
 }

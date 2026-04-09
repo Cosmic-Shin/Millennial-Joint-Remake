@@ -2,10 +2,12 @@ using UnityEngine;
 
 public class PlateCounter : BaseStation, IInteractable
 {
-    // Can only grab a plate when hands are empty
+    // Can only grab a plate when hands are empty and not holding a complete drink
     public bool CanInteractWith(PlayerControl player)
     {
-        return player != null && player.heldItem.IsEmpty;
+        if (player == null) return false;
+        if (player.heldItem.IsCompleteDrink) return false;
+        return player.heldItem.IsEmpty;
     }
 
     public void Interact(PlayerControl player)

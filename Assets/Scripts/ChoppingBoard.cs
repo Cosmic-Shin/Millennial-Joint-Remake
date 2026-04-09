@@ -8,9 +8,11 @@ public class ChoppingBoard : BaseStation, IInteractable
     //   - Board empty + holding VeggieRaw → place it
     //   - Board has VeggieRaw + empty hands → chop it
     //   - Board has VeggieChopped + empty hands → pick it up
+    //   - Cannot interact if holding a complete drink
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
+        if (player.heldItem.IsCompleteDrink) return false;
 
         if (storedItem.IsEmpty)
             return player.heldItem.type == ItemType.VeggieRaw;

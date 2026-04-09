@@ -4,20 +4,30 @@ public class ServingCounter : BaseStation, IInteractable
 {
     public int totalServed;
 
-    // Only valid when player holds a complete sandwich
+    // Only valid when player holds a complete burger, fries plate, or complete drink
     public bool CanInteractWith(PlayerControl player)
     {
         return player != null
-            && player.heldItem.IsPlate
-            && player.heldItem.IsCompleteSandwich;
+            && ((player.heldItem.IsPlate && (player.heldItem.IsCompleteBurger || player.heldItem.IsCompleteFries))
+                || player.heldItem.IsCompleteDrink);
     }
 
     public void Interact(PlayerControl player)
     {
         if (player == null) return;
 
-        totalServed++;
+        if (OrderManager.Instance != null)
+        {
+            if (!OrderManager.Instance.TryServeItem(player.heldItem))
+            {
+                Show(player, "Item is not part of the current order");
+                return;
+            }
+        }
+
+        string servedName = player.heldItem.GetDisplayName();
         player.heldItem.Clear();
-        Show(player, "Sandwich served! Total served: " + totalServed);
+        totalServed++;
+        Show(player, servedName + " served! Total served: " + totalServed);
     }
 }

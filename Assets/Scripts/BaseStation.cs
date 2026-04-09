@@ -37,7 +37,7 @@ public class BaseStation : MonoBehaviour
         }
     }
 
-    protected void Show(PlayerControl player, string message)
+    public void Show(PlayerControl player, string message)
     {
         string fullMessage = message;
         if (player != null)
