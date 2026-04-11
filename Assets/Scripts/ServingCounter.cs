@@ -4,11 +4,11 @@ public class ServingCounter : BaseStation, IInteractable
 {
     public int totalServed;
 
-    // Only valid when player holds a complete burger, fries plate, or complete drink
+    // Only valid when player holds a complete burger, bacon burger, fried chicken, fries plate, or complete drink
     public bool CanInteractWith(PlayerControl player)
     {
         return player != null
-            && ((player.heldItem.IsPlate && (player.heldItem.IsCompleteBurger || player.heldItem.IsCompleteFries))
+            && ((player.heldItem.IsPlate && (player.heldItem.IsCompleteBurger || player.heldItem.IsCompleteBaconBurger || player.heldItem.IsCompleteFriedChicken || player.heldItem.IsCompleteFries))
                 || player.heldItem.IsCompleteDrink);
     }
 

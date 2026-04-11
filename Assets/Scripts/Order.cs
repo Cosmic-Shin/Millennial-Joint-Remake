@@ -27,7 +27,13 @@ public class Order
 
     private OrderItemType GetRandomItemType()
     {
-        var types = new[] { OrderItemType.Burger, OrderItemType.Soda, OrderItemType.Boba, OrderItemType.Fries };
+        var types = new[] {
+            OrderItemType.Burger,
+            OrderItemType.BaconBurger,
+            OrderItemType.FriedChicken,
+            OrderItemType.Soda,
+            OrderItemType.Boba,
+            OrderItemType.Fries };
         return types[UnityEngine.Random.Range(0, types.Length)];
     }
 

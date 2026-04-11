@@ -4,6 +4,8 @@ using UnityEngine;
 public enum OrderItemType
 {
     Burger,
+    BaconBurger,
+    FriedChicken,
     Soda,
     Boba,
     Fries
@@ -26,6 +28,12 @@ public class OrderItem
         if (type == OrderItemType.Burger)
             return item.IsPlate && item.IsCompleteBurger;
 
+        if (type == OrderItemType.BaconBurger)
+            return item.IsPlate && item.IsCompleteBaconBurger;
+
+        if (type == OrderItemType.FriedChicken)
+            return item.IsPlate && item.IsCompleteFriedChicken;
+
         if (type == OrderItemType.Soda)
             return item.IsCup && item.cupHasSoda && !item.cupHasBoba && !item.cupBobaDrinkReady;
 
@@ -43,6 +51,8 @@ public class OrderItem
         return type switch
         {
             OrderItemType.Burger => "Burger",
+            OrderItemType.BaconBurger => "Bacon Burger",
+            OrderItemType.FriedChicken => "Fried Chicken",
             OrderItemType.Soda => "Soda",
             OrderItemType.Boba => "Boba",
             OrderItemType.Fries => "Fries",

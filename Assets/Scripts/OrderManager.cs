@@ -6,6 +6,8 @@ public class OrderManager : MonoBehaviour
 
     [Header("Order Prices")]
     public float burgerPrice = 8f;
+    public float baconBurgerPrice = 11f;
+    public float friedChickenPrice = 9f;
     public float sodaPrice = 2.5f;
     public float bobaPrice = 4f;
     public float friesPrice = 3.5f;
@@ -69,6 +71,8 @@ public class OrderManager : MonoBehaviour
         return type switch
         {
             OrderItemType.Burger => burgerPrice,
+            OrderItemType.BaconBurger => baconBurgerPrice,
+            OrderItemType.FriedChicken => friedChickenPrice,
             OrderItemType.Soda => sodaPrice,
             OrderItemType.Boba => bobaPrice,
             OrderItemType.Fries => friesPrice,

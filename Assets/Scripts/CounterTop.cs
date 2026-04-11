@@ -41,12 +41,29 @@ public class CounterTop : BaseStation, IInteractable
                 && storedItem.plateHasBun && storedItem.plateHasPatty && !storedItem.plateHasVeggie)
                 return true;
 
+            // Add Bacon (requires Bun + Patty + Veggie, must not already have bacon)
+            if (player.heldItem.type == ItemType.BaconCooked
+                && storedItem.plateHasBun && storedItem.plateHasPatty && storedItem.plateHasVeggie && !storedItem.plateHasBacon)
+                return true;
+
             // Add cooked fries to an empty plate
             if (player.heldItem.type == ItemType.FriesCooked
                 && !storedItem.plateHasFries
                 && !storedItem.plateHasBun
                 && !storedItem.plateHasPatty
-                && !storedItem.plateHasVeggie)
+                && !storedItem.plateHasVeggie
+                && !storedItem.plateHasBacon
+                && !storedItem.plateHasChicken)
+                return true;
+
+            // Add cooked chicken to an empty plate
+            if (player.heldItem.type == ItemType.ChickenCooked
+                && !storedItem.plateHasFries
+                && !storedItem.plateHasBun
+                && !storedItem.plateHasPatty
+                && !storedItem.plateHasVeggie
+                && !storedItem.plateHasBacon
+                && !storedItem.plateHasChicken)
                 return true;
 
             return false;
@@ -194,14 +211,56 @@ public class CounterTop : BaseStation, IInteractable
                     Show(player, "Plate already has fries");
                     return;
                 }
-                if (storedItem.plateHasBun || storedItem.plateHasPatty || storedItem.plateHasVeggie)
+                if (storedItem.plateHasBun || storedItem.plateHasPatty || storedItem.plateHasVeggie || storedItem.plateHasBacon || storedItem.plateHasChicken)
                 {
-                    Show(player, "Cannot add fries to a burger plate");
+                    Show(player, "Cannot add fries to a burger or chicken plate");
                     return;
                 }
                 storedItem.plateHasFries = true;
                 player.heldItem.Clear();
                 Show(player, "Placed fries on plate");
+                break;
+
+            case ItemType.BaconCooked:
+                if (!storedItem.plateHasBun)
+                {
+                    Show(player, "Place bun first");
+                    return;
+                }
+                if (!storedItem.plateHasPatty)
+                {
+                    Show(player, "Place cooked patty second");
+                    return;
+                }
+                if (!storedItem.plateHasVeggie)
+                {
+                    Show(player, "Place chopped veggie third");
+                    return;
+                }
+                if (storedItem.plateHasBacon)
+                {
+                    Show(player, "Plate already has bacon");
+                    return;
+                }
+                if (storedItem.plateHasFries || storedItem.plateHasChicken)
+                {
+                    Show(player, "Cannot add bacon to this plate");
+                    return;
+                }
+                storedItem.plateHasBacon = true;
+                player.heldItem.Clear();
+                Show(player, "Placed bacon on plate");
+                break;
+
+            case ItemType.ChickenCooked:
+                if (storedItem.plateHasFries || storedItem.plateHasBun || storedItem.plateHasPatty || storedItem.plateHasVeggie || storedItem.plateHasBacon || storedItem.plateHasChicken)
+                {
+                    Show(player, "Cannot add cooked chicken to this plate");
+                    return;
+                }
+                storedItem.plateHasChicken = true;
+                player.heldItem.Clear();
+                Show(player, "Placed cooked chicken on plate");
                 break;
 
             case ItemType.PattyRaw:

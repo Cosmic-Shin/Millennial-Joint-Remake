@@ -8,6 +8,8 @@ public class IngredientSelectionPanel : MonoBehaviour
     public Button veggieButton;
     public Button pattyButton;
     public Button friesButton;
+    public Button baconButton;
+    public Button chickenButton;
     public Button closeButton;
 
     private PlayerControl currentPlayer;
@@ -26,6 +28,12 @@ public class IngredientSelectionPanel : MonoBehaviour
 
         if (friesButton != null)
             friesButton.onClick.AddListener(() => SelectIngredient(ItemType.FrozenFries));
+
+        if (baconButton != null)
+            baconButton.onClick.AddListener(() => SelectIngredient(ItemType.BaconRaw));
+
+        if (chickenButton != null)
+            chickenButton.onClick.AddListener(() => SelectIngredient(ItemType.ChickenRaw));
 
         if (closeButton != null)
             closeButton.onClick.AddListener(ClosePanel);

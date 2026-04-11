@@ -10,9 +10,13 @@ public enum ItemType
     VeggieChopped,
     PattyRaw,
     PattyCooked,
+    BaconRaw,
+    BaconCooked,
     Cup,
     FrozenFries,
-    FriesCooked
+    FriesCooked,
+    ChickenRaw,
+    ChickenCooked
 }
 
 [Serializable]
@@ -22,9 +26,11 @@ public class KitchenItemData
 
     [Header("Plate Contents")]
     public bool plateHasBun;
-    public bool plateHasPatty;   // order matches game rule: Bun → Patty → Veggie
+    public bool plateHasPatty;   // order matches game rule: Bun ? Patty ? Veggie
     public bool plateHasVeggie;
+    public bool plateHasBacon;
     public bool plateHasFries;
+    public bool plateHasChicken;
 
     [Header("Cup Contents")]
     public bool cupHasSoda;
@@ -40,14 +46,36 @@ public class KitchenItemData
         plateHasBun &&
         plateHasPatty &&
         plateHasVeggie &&
-        !plateHasFries;
+        !plateHasFries &&
+        !plateHasBacon &&
+        !plateHasChicken;
+
+    public bool IsCompleteBaconBurger =>
+        type == ItemType.Plate &&
+        plateHasBun &&
+        plateHasPatty &&
+        plateHasVeggie &&
+        plateHasBacon &&
+        !plateHasFries &&
+        !plateHasChicken;
+
+    public bool IsCompleteFriedChicken =>
+        type == ItemType.Plate &&
+        plateHasChicken &&
+        !plateHasBun &&
+        !plateHasPatty &&
+        !plateHasVeggie &&
+        !plateHasFries &&
+        !plateHasBacon;
 
     public bool IsCompleteFries =>
         type == ItemType.Plate &&
         plateHasFries &&
         !plateHasBun &&
         !plateHasPatty &&
-        !plateHasVeggie;
+        !plateHasVeggie &&
+        !plateHasBacon &&
+        !plateHasChicken;
 
     public bool IsCompleteDrink =>
         type == ItemType.Cup &&
@@ -59,10 +87,12 @@ public class KitchenItemData
 
         if (newType != ItemType.Plate)
         {
-            plateHasBun    = false;
-            plateHasPatty  = false;
-            plateHasVeggie = false;
-            plateHasFries  = false;
+            plateHasBun      = false;
+            plateHasPatty    = false;
+            plateHasVeggie   = false;
+            plateHasBacon    = false;
+            plateHasFries    = false;
+            plateHasChicken  = false;
         }
 
         if (newType != ItemType.Cup)
@@ -75,13 +105,15 @@ public class KitchenItemData
 
     public void MakePlate()
     {
-        type             = ItemType.Plate;
-        plateHasBun      = false;
-        plateHasPatty    = false;
-        plateHasVeggie   = false;
-        plateHasFries    = false;
-        cupHasSoda       = false;
-        cupHasBoba       = false;
+        type              = ItemType.Plate;
+        plateHasBun       = false;
+        plateHasPatty     = false;
+        plateHasVeggie    = false;
+        plateHasBacon     = false;
+        plateHasFries     = false;
+        plateHasChicken   = false;
+        cupHasSoda        = false;
+        cupHasBoba        = false;
         cupBobaDrinkReady = false;
     }
 
@@ -91,7 +123,9 @@ public class KitchenItemData
         plateHasBun        = false;
         plateHasPatty      = false;
         plateHasVeggie     = false;
+        plateHasBacon      = false;
         plateHasFries      = false;
+        plateHasChicken    = false;
         cupHasSoda         = false;
         cupHasBoba         = false;
         cupBobaDrinkReady  = false;
@@ -103,7 +137,9 @@ public class KitchenItemData
         plateHasBun        = other.plateHasBun;
         plateHasPatty      = other.plateHasPatty;
         plateHasVeggie     = other.plateHasVeggie;
+        plateHasBacon      = other.plateHasBacon;
         plateHasFries      = other.plateHasFries;
+        plateHasChicken    = other.plateHasChicken;
         cupHasSoda         = other.cupHasSoda;
         cupHasBoba         = other.cupHasBoba;
         cupBobaDrinkReady  = other.cupBobaDrinkReady;
@@ -114,22 +150,30 @@ public class KitchenItemData
         return type == ItemType.Bun ||
                type == ItemType.VeggieChopped ||
                type == ItemType.PattyCooked ||
-               type == ItemType.FriesCooked;
+               type == ItemType.FriesCooked ||
+               type == ItemType.BaconCooked ||
+               type == ItemType.ChickenCooked;
     }
 
-    // FIX: display order now matches game rule (Bun → Patty → Veggie)
+    // FIX: display order now matches game rule (Bun ? Patty ? Veggie)
     public string GetDisplayName()
     {
         if (type == ItemType.Plate)
         {
             string result = "Plate";
-            result += plateHasBun    ? " + Bun"          : "";
-            result += plateHasPatty  ? " + CookedPatty"  : "";
-            result += plateHasVeggie ? " + ChoppedVeggie" : "";
-            result += plateHasFries  ? " + Fries"        : "";
+            result += plateHasBun      ? " + Bun"           : "";
+            result += plateHasPatty    ? " + CookedPatty"   : "";
+            result += plateHasVeggie   ? " + ChoppedVeggie" : "";
+            result += plateHasBacon    ? " + Bacon"         : "";
+            result += plateHasFries    ? " + Fries"         : "";
+            result += plateHasChicken  ? " + CookedChicken" : "";
 
-            if (IsCompleteBurger)
+            if (IsCompleteBaconBurger)
+                result += " (Complete Bacon Burger)";
+            else if (IsCompleteBurger)
                 result += " (Complete Burger)";
+            else if (IsCompleteFriedChicken)
+                result += " (Complete Fried Chicken)";
             else if (IsCompleteFries)
                 result += " (Complete Fries)";
 
@@ -147,6 +191,13 @@ public class KitchenItemData
             return "Cup (Empty)";
         }
 
-        return type.ToString();
+        return type switch
+        {
+            ItemType.BaconRaw => "Raw Bacon",
+            ItemType.BaconCooked => "Cooked Bacon",
+            ItemType.ChickenRaw => "Raw Chicken",
+            ItemType.ChickenCooked => "Cooked Chicken",
+            _ => type.ToString(),
+        };
     }
 }
