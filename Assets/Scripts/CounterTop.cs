@@ -3,6 +3,7 @@ using UnityEngine;
 public class CounterTop : BaseStation, IInteractable
 {
     public KitchenItemData storedItem = new KitchenItemData();
+    public KitchenItemVisualizer storedItemVisualizer;
 
     // ------------------------------------------------------------------
     // Valid interactions:
@@ -100,6 +101,7 @@ public class CounterTop : BaseStation, IInteractable
             {
                 player.heldItem.CopyFrom(storedItem);
                 storedItem.Clear();
+                UpdateStoredItemVisual();
                 Show(player, "Picked up plate from countertop");
                 return;
             }
@@ -115,6 +117,7 @@ public class CounterTop : BaseStation, IInteractable
             {
                 player.heldItem.CopyFrom(storedItem);
                 storedItem.Clear();
+                UpdateStoredItemVisual();
                 Show(player, "Picked up cup from countertop");
                 return;
             }
@@ -137,6 +140,7 @@ public class CounterTop : BaseStation, IInteractable
 
         storedItem.CopyFrom(player.heldItem);
         player.heldItem.Clear();
+        UpdateStoredItemVisual();
         Show(player, "Placed plate on countertop");
     }
 
@@ -150,6 +154,7 @@ public class CounterTop : BaseStation, IInteractable
 
         storedItem.CopyFrom(player.heldItem);
         player.heldItem.Clear();
+        UpdateStoredItemVisual();
         Show(player, "Placed cup on countertop");
     }
 
@@ -165,6 +170,7 @@ public class CounterTop : BaseStation, IInteractable
                 }
                 storedItem.plateHasBun = true;
                 player.heldItem.Clear();
+                UpdateStoredItemVisual();
                 Show(player, "Placed bun on plate");
                 break;
 
@@ -181,6 +187,7 @@ public class CounterTop : BaseStation, IInteractable
                 }
                 storedItem.plateHasPatty = true;
                 player.heldItem.Clear();
+                UpdateStoredItemVisual();
                 Show(player, "Placed cooked patty on plate");
                 break;
 
@@ -202,6 +209,7 @@ public class CounterTop : BaseStation, IInteractable
                 }
                 storedItem.plateHasVeggie = true;
                 player.heldItem.Clear();
+                UpdateStoredItemVisual();
                 Show(player, "Placed chopped veggie on plate");
                 break;
 
@@ -218,6 +226,7 @@ public class CounterTop : BaseStation, IInteractable
                 }
                 storedItem.plateHasFries = true;
                 player.heldItem.Clear();
+                UpdateStoredItemVisual();
                 Show(player, "Placed fries on plate");
                 break;
 
@@ -249,6 +258,7 @@ public class CounterTop : BaseStation, IInteractable
                 }
                 storedItem.plateHasBacon = true;
                 player.heldItem.Clear();
+                UpdateStoredItemVisual();
                 Show(player, "Placed bacon on plate");
                 break;
 
@@ -260,6 +270,7 @@ public class CounterTop : BaseStation, IInteractable
                 }
                 storedItem.plateHasChicken = true;
                 player.heldItem.Clear();
+                UpdateStoredItemVisual();
                 Show(player, "Placed cooked chicken on plate");
                 break;
 
@@ -275,5 +286,11 @@ public class CounterTop : BaseStation, IInteractable
                 Show(player, "Wrong item for plate");
                 break;
         }
+    }
+
+    private void UpdateStoredItemVisual()
+    {
+        if (storedItemVisualizer != null)
+            storedItemVisualizer.Refresh(storedItem);
     }
 }

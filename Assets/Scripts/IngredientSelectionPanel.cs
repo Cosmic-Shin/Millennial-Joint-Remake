@@ -64,6 +64,7 @@ public class IngredientSelectionPanel : MonoBehaviour
         Debug.Log("IngredientBox.Interact called | player holding before: " + currentPlayer.GetHeldItemDebug());
 
         currentPlayer.heldItem.Set(ingredientType);
+        currentPlayer.RefreshHeldItemDisplay();
         Debug.Log("IngredientBox.Interact completed | player holding after: " + currentPlayer.GetHeldItemDebug());
         parentBox.Show(currentPlayer, "Picked up " + currentPlayer.heldItem.GetDisplayName());
 

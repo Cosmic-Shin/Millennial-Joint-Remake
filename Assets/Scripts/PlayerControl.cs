@@ -30,6 +30,9 @@ public class PlayerControl : MonoBehaviour
     public KitchenItemData heldItem = new KitchenItemData();
     public Text heldItemText;
 
+    [Header("Held Item Visuals")]
+    public KitchenItemVisualizer heldItemVisualizer;
+
     private BaseStation lastOpenStation;
 
     private void OnValidate()
@@ -50,6 +53,7 @@ public class PlayerControl : MonoBehaviour
             hitMask = ~0;
 
         UpdateHeldItemHUD();
+        RefreshHeldItemVisual();
     }
 
     private void Update()
@@ -88,6 +92,7 @@ public class PlayerControl : MonoBehaviour
 
                 interactable.Interact(this);
                 UpdateHeldItemHUD();
+                RefreshHeldItemVisual();
 
                 Debug.Log("AFTER INTERACT — " + GetHeldItemDebug()
                           + " | player instanceID: " + GetInstanceID());
@@ -117,6 +122,7 @@ public class PlayerControl : MonoBehaviour
                 Debug.Log("Dropped: " + heldItem.GetDisplayName());
                 heldItem.Clear();
                 UpdateHeldItemHUD();
+                RefreshHeldItemVisual();
                 Debug.Log(GetHeldItemDebug());
             }
             else
@@ -204,6 +210,18 @@ public class PlayerControl : MonoBehaviour
         if (heldItem == null || heldItem.IsEmpty)
             return "Holding: Nothing";
         return "Holding: " + heldItem.GetDisplayName();
+    }
+
+    public void RefreshHeldItemDisplay()
+    {
+        UpdateHeldItemHUD();
+        RefreshHeldItemVisual();
+    }
+
+    private void RefreshHeldItemVisual()
+    {
+        if (heldItemVisualizer != null)
+            heldItemVisualizer.Refresh(heldItem);
     }
 
     private void UpdateHeldItemHUD()
