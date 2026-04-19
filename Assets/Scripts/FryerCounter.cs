@@ -3,6 +3,7 @@ using UnityEngine;
 public class FryerCounter : BaseStation, IInteractable
 {
     public KitchenItemData storedItem = new KitchenItemData();
+    public KitchenItemVisualizer storedItemVisualizer;
 
     // Valid interactions:
     //   - Fryer empty + holding FrozenFries or ChickenRaw  → place item in fryer
@@ -34,12 +35,14 @@ public class FryerCounter : BaseStation, IInteractable
             {
                 storedItem.Set(ItemType.ChickenRaw);
                 player.heldItem.Clear();
+                UpdateStoredItemVisual();
                 Show(player, "Placed raw chicken in fryer");
                 return;
             }
 
             storedItem.Set(ItemType.FrozenFries);
             player.heldItem.Clear();
+            UpdateStoredItemVisual();
             Show(player, "Placed frozen fries in fryer");
             return;
         }
@@ -47,6 +50,7 @@ public class FryerCounter : BaseStation, IInteractable
         if (storedItem.type == ItemType.FrozenFries)
         {
             storedItem.Set(ItemType.FriesCooked);
+            UpdateStoredItemVisual();
             Show(player, "Fries cooked");
             return;
         }
@@ -54,6 +58,7 @@ public class FryerCounter : BaseStation, IInteractable
         if (storedItem.type == ItemType.ChickenRaw)
         {
             storedItem.Set(ItemType.ChickenCooked);
+            UpdateStoredItemVisual();
             Show(player, "Chicken cooked");
             return;
         }
@@ -62,6 +67,7 @@ public class FryerCounter : BaseStation, IInteractable
         {
             player.heldItem.Set(ItemType.FriesCooked);
             storedItem.Clear();
+            UpdateStoredItemVisual();
             Show(player, "Picked up cooked fries");
             return;
         }
@@ -70,10 +76,17 @@ public class FryerCounter : BaseStation, IInteractable
         {
             player.heldItem.Set(ItemType.ChickenCooked);
             storedItem.Clear();
+            UpdateStoredItemVisual();
             Show(player, "Picked up cooked chicken");
             return;
         }
 
         Show(player, "Cannot use fryer now");
+    }
+
+    private void UpdateStoredItemVisual()
+    {
+        if (storedItemVisualizer != null)
+            storedItemVisualizer.Refresh(storedItem);
     }
 }

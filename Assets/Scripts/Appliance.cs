@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-// Kitchen stations now inherit BaseStation directly.
 //so this script is basically useless but best not to remove it just yet in case we want to add some shared appliance functionality later
 //im also using this shit as reference 
 public class Appliance : MonoBehaviour, IInteractable

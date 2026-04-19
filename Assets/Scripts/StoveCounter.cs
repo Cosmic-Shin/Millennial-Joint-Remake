@@ -6,22 +6,20 @@ public class StoveCounter : BaseStation, IInteractable
     public KitchenItemVisualizer storedItemVisualizer;
 
     // Valid interactions:
-    //   - Stove empty + holding PattyRaw, BaconRaw, or ChickenRaw → place it
-    //   - Stove has PattyRaw, BaconRaw, or ChickenRaw + empty hands → cook it
-    //   - Stove has PattyCooked, BaconCooked, or ChickenCooked + empty hands → pick it up
-    //   - Cannot interact if holding a complete drink
+    //   - Stove empty + holding PattyRaw or HamRaw → place it
+    //   - Stove has PattyRaw or HamRaw + empty hands → cook it
+    //   - Stove has PattyCooked or HamCooked + empty hands → pick it up
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
-        if (player.heldItem.IsCompleteDrink) return false;
 
         if (storedItem.IsEmpty)
-            return player.heldItem.type == ItemType.PattyRaw || player.heldItem.type == ItemType.BaconRaw || player.heldItem.type == ItemType.ChickenRaw;
+            return player.heldItem.type == ItemType.PattyRaw || player.heldItem.type == ItemType.HamRaw;
 
-        if (storedItem.type == ItemType.PattyRaw || storedItem.type == ItemType.BaconRaw || storedItem.type == ItemType.ChickenRaw)
+        if (storedItem.type == ItemType.PattyRaw || storedItem.type == ItemType.HamRaw)
             return player.heldItem.IsEmpty; // tap to cook
 
-        if (storedItem.type == ItemType.PattyCooked || storedItem.type == ItemType.BaconCooked || storedItem.type == ItemType.ChickenCooked)
+        if (storedItem.type == ItemType.PattyCooked || storedItem.type == ItemType.HamCooked)
             return player.heldItem.IsEmpty; // pick up
 
         return false;
@@ -33,28 +31,25 @@ public class StoveCounter : BaseStation, IInteractable
 
         if (storedItem.IsEmpty)
         {
-            if (player.heldItem.type == ItemType.BaconRaw)
+            if (player.heldItem.type == ItemType.HamRaw)
             {
-                storedItem.Set(ItemType.BaconRaw);
+                storedItem.Set(ItemType.HamRaw);
                 player.heldItem.Clear();
                 UpdateStoredItemVisual();
-                Show(player, "Placed raw bacon on stove");
+                Show(player, "Placed raw ham on stove");
                 return;
             }
 
-            if (player.heldItem.type == ItemType.ChickenRaw)
+            if (player.heldItem.type == ItemType.PattyRaw)
             {
-                storedItem.Set(ItemType.ChickenRaw);
+                storedItem.Set(ItemType.PattyRaw);
                 player.heldItem.Clear();
                 UpdateStoredItemVisual();
-                Show(player, "Placed raw chicken on stove");
+                Show(player, "Placed raw patty on stove");
                 return;
             }
 
-            storedItem.Set(ItemType.PattyRaw);
-            player.heldItem.Clear();
-            UpdateStoredItemVisual();
-            Show(player, "Placed raw patty on stove");
+            Show(player, "Place raw ham or raw patty on stove");
             return;
         }
 
@@ -66,19 +61,11 @@ public class StoveCounter : BaseStation, IInteractable
             return;
         }
 
-        if (storedItem.type == ItemType.BaconRaw)
+        if (storedItem.type == ItemType.HamRaw)
         {
-            storedItem.Set(ItemType.BaconCooked);
+            storedItem.Set(ItemType.HamCooked);
             UpdateStoredItemVisual();
-            Show(player, "Bacon cooked");
-            return;
-        }
-
-        if (storedItem.type == ItemType.ChickenRaw)
-        {
-            storedItem.Set(ItemType.ChickenCooked);
-            UpdateStoredItemVisual();
-            Show(player, "Chicken cooked");
+            Show(player, "Ham cooked");
             return;
         }
 
@@ -91,21 +78,12 @@ public class StoveCounter : BaseStation, IInteractable
             return;
         }
 
-        if (storedItem.type == ItemType.BaconCooked)
+        if (storedItem.type == ItemType.HamCooked)
         {
-            player.heldItem.Set(ItemType.BaconCooked);
+            player.heldItem.Set(ItemType.HamCooked);
             storedItem.Clear();
             UpdateStoredItemVisual();
-            Show(player, "Picked up cooked bacon");
-            return;
-        }
-
-        if (storedItem.type == ItemType.ChickenCooked)
-        {
-            player.heldItem.Set(ItemType.ChickenCooked);
-            storedItem.Clear();
-            UpdateStoredItemVisual();
-            Show(player, "Picked up cooked chicken");
+            Show(player, "Picked up cooked ham");
             return;
         }
 

@@ -29,20 +29,23 @@ public class Order
     {
         var types = new[] {
             OrderItemType.Burger,
-            OrderItemType.BaconBurger,
+            OrderItemType.Sandwich,
             OrderItemType.FriedChicken,
             OrderItemType.Soda,
-            OrderItemType.Boba,
+            OrderItemType.Coffee,
             OrderItemType.Fries };
         return types[UnityEngine.Random.Range(0, types.Length)];
     }
 
     public OrderItemType? TryServeItem(KitchenItemData item)
     {
-        // Check if this item matches any unserved order item
-        for (int i = 0; i < 2; i++)
+        // Items may be served in any order.
+        for (int i = 0; i < items.Length; i++)
         {
-            if (!served[i] && items[i].IsMatching(item))
+            if (items[i] == null || served[i])
+                continue;
+
+            if (items[i].IsMatching(item))
             {
                 served[i] = true;
                 return items[i].type;

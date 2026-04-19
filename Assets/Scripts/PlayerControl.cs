@@ -33,6 +33,21 @@ public class PlayerControl : MonoBehaviour
     [Header("Held Item Visuals")]
     public KitchenItemVisualizer heldItemVisualizer;
 
+    [Header("Dropped Item")]
+    public float dropForwardOffset = 0.8f;
+    public float dropUpOffset = 0.5f;
+    public float dropUpwardVelocity = 0.25f;
+    public float throwForceMin = 2f;
+    public float throwForceMax = 10f;
+    public float minimumThrowHoldTime = 0.5f;
+    public float maximumThrowHoldTime = 3f;
+    public float throwUpwardBoost = 1.5f;
+    public float pickupRadius = 1.5f;
+    public float dropTorque = 1.5f;
+    public float droppedItemLifetime = 30f;
+
+    private bool dropButtonHeld;
+    private float dropButtonHoldTime;
     private BaseStation lastOpenStation;
 
     private void OnValidate()
@@ -72,7 +87,17 @@ public class PlayerControl : MonoBehaviour
         {
             Debug.Log("PLAYER INSTANCE ID: " + GetInstanceID());
 
-            IInteractable interactable = GetNearestValidInteractable();
+            IInteractable interactable = null;
+            if (heldItem.IsEmpty)
+                interactable = GetNearestValidDroppedItem(pickupRadius);
+
+            if (interactable == null)
+            {
+                interactable = GetNearestValidInteractable(castRadius);
+                if (interactable == null && heldItem.IsEmpty)
+                    interactable = GetNearestValidInteractable(pickupRadius);
+            }
+
             if (interactable != null)
             {
                 MonoBehaviour mb = interactable as MonoBehaviour;
@@ -113,23 +138,82 @@ public class PlayerControl : MonoBehaviour
         }
 
         // ---------------------------------------------------------------
-        // Drop item
+        // Drop / throw item
         // ---------------------------------------------------------------
-        if (Input.GetKeyDown(DropItem))
+        if (Input.GetKeyDown(DropItem) && !heldItem.IsEmpty)
+        {
+            dropButtonHeld = true;
+            dropButtonHoldTime = 0f;
+        }
+
+        if (Input.GetKey(DropItem) && dropButtonHeld)
+        {
+            dropButtonHoldTime += Time.deltaTime;
+        }
+
+        if (Input.GetKeyUp(DropItem) && dropButtonHeld)
         {
             if (!heldItem.IsEmpty)
             {
-                Debug.Log("Dropped: " + heldItem.GetDisplayName());
+                bool isThrow = dropButtonHoldTime >= minimumThrowHoldTime;
+                Vector3 dropPosition = transform.position + transform.forward * dropForwardOffset + Vector3.up * dropUpOffset;
+                Vector3 velocity;
+
+                if (isThrow)
+                {
+                    float charge = Mathf.Clamp01((dropButtonHoldTime - minimumThrowHoldTime) /
+                        Mathf.Max(0.0001f, maximumThrowHoldTime - minimumThrowHoldTime));
+                    float strength = Mathf.Lerp(throwForceMin, throwForceMax, charge);
+                    velocity = transform.forward * strength + Vector3.up * throwUpwardBoost;
+                    Debug.Log($"Thrown with charge {charge:F2}: {heldItem.GetDisplayName()}");
+                }
+                else
+                {
+                    velocity = Vector3.up * dropUpwardVelocity;
+                    Debug.Log("Dropped: " + heldItem.GetDisplayName());
+                }
+
+                SpawnDroppedItem(heldItem, dropPosition, velocity);
                 heldItem.Clear();
                 UpdateHeldItemHUD();
                 RefreshHeldItemVisual();
                 Debug.Log(GetHeldItemDebug());
             }
-            else
-            {
-                Debug.Log("Nothing to drop — " + GetHeldItemDebug());
-            }
+
+            dropButtonHeld = false;
+            dropButtonHoldTime = 0f;
         }
+    }
+
+    private void SpawnDroppedItem(KitchenItemData itemData, Vector3 position, Vector3 velocity)
+    {
+        if (itemData == null || itemData.IsEmpty)
+            return;
+
+        GameObject droppedObject = new GameObject("DroppedItem:" + itemData.GetDisplayName());
+        droppedObject.layer = LayerMask.NameToLayer("Default");
+        droppedObject.transform.position = position;
+        droppedObject.transform.rotation = Quaternion.identity;
+
+        SphereCollider collider = droppedObject.AddComponent<SphereCollider>();
+        collider.radius = 0.45f;
+        collider.center = Vector3.zero;
+        collider.isTrigger = false;
+        collider.material = null;
+
+        Rigidbody droppedRigidbody = droppedObject.AddComponent<Rigidbody>();
+        droppedRigidbody.mass = 3f;
+        droppedRigidbody.useGravity = true;
+        droppedRigidbody.linearDamping = 4f;
+        droppedRigidbody.angularDamping = 4f;
+        droppedRigidbody.constraints = RigidbodyConstraints.FreezeRotation;
+        droppedRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        droppedRigidbody.AddForce(velocity, ForceMode.VelocityChange);
+
+        DroppedItem droppedItem = droppedObject.AddComponent<DroppedItem>();
+        droppedItem.Initialize(itemData, heldItemVisualizer);
+
+        Destroy(droppedObject, droppedItemLifetime);
     }
 
     private System.Collections.IEnumerator CloseAfterDelay(BaseStation station, float delay)
@@ -160,10 +244,10 @@ public class PlayerControl : MonoBehaviour
         }
     }
 
-    private IInteractable GetNearestValidInteractable()
+    private IInteractable GetNearestValidInteractable(float radius)
     {
         int maskValue = hitMask.value == 0 ? ~0 : hitMask.value;
-        Collider[] hits = Physics.OverlapSphere(transform.position, castRadius, maskValue);
+        Collider[] hits = Physics.OverlapSphere(transform.position, radius, maskValue);
 
         IInteractable nearest = null;
         float nearestDist = Mathf.Infinity;
@@ -183,6 +267,59 @@ public class PlayerControl : MonoBehaviour
         }
 
         return nearest;
+    }
+
+    private IInteractable GetNearestValidDroppedItem(float radius)
+    {
+        int maskValue = hitMask.value == 0 ? ~0 : hitMask.value;
+        Collider[] hits = Physics.OverlapSphere(transform.position, radius, maskValue, QueryTriggerInteraction.Collide);
+
+        DroppedItem nearestDropped = null;
+        float nearestDist = Mathf.Infinity;
+
+        foreach (Collider hit in hits)
+        {
+            DroppedItem dropped = hit.GetComponent<DroppedItem>() ?? hit.GetComponentInParent<DroppedItem>();
+            if (dropped == null && hit.attachedRigidbody != null)
+                dropped = hit.attachedRigidbody.GetComponent<DroppedItem>();
+
+            if (dropped == null) continue;
+            if (!dropped.CanInteractWith(this)) continue;
+
+            float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
+            if (dist < nearestDist)
+            {
+                nearestDist = dist;
+                nearestDropped = dropped;
+            }
+        }
+
+        if (nearestDropped != null)
+            return nearestDropped;
+
+        // Fallback: if the layer mask excludes the dropped item layer, search all layers.
+        if (maskValue != ~0)
+        {
+            hits = Physics.OverlapSphere(transform.position, radius, ~0, QueryTriggerInteraction.Collide);
+            foreach (Collider hit in hits)
+            {
+                DroppedItem dropped = hit.GetComponent<DroppedItem>() ?? hit.GetComponentInParent<DroppedItem>();
+                if (dropped == null && hit.attachedRigidbody != null)
+                    dropped = hit.attachedRigidbody.GetComponent<DroppedItem>();
+
+                if (dropped == null) continue;
+                if (!dropped.CanInteractWith(this)) continue;
+
+                float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
+                if (dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    nearestDropped = dropped;
+                }
+            }
+        }
+
+        return nearestDropped;
     }
 
     private IInteractable GetBestInteractable(Collider hit)
@@ -238,5 +375,8 @@ public class PlayerControl : MonoBehaviour
     {
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, castRadius);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, pickupRadius);
     }
 }

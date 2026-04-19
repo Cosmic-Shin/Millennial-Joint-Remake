@@ -4,11 +4,10 @@ public class IngredientBox : BaseStation, IInteractable
 {
     public IngredientSelectionPanel selectionPanel;
 
-    // Can only grab from a box when hands are empty and not holding a complete drink
+    // Can only grab from a box when hands are empty
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
-        if (player.heldItem.IsCompleteDrink) return false;
         return player.heldItem.IsEmpty;
     }
 

@@ -11,7 +11,6 @@ public class BaseStation : MonoBehaviour
 
     public void OpenPanel(bool show)
     {
-        // Silently skip if not configured — station still works, just no panel animation
         if (interactionPanel == null) return;
         if (interactionPanel.panelCanvas == null) return;
 
@@ -45,7 +44,6 @@ public class BaseStation : MonoBehaviour
 
         Debug.Log("[" + gameObject.name + "] " + fullMessage);
 
-        // Silently skip if not configured
         if (interactionPanel != null)
             interactionPanel.ShowMessage(fullMessage);
     }

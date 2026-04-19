@@ -8,6 +8,9 @@ public class OrderUIManager : MonoBehaviour
 
     public TextMeshProUGUI orderText;
     public TextMeshProUGUI moneyText;
+    public TextMeshProUGUI timerText;
+    public TextMeshProUGUI quotaText;
+    public TextMeshProUGUI statusText;
 
     private void Awake()
     {
@@ -17,6 +20,11 @@ public class OrderUIManager : MonoBehaviour
             return;
         }
         Instance = this;
+    }
+
+    private void Start()
+    {
+        // Removed call to UpdateDisplay here, as UpdateGameUI will handle it
     }
 
     public void UpdateDisplay(Order order)
@@ -31,6 +39,22 @@ public class OrderUIManager : MonoBehaviour
         UpdateMoneyDisplay();
     }
 
+    public void UpdateGameUI()
+    {
+        if (OrderManager.Instance == null) return;
+
+        if (timerText != null)
+            timerText.text = "" + Mathf.Ceil(OrderManager.Instance.GetCurrentTime()).ToString() + "s";
+
+        if (quotaText != null)
+            quotaText.text = "Goal: $" + OrderManager.Instance.moneyQuota.ToString("0.00");
+
+        if (statusText != null)
+            statusText.text = OrderManager.Instance.state.ToString();
+
+        UpdateMoneyDisplay();
+    }
+
     public void UpdateMoneyDisplay()
     {
         if (moneyText == null)
@@ -41,11 +65,11 @@ public class OrderUIManager : MonoBehaviour
 
         if (OrderManager.Instance != null)
         {
-            moneyText.text = "Money: $" + OrderManager.Instance.money.ToString("0.00");
+            moneyText.text = "$" + OrderManager.Instance.money.ToString("0.00");
         }
         else
         {
-            moneyText.text = "Money: $0.00";
+            moneyText.text = "$0.00";
         }
     }
 }

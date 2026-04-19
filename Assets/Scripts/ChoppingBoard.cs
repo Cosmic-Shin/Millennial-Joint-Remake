@@ -3,6 +3,7 @@ using UnityEngine;
 public class ChoppingBoard : BaseStation, IInteractable
 {
     public KitchenItemData storedItem = new KitchenItemData();
+    public KitchenItemVisualizer storedItemVisualizer;
 
     // Valid interactions:
     //   - Board empty + holding VeggieRaw → place it
@@ -12,7 +13,6 @@ public class ChoppingBoard : BaseStation, IInteractable
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
-        if (player.heldItem.IsCompleteDrink) return false;
 
         if (storedItem.IsEmpty)
             return player.heldItem.type == ItemType.VeggieRaw;
@@ -38,6 +38,7 @@ public class ChoppingBoard : BaseStation, IInteractable
         {
             storedItem.Set(ItemType.VeggieRaw);
             player.heldItem.Clear();
+            UpdateStoredItemVisual();
             Show(player, "Placed raw veggie on chopping board");
             Debug.Log("ChoppingBoard result | storedItem now: " + storedItem.GetDisplayName());
             return;
@@ -46,6 +47,7 @@ public class ChoppingBoard : BaseStation, IInteractable
         if (storedItem.type == ItemType.VeggieRaw)
         {
             storedItem.Set(ItemType.VeggieChopped);
+            UpdateStoredItemVisual();
             Show(player, "Veggie chopped");
             Debug.Log("ChoppingBoard result | storedItem now: " + storedItem.GetDisplayName());
             return;
@@ -55,11 +57,18 @@ public class ChoppingBoard : BaseStation, IInteractable
         {
             player.heldItem.Set(ItemType.VeggieChopped);
             storedItem.Clear();
+            UpdateStoredItemVisual();
             Show(player, "Picked up chopped veggie");
             Debug.Log("ChoppingBoard result | player after: " + player.GetHeldItemDebug());
             return;
         }
 
         Show(player, "Cannot use chopping board now");
+    }
+
+    private void UpdateStoredItemVisual()
+    {
+        if (storedItemVisualizer != null)
+            storedItemVisualizer.Refresh(storedItem);
     }
 }

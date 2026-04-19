@@ -5,11 +5,13 @@ public class IngredientSelectionPanel : MonoBehaviour
 {
     public GameObject panelObject;
     public Button bunButton;
+    public Button breadButton;
     public Button veggieButton;
     public Button pattyButton;
     public Button friesButton;
-    public Button baconButton;
     public Button chickenButton;
+    public Button hamButton;
+    public Button cheeseButton;
     public Button closeButton;
 
     private PlayerControl currentPlayer;
@@ -20,6 +22,9 @@ public class IngredientSelectionPanel : MonoBehaviour
         if (bunButton != null)
             bunButton.onClick.AddListener(() => SelectIngredient(ItemType.Bun));
 
+        if (breadButton != null)
+            breadButton.onClick.AddListener(() => SelectIngredient(ItemType.Bread));
+
         if (veggieButton != null)
             veggieButton.onClick.AddListener(() => SelectIngredient(ItemType.VeggieRaw));
 
@@ -29,11 +34,14 @@ public class IngredientSelectionPanel : MonoBehaviour
         if (friesButton != null)
             friesButton.onClick.AddListener(() => SelectIngredient(ItemType.FrozenFries));
 
-        if (baconButton != null)
-            baconButton.onClick.AddListener(() => SelectIngredient(ItemType.BaconRaw));
-
         if (chickenButton != null)
             chickenButton.onClick.AddListener(() => SelectIngredient(ItemType.ChickenRaw));
+
+        if (hamButton != null)
+            hamButton.onClick.AddListener(() => SelectIngredient(ItemType.HamRaw));
+
+        if (cheeseButton != null)
+            cheeseButton.onClick.AddListener(() => SelectIngredient(ItemType.Cheese));
 
         if (closeButton != null)
             closeButton.onClick.AddListener(ClosePanel);
@@ -44,6 +52,9 @@ public class IngredientSelectionPanel : MonoBehaviour
         currentPlayer = player;
         parentBox = box;
 
+        if (currentPlayer != null)
+            currentPlayer.doMove = false;
+
         if (panelObject != null)
             panelObject.SetActive(true);
     }
@@ -52,6 +63,9 @@ public class IngredientSelectionPanel : MonoBehaviour
     {
         if (panelObject != null)
             panelObject.SetActive(false);
+
+        if (currentPlayer != null)
+            currentPlayer.doMove = true;
 
         currentPlayer = null;
         parentBox = null;

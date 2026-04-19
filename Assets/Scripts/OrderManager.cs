@@ -6,16 +6,25 @@ public class OrderManager : MonoBehaviour
 
     [Header("Order Prices")]
     public float burgerPrice = 8f;
-    public float baconBurgerPrice = 11f;
+    public float sandwichPrice = 10f;
     public float friedChickenPrice = 9f;
     public float sodaPrice = 2.5f;
-    public float bobaPrice = 4f;
+    public float coffeePrice = 3.5f;
     public float friesPrice = 3.5f;
 
     [Header("Economy")]
     public float money = 0f;
 
+    [Header("Game Mode")]
+    public float gameTimer = 300f; // Adjustable timer in seconds (default 5 minutes)
+    public float moneyQuota = 100f; // Adjustable money quota
+
+    private float currentTime;
+    private bool quotaReached = false;
     private Order currentOrder;
+
+    public enum GameState { Playing, Won, Lost }
+    public GameState state = GameState.Playing;
 
     private void Awake()
     {
@@ -30,11 +39,48 @@ public class OrderManager : MonoBehaviour
     private void Start()
     {
         money = Mathf.Max(0f, money);
+        currentTime = Mathf.Max(gameTimer, 0.1f); // Prevent instant loss
+        quotaReached = false;
+        state = GameState.Playing;
         GenerateNewOrder();
+        OrderUIManager.Instance?.UpdateGameUI();
+    }
+
+    private void Update()
+    {
+        if (state != GameState.Playing) return;
+
+        currentTime -= Time.deltaTime;
+        if (money >= moneyQuota && !quotaReached)
+        {
+            quotaReached = true;
+            Debug.Log("Quota reached! Continue until timer ends.");
+        }
+
+        if (currentTime <= 0)
+        {
+            if (quotaReached)
+            {
+                state = GameState.Won;
+                Debug.Log("Game Won!");
+            }
+            else
+            {
+                state = GameState.Lost;
+                Debug.Log("Game Over!");
+            }
+            OrderUIManager.Instance?.UpdateGameUI();
+        }
+        else
+        {
+            OrderUIManager.Instance?.UpdateGameUI();
+        }
     }
 
     public void GenerateNewOrder()
     {
+        if (state != GameState.Playing) return;
+
         currentOrder = new Order();
         currentOrder.GenerateRandomOrder();
         Debug.Log("New order generated:\n" + currentOrder.GetDisplayText());
@@ -43,27 +89,26 @@ public class OrderManager : MonoBehaviour
 
     public bool TryServeItem(KitchenItemData item)
     {
-        if (currentOrder == null) return false;
+        if (currentOrder == null)
+            return false;
 
         OrderItemType? servedType = currentOrder.TryServeItem(item);
-        if (servedType.HasValue)
+        if (servedType == null)
+            return false;
+
+        money += GetPriceForType(servedType.Value);
+
+        if (currentOrder.IsComplete())
         {
-            float earned = GetPriceForType(servedType.Value);
-            money += earned;
-            Debug.Log("Item served! Earned $" + earned + ". Progress: " + currentOrder.GetServedCount() + "/2\n" + currentOrder.GetDisplayText());
+            Debug.Log("Order complete! Generating new order.");
+            GenerateNewOrder();
+        }
+        else
+        {
             OrderUIManager.Instance?.UpdateDisplay(currentOrder);
-
-            if (currentOrder.IsComplete())
-            {
-                Debug.Log("Order complete! Generating new order...");
-                GenerateNewOrder();
-            }
-
-            return true;
         }
 
-        Debug.Log("Item does not match current order");
-        return false;
+        return true;
     }
 
     private float GetPriceForType(OrderItemType type)
@@ -71,14 +116,16 @@ public class OrderManager : MonoBehaviour
         return type switch
         {
             OrderItemType.Burger => burgerPrice,
-            OrderItemType.BaconBurger => baconBurgerPrice,
+            OrderItemType.Sandwich => sandwichPrice,
             OrderItemType.FriedChicken => friedChickenPrice,
             OrderItemType.Soda => sodaPrice,
-            OrderItemType.Boba => bobaPrice,
+            OrderItemType.Coffee => coffeePrice,
             OrderItemType.Fries => friesPrice,
             _ => 0f,
         };
     }
+
+    public float GetCurrentTime() => currentTime;
 
     public Order GetCurrentOrder()
     {
