@@ -4,10 +4,16 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerControl : MonoBehaviour
 {
+    [Header("Player")]
+    public int playerNumber = 1; // 1 or 2
+
     [Header("Movement")]
     public bool doMove = true;
     public float speed = 6f;
     public float runMultiplier = 1.5f;
+
+    [Header("Animation")]
+    public Animator animator;
 
     private Rigidbody rb;
     private Vector3 direction;
@@ -60,8 +66,21 @@ public class PlayerControl : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
 
-        // Force-clear at runtime so stale Inspector-serialized data never causes issues.
-        // This is the fix for heldItem appearing set in the Inspector but not updating at runtime.
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+        // Configure keys based on player number
+        if (playerNumber == 2)
+        {
+            MoveUp        = KeyCode.UpArrow;
+            MoveLeft      = KeyCode.LeftArrow;
+            MoveDown      = KeyCode.DownArrow;
+            MoveRight     = KeyCode.RightArrow;
+            PrimaryAction = KeyCode.Return;
+            Run           = KeyCode.RightShift;
+            DropItem      = KeyCode.RightControl;
+        }
+
         heldItem.Clear();
 
         if (hitMask.value == 0)
@@ -69,6 +88,7 @@ public class PlayerControl : MonoBehaviour
 
         UpdateHeldItemHUD();
         RefreshHeldItemVisual();
+        UpdateAnimator();
     }
 
     private void Update()
@@ -118,6 +138,7 @@ public class PlayerControl : MonoBehaviour
                 interactable.Interact(this);
                 UpdateHeldItemHUD();
                 RefreshHeldItemVisual();
+                UpdateAnimator();
 
                 Debug.Log("AFTER INTERACT — " + GetHeldItemDebug()
                           + " | player instanceID: " + GetInstanceID());
@@ -177,12 +198,16 @@ public class PlayerControl : MonoBehaviour
                 heldItem.Clear();
                 UpdateHeldItemHUD();
                 RefreshHeldItemVisual();
+                UpdateAnimator();
+
                 Debug.Log(GetHeldItemDebug());
             }
 
             dropButtonHeld = false;
             dropButtonHoldTime = 0f;
         }
+
+        UpdateAnimator();
     }
 
     private void SpawnDroppedItem(KitchenItemData itemData, Vector3 position, Vector3 velocity)
@@ -244,6 +269,18 @@ public class PlayerControl : MonoBehaviour
         }
     }
 
+    private void UpdateAnimator()
+    {
+        if (animator == null)
+            return;
+
+        bool isMoving = direction.sqrMagnitude > 0.01f;
+        bool isCarrying = heldItem != null && !heldItem.IsEmpty;
+
+        animator.SetBool("IsMoving", isMoving);
+        animator.SetBool("IsCarrying", isCarrying);
+    }
+
     private IInteractable GetNearestValidInteractable(float radius)
     {
         int maskValue = hitMask.value == 0 ? ~0 : hitMask.value;
@@ -297,7 +334,6 @@ public class PlayerControl : MonoBehaviour
         if (nearestDropped != null)
             return nearestDropped;
 
-        // Fallback: if the layer mask excludes the dropped item layer, search all layers.
         if (maskValue != ~0)
         {
             hits = Physics.OverlapSphere(transform.position, radius, ~0, QueryTriggerInteraction.Collide);
@@ -353,6 +389,7 @@ public class PlayerControl : MonoBehaviour
     {
         UpdateHeldItemHUD();
         RefreshHeldItemVisual();
+        UpdateAnimator();
     }
 
     private void RefreshHeldItemVisual()

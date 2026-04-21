@@ -43,14 +43,46 @@ public class OrderUIManager : MonoBehaviour
     {
         if (OrderManager.Instance == null) return;
 
+        var mode = OrderManager.Instance.GetCurrentMode();
+        var state = OrderManager.Instance.state;
+
         if (timerText != null)
-            timerText.text = "" + Mathf.Ceil(OrderManager.Instance.GetCurrentTime()).ToString() + "s";
+        {
+            if (mode == OrderManager.GameMode.TIME)
+            {
+                // TIME mode: countdown from 3 minutes
+                timerText.text = "" + Mathf.Ceil(Mathf.Max(0, OrderManager.Instance.GetCurrentTime())).ToString() + "s";
+            }
+            else  // SPEED mode
+            {
+                // SPEED mode: count up (show elapsed time)
+                timerText.text = "" + Mathf.Ceil(OrderManager.Instance.GetCurrentTime()).ToString() + "s";
+            }
+        }
 
         if (quotaText != null)
-            quotaText.text = "Goal: $" + OrderManager.Instance.moneyQuota.ToString("0.00");
+        {
+            if (mode == OrderManager.GameMode.TIME)
+            {
+                quotaText.text = "Goal: $" + OrderManager.Instance.moneyQuota.ToString("0.00");
+            }
+            else  // SPEED mode
+            {
+                quotaText.text = "Quota: $" + OrderManager.Instance.moneyQuota.ToString("0.00");
+            }
+        }
 
         if (statusText != null)
-            statusText.text = OrderManager.Instance.state.ToString();
+        {
+            if (state == OrderManager.GameState.Waiting)
+            {
+                statusText.text = "Waiting...";
+            }
+            else
+            {
+                statusText.text = state.ToString();
+            }
+        }
 
         UpdateMoneyDisplay();
     }

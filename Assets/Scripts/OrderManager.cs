@@ -4,6 +4,8 @@ public class OrderManager : MonoBehaviour
 {
     public static OrderManager Instance { get; private set; }
 
+    public enum GameMode { TIME, SPEED }
+
     [Header("Order Prices")]
     public float burgerPrice       = 8f;
     public float sandwichPrice     = 10f;
@@ -20,13 +22,15 @@ public class OrderManager : MonoBehaviour
     [Header("Game Mode")]
     public float gameTimer  = 300f;
     public float moneyQuota = 100f;
+    public float speedModeQuota = 50f;  // Quota for speed mode
 
     private float currentTime;
     private bool quotaReached = false;
     private Order currentOrder;
+    private GameMode currentMode = GameMode.TIME;
 
-    public enum GameState { Playing, Won, Lost }
-    public GameState state = GameState.Playing;
+    public enum GameState { Waiting, Playing, Won, Lost }
+    public GameState state = GameState.Waiting;
 
     private void Awake()
     {
@@ -40,31 +44,69 @@ public class OrderManager : MonoBehaviour
 
     private void Start()
     {
-        money        = Mathf.Max(0f, money);
-        currentTime  = Mathf.Max(gameTimer, 0.1f);
+        // Game starts in waiting state (mode selection shown)
+        state = GameState.Waiting;
+    }
+
+    public void SetGameMode(GameMode mode)
+    {
+        currentMode = mode;
+        money = 0f;
         quotaReached = false;
-        state        = GameState.Playing;
+        state = GameState.Playing;
+
+        if (mode == GameMode.TIME)
+        {
+            currentTime = 180f;  // 3 minutes
+            moneyQuota = 100f;
+        }
+        else  // SPEED mode
+        {
+            currentTime = 0f;  // Timer counts up
+            moneyQuota = speedModeQuota;
+        }
+
         GenerateNewOrder();
         OrderUIManager.Instance?.UpdateGameUI();
+        Debug.Log($"Game Mode: {(mode == GameMode.TIME ? "TIME (3 mins)" : "SPEED (Race Quota)")} | Quota: ${moneyQuota}");
     }
 
     private void Update()
     {
         if (state != GameState.Playing) return;
 
-        currentTime -= Time.deltaTime;
+        if (currentMode == GameMode.TIME)
+        {
+            currentTime -= Time.deltaTime;
+        }
+        else  // SPEED mode - timer counts up
+        {
+            currentTime += Time.deltaTime;
+        }
 
         if (money >= moneyQuota && !quotaReached)
         {
             quotaReached = true;
-            Debug.Log("Quota reached! Continue until timer ends.");
+
+            if (currentMode == GameMode.TIME)
+            {
+                Debug.Log("Quota reached! Continue until timer ends.");
+            }
+            else  // SPEED mode
+            {
+                state = GameState.Won;
+                Debug.Log($"Speed Mode Complete! Time: {currentTime:F1}s");
+                OrderUIManager.Instance?.UpdateGameUI();
+                HandleGameEnd();
+            }
         }
 
-        if (currentTime <= 0)
+        if (currentMode == GameMode.TIME && currentTime <= 0)
         {
             state = quotaReached ? GameState.Won : GameState.Lost;
-            Debug.Log(state == GameState.Won ? "Game Won!" : "Game Over!");
+            Debug.Log(state == GameState.Won ? "Game Won! (Time expired with quota)" : "Game Over! (Time expired, no quota)");
             OrderUIManager.Instance?.UpdateGameUI();
+            HandleGameEnd();
         }
         else
         {
@@ -104,6 +146,17 @@ public class OrderManager : MonoBehaviour
         return true;
     }
 
+    private void HandleGameEnd()
+    {
+        // Show mode selector after a brief delay
+        Invoke(nameof(ShowModeSelector), 2f);
+    }
+
+    private void ShowModeSelector()
+    {
+        GameModeSelector.Instance?.ShowModeSelector();
+    }
+
     private float GetPriceForType(OrderItemType type)
     {
         return type switch
@@ -122,4 +175,5 @@ public class OrderManager : MonoBehaviour
 
     public float GetCurrentTime()  => currentTime;
     public Order GetCurrentOrder() => currentOrder;
+    public GameMode GetCurrentMode() => currentMode;
 }

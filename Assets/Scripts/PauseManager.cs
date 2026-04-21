@@ -31,6 +31,10 @@ public class PauseManager : MonoBehaviour
 
     private void Update()
     {
+        // Only allow ESC pause/resume during actual gameplay
+        if (OrderManager.Instance != null && OrderManager.Instance.state == OrderManager.GameState.Waiting)
+            return;
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (isPaused)
