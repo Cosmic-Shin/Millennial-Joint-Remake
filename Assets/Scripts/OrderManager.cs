@@ -5,19 +5,21 @@ public class OrderManager : MonoBehaviour
     public static OrderManager Instance { get; private set; }
 
     [Header("Order Prices")]
-    public float burgerPrice = 8f;
-    public float sandwichPrice = 10f;
+    public float burgerPrice       = 8f;
+    public float sandwichPrice     = 10f;
     public float friedChickenPrice = 9f;
-    public float sodaPrice = 2.5f;
-    public float coffeePrice = 3.5f;
-    public float friesPrice = 3.5f;
+    public float friesPrice        = 3.5f;
+    public float sodaPrice         = 2.5f;
+    public float iceTeaPrice       = 2.5f;
+    public float orangeJuicePrice  = 3f;
+    public float coffeePrice       = 3.5f;
 
     [Header("Economy")]
     public float money = 0f;
 
     [Header("Game Mode")]
-    public float gameTimer = 300f; // Adjustable timer in seconds (default 5 minutes)
-    public float moneyQuota = 100f; // Adjustable money quota
+    public float gameTimer  = 300f;
+    public float moneyQuota = 100f;
 
     private float currentTime;
     private bool quotaReached = false;
@@ -38,10 +40,10 @@ public class OrderManager : MonoBehaviour
 
     private void Start()
     {
-        money = Mathf.Max(0f, money);
-        currentTime = Mathf.Max(gameTimer, 0.1f); // Prevent instant loss
+        money        = Mathf.Max(0f, money);
+        currentTime  = Mathf.Max(gameTimer, 0.1f);
         quotaReached = false;
-        state = GameState.Playing;
+        state        = GameState.Playing;
         GenerateNewOrder();
         OrderUIManager.Instance?.UpdateGameUI();
     }
@@ -51,6 +53,7 @@ public class OrderManager : MonoBehaviour
         if (state != GameState.Playing) return;
 
         currentTime -= Time.deltaTime;
+
         if (money >= moneyQuota && !quotaReached)
         {
             quotaReached = true;
@@ -59,16 +62,8 @@ public class OrderManager : MonoBehaviour
 
         if (currentTime <= 0)
         {
-            if (quotaReached)
-            {
-                state = GameState.Won;
-                Debug.Log("Game Won!");
-            }
-            else
-            {
-                state = GameState.Lost;
-                Debug.Log("Game Over!");
-            }
+            state = quotaReached ? GameState.Won : GameState.Lost;
+            Debug.Log(state == GameState.Won ? "Game Won!" : "Game Over!");
             OrderUIManager.Instance?.UpdateGameUI();
         }
         else
@@ -89,12 +84,10 @@ public class OrderManager : MonoBehaviour
 
     public bool TryServeItem(KitchenItemData item)
     {
-        if (currentOrder == null)
-            return false;
+        if (currentOrder == null) return false;
 
         OrderItemType? servedType = currentOrder.TryServeItem(item);
-        if (servedType == null)
-            return false;
+        if (servedType == null) return false;
 
         money += GetPriceForType(servedType.Value);
 
@@ -115,20 +108,18 @@ public class OrderManager : MonoBehaviour
     {
         return type switch
         {
-            OrderItemType.Burger => burgerPrice,
-            OrderItemType.Sandwich => sandwichPrice,
+            OrderItemType.Burger       => burgerPrice,
+            OrderItemType.Sandwich     => sandwichPrice,
             OrderItemType.FriedChicken => friedChickenPrice,
-            OrderItemType.Soda => sodaPrice,
-            OrderItemType.Coffee => coffeePrice,
-            OrderItemType.Fries => friesPrice,
-            _ => 0f,
+            OrderItemType.Fries        => friesPrice,
+            OrderItemType.Soda         => sodaPrice,
+            OrderItemType.IceTea       => iceTeaPrice,
+            OrderItemType.OrangeJuice  => orangeJuicePrice,
+            OrderItemType.Coffee       => coffeePrice,
+            _                          => 0f,
         };
     }
 
-    public float GetCurrentTime() => currentTime;
-
-    public Order GetCurrentOrder()
-    {
-        return currentOrder;
-    }
+    public float GetCurrentTime()  => currentTime;
+    public Order GetCurrentOrder() => currentOrder;
 }

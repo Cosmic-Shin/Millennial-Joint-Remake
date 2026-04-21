@@ -1,25 +1,30 @@
 using UnityEngine;
 
+/// <summary>
+/// Stove now only cooks PattyRaw → PattyCooked.
+/// Ham no longer needs cooking (goes directly to sandwich from IngredientBox).
+/// Chicken is handled separately by a FryerCounter if used.
+/// </summary>
 public class StoveCounter : BaseStation, IInteractable
 {
     public KitchenItemData storedItem = new KitchenItemData();
     public KitchenItemVisualizer storedItemVisualizer;
 
     // Valid interactions:
-    //   - Stove empty + holding PattyRaw or HamRaw → place it
-    //   - Stove has PattyRaw or HamRaw + empty hands → cook it
-    //   - Stove has PattyCooked or HamCooked + empty hands → pick it up
+    //   - Stove empty + holding PattyRaw → place it
+    //   - Stove has PattyRaw + empty hands → cook it
+    //   - Stove has PattyCooked + empty hands → pick it up
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
 
         if (storedItem.IsEmpty)
-            return player.heldItem.type == ItemType.PattyRaw || player.heldItem.type == ItemType.HamRaw;
+            return player.heldItem.type == ItemType.PattyRaw;
 
-        if (storedItem.type == ItemType.PattyRaw || storedItem.type == ItemType.HamRaw)
+        if (storedItem.type == ItemType.PattyRaw)
             return player.heldItem.IsEmpty; // tap to cook
 
-        if (storedItem.type == ItemType.PattyCooked || storedItem.type == ItemType.HamCooked)
+        if (storedItem.type == ItemType.PattyCooked)
             return player.heldItem.IsEmpty; // pick up
 
         return false;
@@ -29,17 +34,9 @@ public class StoveCounter : BaseStation, IInteractable
     {
         if (player == null) return;
 
+        // Place raw patty
         if (storedItem.IsEmpty)
         {
-            if (player.heldItem.type == ItemType.HamRaw)
-            {
-                storedItem.Set(ItemType.HamRaw);
-                player.heldItem.Clear();
-                UpdateStoredItemVisual();
-                Show(player, "Placed raw ham on stove");
-                return;
-            }
-
             if (player.heldItem.type == ItemType.PattyRaw)
             {
                 storedItem.Set(ItemType.PattyRaw);
@@ -49,26 +46,20 @@ public class StoveCounter : BaseStation, IInteractable
                 return;
             }
 
-            Show(player, "Place raw ham or raw patty on stove");
+            Show(player, "Place a raw patty on the stove");
             return;
         }
 
+        // Cook the patty
         if (storedItem.type == ItemType.PattyRaw)
         {
             storedItem.Set(ItemType.PattyCooked);
             UpdateStoredItemVisual();
-            Show(player, "Patty cooked");
+            Show(player, "Patty cooked!");
             return;
         }
 
-        if (storedItem.type == ItemType.HamRaw)
-        {
-            storedItem.Set(ItemType.HamCooked);
-            UpdateStoredItemVisual();
-            Show(player, "Ham cooked");
-            return;
-        }
-
+        // Pick up cooked patty
         if (storedItem.type == ItemType.PattyCooked)
         {
             player.heldItem.Set(ItemType.PattyCooked);
@@ -78,16 +69,7 @@ public class StoveCounter : BaseStation, IInteractable
             return;
         }
 
-        if (storedItem.type == ItemType.HamCooked)
-        {
-            player.heldItem.Set(ItemType.HamCooked);
-            storedItem.Clear();
-            UpdateStoredItemVisual();
-            Show(player, "Picked up cooked ham");
-            return;
-        }
-
-        Show(player, "Cannot use stove now");
+        Show(player, "Cannot use stove right now");
     }
 
     private void UpdateStoredItemVisual()

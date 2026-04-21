@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &5884562190603799400
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2590035539130053320, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.00157
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497842514048544393, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.00157
+      objectReference: {fileID: 0}
+    - target: {fileID: 4833346382044736857, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 9.582204
+      objectReference: {fileID: 0}
+    - target: {fileID: 4833346382044736857, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.00000017881393
+      objectReference: {fileID: 0}
+    - target: {fileID: 4833346382044736857, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.7409261
+      objectReference: {fileID: 0}
+    - target: {fileID: 4833346382044736857, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071067
+      objectReference: {fileID: 0}
+    - target: {fileID: 4833346382044736857, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 4833346382044736857, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4833346382044736857, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4833346382044736857, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4833346382044736857, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4833346382044736857, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5213108165973014499, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+      propertyPath: m_Name
+      value: Sandwich Bread Variant
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects:
+    - {fileID: 8190880718104777378, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+    - {fileID: 2054486020252016584, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+    - {fileID: 739828091113809432, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+    - {fileID: 8411808254865183495, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+    - {fileID: 1456159694286168297, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+    - {fileID: 9161533295859264067, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+    - {fileID: 7148167369252808429, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+    - {fileID: 5203466886742448535, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d02b39e15f221274299e6f4ac7c40f50, type: 3}

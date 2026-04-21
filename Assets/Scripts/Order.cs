@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
@@ -18,7 +17,6 @@ public class Order
 
     public void GenerateRandomOrder()
     {
-        // Random order for 2 people - can be any combination of items
         items[0] = new OrderItem(GetRandomItemType());
         items[1] = new OrderItem(GetRandomItemType());
         served[0] = false;
@@ -27,24 +25,25 @@ public class Order
 
     private OrderItemType GetRandomItemType()
     {
-        var types = new[] {
+        var types = new[]
+        {
             OrderItemType.Burger,
             OrderItemType.Sandwich,
             OrderItemType.FriedChicken,
+            OrderItemType.Fries,
             OrderItemType.Soda,
-            OrderItemType.Coffee,
-            OrderItemType.Fries };
+            OrderItemType.IceTea,
+            OrderItemType.OrangeJuice,
+            OrderItemType.Coffee
+        };
         return types[UnityEngine.Random.Range(0, types.Length)];
     }
 
     public OrderItemType? TryServeItem(KitchenItemData item)
     {
-        // Items may be served in any order.
         for (int i = 0; i < items.Length; i++)
         {
-            if (items[i] == null || served[i])
-                continue;
-
+            if (items[i] == null || served[i]) continue;
             if (items[i].IsMatching(item))
             {
                 served[i] = true;
@@ -54,15 +53,9 @@ public class Order
         return null;
     }
 
-    public bool IsComplete()
-    {
-        return served[0] && served[1];
-    }
+    public bool IsComplete() => served[0] && served[1];
 
-    public int GetServedCount()
-    {
-        return (served[0] ? 1 : 0) + (served[1] ? 1 : 0);
-    }
+    public int GetServedCount() => (served[0] ? 1 : 0) + (served[1] ? 1 : 0);
 
     public string GetDisplayText()
     {

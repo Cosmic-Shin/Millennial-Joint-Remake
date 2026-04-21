@@ -1,15 +1,12 @@
 using UnityEngine;
 
-public class FryerCounter : BaseStation, IInteractable
+public class FryerCounter : StorageStation
 {
-    public KitchenItemData storedItem = new KitchenItemData();
-    public KitchenItemVisualizer storedItemVisualizer;
-
     // Valid interactions:
     //   - Fryer empty + holding FrozenFries or ChickenRaw  → place item in fryer
     //   - Fryer has FrozenFries or ChickenRaw + empty hands  → cook it
     //   - Fryer has FriesCooked or ChickenCooked + empty hands  → pick up cooked item
-    public bool CanInteractWith(PlayerControl player)
+    public override bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
 
@@ -25,7 +22,7 @@ public class FryerCounter : BaseStation, IInteractable
         return false;
     }
 
-    public void Interact(PlayerControl player)
+    public override void Interact(PlayerControl player)
     {
         if (player == null) return;
 
@@ -82,11 +79,5 @@ public class FryerCounter : BaseStation, IInteractable
         }
 
         Show(player, "Cannot use fryer now");
-    }
-
-    private void UpdateStoredItemVisual()
-    {
-        if (storedItemVisualizer != null)
-            storedItemVisualizer.Refresh(storedItem);
     }
 }

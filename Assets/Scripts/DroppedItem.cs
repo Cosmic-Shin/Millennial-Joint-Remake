@@ -18,7 +18,7 @@ public class DroppedItem : MonoBehaviour, IInteractable
             visualizer.localPosition = Vector3.zero;
             visualizer.localEulerAngles = Vector3.zero;
             visualizer.localScale = Vector3.one;
-            visualizer.CopyPrefabReferencesFrom(sourceVisualizer);
+            // No need to copy prefab references - registry handles them
             visualizer.Refresh(item);
         }
     }

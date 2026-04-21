@@ -6,9 +6,11 @@ public enum OrderItemType
     Burger,
     Sandwich,
     FriedChicken,
+    Fries,
     Soda,
-    Coffee,
-    Fries
+    IceTea,
+    OrangeJuice,
+    Coffee
 }
 
 [Serializable]
@@ -25,23 +27,14 @@ public class OrderItem
     {
         if (item.IsEmpty) return false;
 
-        if (type == OrderItemType.Burger)
-            return item.IsPlate && item.IsCompleteBurger;
-
-        if (type == OrderItemType.Sandwich)
-            return item.IsPlate && item.IsCompleteSandwich;
-
-        if (type == OrderItemType.FriedChicken)
-            return item.IsPlate && item.IsCompleteFriedChicken;
-
-        if (type == OrderItemType.Soda)
-            return item.IsCup && item.cupHasSoda;
-
-        if (type == OrderItemType.Coffee)
-            return item.IsCup && item.cupHasCoffee;
-
-        if (type == OrderItemType.Fries)
-            return item.IsPlate && item.IsCompleteFries;
+        if (type == OrderItemType.Burger)       return item.IsPlate && item.IsCompleteBurger;
+        if (type == OrderItemType.Sandwich)     return item.IsPlate && item.IsCompleteSandwich;
+        if (type == OrderItemType.FriedChicken) return item.IsPlate && item.IsCompleteFriedChicken;
+        if (type == OrderItemType.Fries)        return item.IsPlate && item.IsCompleteFries;
+        if (type == OrderItemType.Soda)         return item.IsCup && item.cupHasSoda;
+        if (type == OrderItemType.IceTea)       return item.IsCup && item.cupHasIceTea;
+        if (type == OrderItemType.OrangeJuice)  return item.IsCup && item.cupHasOrangeJuice;
+        if (type == OrderItemType.Coffee)       return item.IsCup && item.cupHasCoffee;
 
         return false;
     }
@@ -50,13 +43,15 @@ public class OrderItem
     {
         return type switch
         {
-            OrderItemType.Burger => "Burger",
-            OrderItemType.Sandwich => "Sandwich",
+            OrderItemType.Burger       => "Burger",
+            OrderItemType.Sandwich     => "Sandwich",
             OrderItemType.FriedChicken => "Fried Chicken",
-            OrderItemType.Soda => "Soda",
-            OrderItemType.Coffee => "Coffee",
-            OrderItemType.Fries => "Fries",
-            _ => "Unknown"
+            OrderItemType.Fries        => "Fries",
+            OrderItemType.Soda         => "Soda",
+            OrderItemType.IceTea       => "Ice Tea",
+            OrderItemType.OrangeJuice  => "Orange Juice",
+            OrderItemType.Coffee       => "Coffee",
+            _                          => "Unknown"
         };
     }
 }
