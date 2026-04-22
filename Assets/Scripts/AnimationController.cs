@@ -11,12 +11,10 @@ public class AnimationController : MonoBehaviour
 
     // Animation parameter hashes (more efficient than string names)
     private int hashIsRunning = Animator.StringToHash("IsRunning");
-    private int hashIsCarrying = Animator.StringToHash("IsCarrying");
 
     private float lastDirX;
     private float lastDirZ;
     private bool lastIsRunning = false;
-    private bool lastIsCarrying = false;
 
     private void Start()
     {
@@ -62,26 +60,11 @@ public class AnimationController : MonoBehaviour
         // Check if running
         bool isRunning = isMoving && Input.GetKey(playerControl.Run);
 
-        // Check if carrying item
-        bool isCarrying = playerControl.heldItem != null && !playerControl.heldItem.IsEmpty;
-
         // Update animator parameters only if they changed (optimization)
         if (isRunning != lastIsRunning)
         {
             animator.SetBool(hashIsRunning, isRunning);
             lastIsRunning = isRunning;
-        }
-
-        if (isCarrying != lastIsCarrying)
-        {
-            animator.SetBool(hashIsCarrying, isCarrying);
-            lastIsCarrying = isCarrying;
-        }
-
-        // Debug info
-        if (Input.GetKeyDown(KeyCode.L))  // Press L to log animation state
-        {
-            Debug.Log($"Animation State - IsRunning: {isRunning}, IsCarrying: {isCarrying}, Moving: {isMoving}");
         }
     }
 }

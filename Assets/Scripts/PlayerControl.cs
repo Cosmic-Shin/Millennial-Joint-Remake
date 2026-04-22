@@ -11,22 +11,37 @@ public class PlayerControl : MonoBehaviour
     public bool doMove = true;
     public float speed = 6f;
     public float runMultiplier = 1.5f;
+    public float rotationSmooth = 10f;
+    public float maxVelocity = 6f;
 
     [Header("Animation")]
     public Animator animator;
-
-    private Rigidbody rb;
-    private Vector3 direction;
-    private bool front, left, back, right;
+    public string isMovingParameter = "IsMoving";
+    public string emote1Trigger = "Emote1";
+    public string emote2Trigger = "Emote2";
+    public string emote3Trigger = "Emote3";
+    public string emote4Trigger = "Emote4";
 
     [Header("Keys")]
-    public KeyCode MoveUp        = KeyCode.W;
-    public KeyCode MoveLeft      = KeyCode.A;
-    public KeyCode MoveDown      = KeyCode.S;
-    public KeyCode MoveRight     = KeyCode.D;
+    public KeyCode MoveUp = KeyCode.W;
+    public KeyCode MoveLeft = KeyCode.A;
+    public KeyCode MoveDown = KeyCode.S;
+    public KeyCode MoveRight = KeyCode.D;
     public KeyCode PrimaryAction = KeyCode.F;
-    public KeyCode Run           = KeyCode.LeftShift;
-    public KeyCode DropItem      = KeyCode.Q;
+    public KeyCode Run = KeyCode.LeftShift;
+    public KeyCode DropItem = KeyCode.Q;
+
+    [Header("Emote Keys - Player 1 (Top Number Row)")]
+    public KeyCode p1Emote1 = KeyCode.Alpha1;
+    public KeyCode p1Emote2 = KeyCode.Alpha2;
+    public KeyCode p1Emote3 = KeyCode.Alpha3;
+    public KeyCode p1Emote4 = KeyCode.Alpha4;
+
+    [Header("Emote Keys - Player 2 (Right Numpad)")]
+    public KeyCode p2Emote1 = KeyCode.Keypad1;
+    public KeyCode p2Emote2 = KeyCode.Keypad2;
+    public KeyCode p2Emote3 = KeyCode.Keypad3;
+    public KeyCode p2Emote4 = KeyCode.Keypad4;
 
     [Header("Interaction")]
     [SerializeField] private float castRadius = 1.2f;
@@ -52,14 +67,33 @@ public class PlayerControl : MonoBehaviour
     public float dropTorque = 1.5f;
     public float droppedItemLifetime = 30f;
 
+    private Rigidbody rb;
+    private Vector3 direction;
+    private bool front, left, back, right;
+
     private bool dropButtonHeld;
     private float dropButtonHoldTime;
     private BaseStation lastOpenStation;
+
+    private int isMovingHash;
+    private int emote1Hash;
+    private int emote2Hash;
+    private int emote3Hash;
+    private int emote4Hash;
 
     private void OnValidate()
     {
         if (hitMask.value == 0)
             hitMask = ~0;
+    }
+
+    private void Awake()
+    {
+        isMovingHash = Animator.StringToHash(isMovingParameter);
+        emote1Hash = Animator.StringToHash(emote1Trigger);
+        emote2Hash = Animator.StringToHash(emote2Trigger);
+        emote3Hash = Animator.StringToHash(emote3Trigger);
+        emote4Hash = Animator.StringToHash(emote4Trigger);
     }
 
     private void Start()
@@ -69,16 +103,15 @@ public class PlayerControl : MonoBehaviour
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
-        // Configure keys based on player number
         if (playerNumber == 2)
         {
-            MoveUp        = KeyCode.UpArrow;
-            MoveLeft      = KeyCode.LeftArrow;
-            MoveDown      = KeyCode.DownArrow;
-            MoveRight     = KeyCode.RightArrow;
+            MoveUp = KeyCode.UpArrow;
+            MoveLeft = KeyCode.LeftArrow;
+            MoveDown = KeyCode.DownArrow;
+            MoveRight = KeyCode.RightArrow;
             PrimaryAction = KeyCode.Return;
-            Run           = KeyCode.RightShift;
-            DropItem      = KeyCode.RightControl;
+            Run = KeyCode.RightShift;
+            DropItem = KeyCode.RightControl;
         }
 
         heldItem.Clear();
@@ -93,27 +126,35 @@ public class PlayerControl : MonoBehaviour
 
     private void Update()
     {
-        if (rb == null) return;
+        if (rb == null)
+            return;
 
         front = Input.GetKey(MoveUp);
-        left  = Input.GetKey(MoveLeft);
-        back  = Input.GetKey(MoveDown);
+        left = Input.GetKey(MoveLeft);
+        back = Input.GetKey(MoveDown);
         right = Input.GetKey(MoveRight);
 
-        // ---------------------------------------------------------------
-        // Interact
-        // ---------------------------------------------------------------
+        direction = new Vector3(
+            (right ? 1 : 0) - (left ? 1 : 0),
+            0f,
+            (front ? 1 : 0) - (back ? 1 : 0)
+        );
+
+        HandleEmotes();
+
         if (Input.GetKeyDown(PrimaryAction))
         {
             Debug.Log("PLAYER INSTANCE ID: " + GetInstanceID());
 
             IInteractable interactable = null;
+
             if (heldItem.IsEmpty)
                 interactable = GetNearestValidDroppedItem(pickupRadius);
 
             if (interactable == null)
             {
                 interactable = GetNearestValidInteractable(castRadius);
+
                 if (interactable == null && heldItem.IsEmpty)
                     interactable = GetNearestValidInteractable(pickupRadius);
             }
@@ -138,7 +179,6 @@ public class PlayerControl : MonoBehaviour
                 interactable.Interact(this);
                 UpdateHeldItemHUD();
                 RefreshHeldItemVisual();
-                UpdateAnimator();
 
                 Debug.Log("AFTER INTERACT — " + GetHeldItemDebug()
                           + " | player instanceID: " + GetInstanceID());
@@ -158,9 +198,6 @@ public class PlayerControl : MonoBehaviour
             }
         }
 
-        // ---------------------------------------------------------------
-        // Drop / throw item
-        // ---------------------------------------------------------------
         if (Input.GetKeyDown(DropItem) && !heldItem.IsEmpty)
         {
             dropButtonHeld = true;
@@ -182,10 +219,14 @@ public class PlayerControl : MonoBehaviour
 
                 if (isThrow)
                 {
-                    float charge = Mathf.Clamp01((dropButtonHoldTime - minimumThrowHoldTime) /
-                        Mathf.Max(0.0001f, maximumThrowHoldTime - minimumThrowHoldTime));
+                    float charge = Mathf.Clamp01(
+                        (dropButtonHoldTime - minimumThrowHoldTime) /
+                        Mathf.Max(0.0001f, maximumThrowHoldTime - minimumThrowHoldTime)
+                    );
+
                     float strength = Mathf.Lerp(throwForceMin, throwForceMax, charge);
                     velocity = transform.forward * strength + Vector3.up * throwUpwardBoost;
+
                     Debug.Log($"Thrown with charge {charge:F2}: {heldItem.GetDisplayName()}");
                 }
                 else
@@ -198,7 +239,6 @@ public class PlayerControl : MonoBehaviour
                 heldItem.Clear();
                 UpdateHeldItemHUD();
                 RefreshHeldItemVisual();
-                UpdateAnimator();
 
                 Debug.Log(GetHeldItemDebug());
             }
@@ -208,6 +248,88 @@ public class PlayerControl : MonoBehaviour
         }
 
         UpdateAnimator();
+    }
+
+    private void FixedUpdate()
+    {
+        if (!doMove || rb == null)
+            return;
+
+        if (direction != Vector3.zero)
+        {
+            float currentSpeed = Input.GetKey(Run) ? speed * runMultiplier : speed;
+
+            rb.AddForce(direction.normalized * currentSpeed * 10f, ForceMode.Force);
+
+            Vector3 flatVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+            if (flatVelocity.magnitude > maxVelocity)
+            {
+                flatVelocity = flatVelocity.normalized * maxVelocity;
+                rb.linearVelocity = new Vector3(flatVelocity.x, rb.linearVelocity.y, flatVelocity.z);
+            }
+
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                rotationSmooth * Time.fixedDeltaTime
+            );
+        }
+    }
+
+    private void HandleEmotes()
+    {
+        if (animator == null)
+            return;
+
+        if (IsMoving())
+            return;
+
+        if (playerNumber == 1)
+        {
+            if (Input.GetKeyDown(p1Emote1))
+                PlayEmote(emote1Hash);
+            else if (Input.GetKeyDown(p1Emote2))
+                PlayEmote(emote2Hash);
+            else if (Input.GetKeyDown(p1Emote3))
+                PlayEmote(emote3Hash);
+            else if (Input.GetKeyDown(p1Emote4))
+                PlayEmote(emote4Hash);
+        }
+        else if (playerNumber == 2)
+        {
+            if (Input.GetKeyDown(p2Emote1))
+                PlayEmote(emote1Hash);
+            else if (Input.GetKeyDown(p2Emote2))
+                PlayEmote(emote2Hash);
+            else if (Input.GetKeyDown(p2Emote3))
+                PlayEmote(emote3Hash);
+            else if (Input.GetKeyDown(p2Emote4))
+                PlayEmote(emote4Hash);
+        }
+    }
+
+    private void PlayEmote(int emoteHash)
+    {
+        animator.ResetTrigger(emote1Hash);
+        animator.ResetTrigger(emote2Hash);
+        animator.ResetTrigger(emote3Hash);
+        animator.ResetTrigger(emote4Hash);
+
+        animator.SetTrigger(emoteHash);
+    }
+
+    private bool IsMoving()
+    {
+        return direction.sqrMagnitude > 0.01f;
+    }
+
+    private void UpdateAnimator()
+    {
+        if (animator == null)
+            return;
+
+        animator.SetBool(isMovingHash, IsMoving());
     }
 
     private void SpawnDroppedItem(KitchenItemData itemData, Vector3 position, Vector3 velocity)
@@ -245,40 +367,6 @@ public class PlayerControl : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         station.OpenPanel(false);
-    }
-
-    private void FixedUpdate()
-    {
-        if (!doMove || rb == null) return;
-
-        direction = new Vector3(
-            (right ? 1 : 0) - (left ? 1 : 0),
-            0,
-            (front ? 1 : 0) - (back ? 1 : 0)
-        );
-
-        if (direction != Vector3.zero)
-        {
-            float currentSpeed = Input.GetKey(Run) ? speed * runMultiplier : speed;
-            rb.AddForce(direction.normalized * currentSpeed * 10f);
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                Quaternion.LookRotation(direction),
-                speed / 2f * Time.deltaTime
-            );
-        }
-    }
-
-    private void UpdateAnimator()
-    {
-        if (animator == null)
-            return;
-
-        bool isMoving = direction.sqrMagnitude > 0.01f;
-        bool isCarrying = heldItem != null && !heldItem.IsEmpty;
-
-        animator.SetBool("IsMoving", isMoving);
-        animator.SetBool("IsCarrying", isCarrying);
     }
 
     private IInteractable GetNearestValidInteractable(float radius)
@@ -337,6 +425,7 @@ public class PlayerControl : MonoBehaviour
         if (maskValue != ~0)
         {
             hits = Physics.OverlapSphere(transform.position, radius, ~0, QueryTriggerInteraction.Collide);
+
             foreach (Collider hit in hits)
             {
                 DroppedItem dropped = hit.GetComponent<DroppedItem>() ?? hit.GetComponentInParent<DroppedItem>();
@@ -382,6 +471,7 @@ public class PlayerControl : MonoBehaviour
     {
         if (heldItem == null || heldItem.IsEmpty)
             return "Holding: Nothing";
+
         return "Holding: " + heldItem.GetDisplayName();
     }
 
@@ -389,7 +479,6 @@ public class PlayerControl : MonoBehaviour
     {
         UpdateHeldItemHUD();
         RefreshHeldItemVisual();
-        UpdateAnimator();
     }
 
     private void RefreshHeldItemVisual()
@@ -400,7 +489,8 @@ public class PlayerControl : MonoBehaviour
 
     private void UpdateHeldItemHUD()
     {
-        if (heldItemText == null) return;
+        if (heldItemText == null)
+            return;
 
         if (heldItem == null || heldItem.IsEmpty)
             heldItemText.text = "Holding: Nothing";
