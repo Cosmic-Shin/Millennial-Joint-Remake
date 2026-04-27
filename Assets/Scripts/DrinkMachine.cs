@@ -1,37 +1,27 @@
 using UnityEngine;
-using UnityEngine.UI;
 
-/// <summary>
-/// Interact while holding an empty cup → opens panel to choose Soda, Ice Tea, or Orange Juice.
-/// The selection panel is just a plain GameObject — no separate script needed.
-/// </summary>
 public class DrinkMachine : BaseStation, IInteractable
 {
-    [Header("Panel")]
-    public GameObject selectionPanel;
-
-    [Header("Buttons")]
-    public Button sodaButton;
-    public Button iceTeaButton;
-    public Button orangeJuiceButton;
-    public Button closeButton;
+    [Header("Drink Selection")]
+    private string[] drinkSelectionLabels = new string[]
+    {
+        "Soda",
+        "Ice Tea",
+        "Orange Juice"
+    };
 
     private PlayerControl currentPlayer;
-
-    private void Awake()
-    {
-        if (sodaButton        != null) sodaButton       .onClick.AddListener(() => SelectDrink("soda"));
-        if (iceTeaButton      != null) iceTeaButton     .onClick.AddListener(() => SelectDrink("icetea"));
-        if (orangeJuiceButton != null) orangeJuiceButton.onClick.AddListener(() => SelectDrink("oj"));
-        if (closeButton       != null) closeButton      .onClick.AddListener(ClosePanel);
-
-        if (selectionPanel != null)
-            selectionPanel.SetActive(false);
-    }
+    private bool isSelectingDrink;
+    private int selectedDrinkIndex;
 
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
+
+        // Allow same player to press F again to confirm
+        if (isSelectingDrink && currentPlayer == player)
+            return true;
+
         return player.heldItem.IsCup
                && !player.heldItem.cupHasSoda
                && !player.heldItem.cupHasIceTea
@@ -42,65 +32,130 @@ public class DrinkMachine : BaseStation, IInteractable
     {
         if (player == null) return;
 
-        if (!player.heldItem.IsCup)
+        if (!isSelectingDrink)
         {
-            Show(player, "Hold an empty cup first");
-            return;
-        }
+            if (!player.heldItem.IsCup)
+            {
+                Show(player, "Hold an empty cup first");
+                return;
+            }
 
-        if (player.heldItem.cupHasSoda || player.heldItem.cupHasIceTea || player.heldItem.cupHasOrangeJuice)
+            if (player.heldItem.cupHasSoda || player.heldItem.cupHasIceTea || player.heldItem.cupHasOrangeJuice)
+            {
+                Show(player, "Cup is already filled");
+                return;
+            }
+
+            currentPlayer = player;
+            currentPlayer.currentDrinkMachine = this;
+            StartDrinkSelection();
+        }
+        else
         {
-            Show(player, "Cup is already filled");
-            return;
+            ConfirmDrinkSelection();
         }
-
-        currentPlayer = player;
-        currentPlayer.doMove = false;
-
-        if (selectionPanel != null)
-            selectionPanel.SetActive(true);
     }
 
-    private void SelectDrink(string drinkKey)
+    private void StartDrinkSelection()
     {
-        if (currentPlayer == null) return;
+        if (drinkSelectionLabels == null || drinkSelectionLabels.Length == 0)
+            return;
 
-        switch (drinkKey)
+        isSelectingDrink = true;
+        selectedDrinkIndex = 0;
+
+        currentPlayer.doMove = false;
+
+        if (currentPlayer.emoteSelectionObject != null)
+            currentPlayer.emoteSelectionObject.SetActive(true);
+
+        UpdateDrinkSelectionText();
+    }
+
+    private void ConfirmDrinkSelection()
+    {
+        if (currentPlayer == null)
+            return;
+
+        switch (selectedDrinkIndex)
         {
-            case "soda":
-                currentPlayer.heldItem.cupHasSoda        = true;
-                currentPlayer.heldItem.cupHasIceTea      = false;
+            case 0:
+                currentPlayer.heldItem.cupHasSoda = true;
+                currentPlayer.heldItem.cupHasIceTea = false;
                 currentPlayer.heldItem.cupHasOrangeJuice = false;
                 Show(currentPlayer, "Filled cup with Soda");
                 break;
 
-            case "icetea":
-                currentPlayer.heldItem.cupHasIceTea      = true;
-                currentPlayer.heldItem.cupHasSoda        = false;
+            case 1:
+                currentPlayer.heldItem.cupHasIceTea = true;
+                currentPlayer.heldItem.cupHasSoda = false;
                 currentPlayer.heldItem.cupHasOrangeJuice = false;
                 Show(currentPlayer, "Filled cup with Ice Tea");
                 break;
 
-            case "oj":
+            case 2:
                 currentPlayer.heldItem.cupHasOrangeJuice = true;
-                currentPlayer.heldItem.cupHasSoda        = false;
-                currentPlayer.heldItem.cupHasIceTea      = false;
+                currentPlayer.heldItem.cupHasSoda = false;
+                currentPlayer.heldItem.cupHasIceTea = false;
                 Show(currentPlayer, "Filled cup with Orange Juice");
                 break;
         }
 
         currentPlayer.RefreshHeldItemDisplay();
-        ClosePanel();
+        EndDrinkSelection();
     }
 
-    private void ClosePanel()
+    private void EndDrinkSelection()
     {
-        if (selectionPanel != null)
-            selectionPanel.SetActive(false);
+        isSelectingDrink = false;
 
         if (currentPlayer != null)
+        {
             currentPlayer.doMove = true;
+            currentPlayer.currentDrinkMachine = null;
+
+            if (currentPlayer.emoteSelectionObject != null)
+                currentPlayer.emoteSelectionObject.SetActive(false);
+
+            if (currentPlayer.emoteSelectionText != null)
+                currentPlayer.emoteSelectionText.text = string.Empty;
+        }
 
         currentPlayer = null;
+    }
+
+    private void UpdateDrinkSelectionText()
+    {
+        if (currentPlayer == null || currentPlayer.emoteSelectionText == null)
+            return;
+
+        if (drinkSelectionLabels == null || selectedDrinkIndex >= drinkSelectionLabels.Length)
+            return;
+
+        currentPlayer.emoteSelectionText.text = drinkSelectionLabels[selectedDrinkIndex];
+    }
+
+    public void HandleDrinkSelectionInput()
+    {
+        if (!isSelectingDrink || currentPlayer == null)
+            return;
+
+        // Cancel selection if player moves away
+        if (Vector3.Distance(transform.position, currentPlayer.transform.position) > 3f)
+        {
+            EndDrinkSelection();
+            return;
+        }
+
+        if (Input.GetKeyDown(currentPlayer.MoveLeft))
+        {
+            selectedDrinkIndex = (selectedDrinkIndex - 1 + drinkSelectionLabels.Length) % drinkSelectionLabels.Length;
+            UpdateDrinkSelectionText();
+        }
+        else if (Input.GetKeyDown(currentPlayer.MoveRight))
+        {
+            selectedDrinkIndex = (selectedDrinkIndex + 1) % drinkSelectionLabels.Length;
+            UpdateDrinkSelectionText();
+        }
     }
 }

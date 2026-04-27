@@ -5,6 +5,28 @@ public class DroppedItem : MonoBehaviour, IInteractable
 {
     public KitchenItemData item = new KitchenItemData();
     private KitchenItemVisualizer visualizer;
+    private Rigidbody rb;
+    private bool isWaitingForPeak = false;
+
+    private void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
+
+    private void Update()
+    {
+        // If gravity is disabled and we're waiting for the item to reach peak,
+        // check if it has started falling (vertical velocity is zero or negative)
+        if (isWaitingForPeak && rb != null && !rb.useGravity)
+        {
+            if (rb.linearVelocity.y <= 0f)
+            {
+                // Item has reached its peak, enable gravity
+                rb.useGravity = true;
+                isWaitingForPeak = false;
+            }
+        }
+    }
 
     public void Initialize(KitchenItemData sourceItem, KitchenItemVisualizer sourceVisualizer)
     {
@@ -21,6 +43,11 @@ public class DroppedItem : MonoBehaviour, IInteractable
             // No need to copy prefab references - registry handles them
             visualizer.Refresh(item);
         }
+    }
+
+    public void SetWaitForPeak()
+    {
+        isWaitingForPeak = true;
     }
 
     public bool CanInteractWith(PlayerControl player)

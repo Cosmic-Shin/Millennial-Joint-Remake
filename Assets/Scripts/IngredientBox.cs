@@ -3,35 +3,21 @@ using UnityEngine.UI;
 
 public class IngredientBox : BaseStation, IInteractable
 {
-    [Header("Panel")]
-    public GameObject selectionPanel;
-
-    [Header("Buttons")]
-    public Button bunButton;
-    public Button breadButton;
-    public Button veggieButton;
-    public Button pattyButton;
-    public Button friesButton;
-    public Button chickenButton;
-    public Button hamButton;      // Ham & Cheese combined
-    public Button closeButton;
+    [Header("Ingredient Selection")]
+    public ItemType[] selectableIngredients = new ItemType[]
+    {
+        ItemType.Bun,
+        ItemType.Bread,
+        ItemType.VeggieRaw,
+        ItemType.PattyRaw,
+        ItemType.FrozenFries,
+        ItemType.ChickenRaw,
+        ItemType.HamRaw
+    };
 
     private PlayerControl currentPlayer;
-
-    private void Awake()
-    {
-        if (bunButton     != null) bunButton    .onClick.AddListener(() => SelectIngredient(ItemType.Bun));
-        if (breadButton   != null) breadButton  .onClick.AddListener(() => SelectIngredient(ItemType.Bread));
-        if (veggieButton  != null) veggieButton .onClick.AddListener(() => SelectIngredient(ItemType.VeggieRaw));
-        if (pattyButton   != null) pattyButton  .onClick.AddListener(() => SelectIngredient(ItemType.PattyRaw));
-        if (friesButton   != null) friesButton  .onClick.AddListener(() => SelectIngredient(ItemType.FrozenFries));
-        if (chickenButton != null) chickenButton.onClick.AddListener(() => SelectIngredient(ItemType.ChickenRaw));
-        if (hamButton     != null) hamButton    .onClick.AddListener(() => SelectIngredient(ItemType.HamRaw));
-        if (closeButton   != null) closeButton  .onClick.AddListener(ClosePanel);
-
-        if (selectionPanel != null)
-            selectionPanel.SetActive(false);
-    }
+    private bool isSelectingIngredient;
+    private int selectedIngredientIndex;
 
     public bool CanInteractWith(PlayerControl player)
     {
@@ -44,31 +30,106 @@ public class IngredientBox : BaseStation, IInteractable
         if (player == null) return;
 
         currentPlayer = player;
-        currentPlayer.doMove = false;
 
-        if (selectionPanel != null)
-            selectionPanel.SetActive(true);
+        if (!isSelectingIngredient)
+        {
+            StartIngredientSelection();
+        }
+        else
+        {
+            ConfirmIngredientSelection();
+        }
     }
 
-    private void SelectIngredient(ItemType ingredientType)
+    private void StartIngredientSelection()
     {
-        if (currentPlayer == null) return;
+        if (selectableIngredients == null || selectableIngredients.Length == 0)
+            return;
 
-        currentPlayer.heldItem.Set(ingredientType);
+        isSelectingIngredient = true;
+        selectedIngredientIndex = 0;
+        currentPlayer.doMove = false;
+        if (currentPlayer.emoteSelectionObject != null)
+            currentPlayer.emoteSelectionObject.SetActive(true);
+        UpdateIngredientSelectionText();
+    }
+
+    private void ConfirmIngredientSelection()
+    {
+        if (selectableIngredients == null || selectedIngredientIndex >= selectableIngredients.Length)
+            return;
+
+        ItemType selectedType = selectableIngredients[selectedIngredientIndex];
+        currentPlayer.heldItem.Set(selectedType);
         currentPlayer.RefreshHeldItemDisplay();
         Show(currentPlayer, "Picked up " + currentPlayer.heldItem.GetDisplayName());
 
-        ClosePanel();
+        EndIngredientSelection();
     }
 
-    private void ClosePanel()
+    private void EndIngredientSelection()
     {
-        if (selectionPanel != null)
-            selectionPanel.SetActive(false);
-
+        isSelectingIngredient = false;
         if (currentPlayer != null)
+        {
             currentPlayer.doMove = true;
-
+            currentPlayer.currentIngredientBox = null;
+            if (currentPlayer.emoteSelectionObject != null)
+                currentPlayer.emoteSelectionObject.SetActive(false);
+            currentPlayer.emoteSelectionText.text = string.Empty;
+        }
         currentPlayer = null;
+    }
+
+    private void UpdateIngredientSelectionText()
+    {
+        if (currentPlayer == null || currentPlayer.emoteSelectionText == null)
+            return;
+
+        if (selectableIngredients == null || selectedIngredientIndex >= selectableIngredients.Length)
+            return;
+
+        ItemType selectedType = selectableIngredients[selectedIngredientIndex];
+        string displayName = GetIngredientDisplayName(selectedType);
+        currentPlayer.emoteSelectionText.text = displayName;
+    }
+
+    private string GetIngredientDisplayName(ItemType type)
+    {
+        switch (type)
+        {
+            case ItemType.Bun: return "Bun";
+            case ItemType.Bread: return "Bread";
+            case ItemType.VeggieRaw: return "Veggie";
+            case ItemType.PattyRaw: return "Patty";
+            case ItemType.FrozenFries: return "Frozen Fries";
+            case ItemType.ChickenRaw: return "Chicken";
+            case ItemType.HamRaw: return "Ham";
+            default: return type.ToString();
+        }
+    }
+
+    public void HandleIngredientSelectionInput()
+    {
+        if (!isSelectingIngredient || currentPlayer == null)
+            return;
+
+        // Cancel selection if player moves away
+        if (Vector3.Distance(transform.position, currentPlayer.transform.position) > 3f)
+        {
+            EndIngredientSelection();
+            return;
+        }
+
+        if (Input.GetKeyDown(currentPlayer.MoveLeft))
+        {
+            selectedIngredientIndex = (selectedIngredientIndex - 1 + selectableIngredients.Length) % selectableIngredients.Length;
+            UpdateIngredientSelectionText();
+        }
+        else if (Input.GetKeyDown(currentPlayer.MoveRight))
+        {
+            selectedIngredientIndex = (selectedIngredientIndex + 1) % selectableIngredients.Length;
+            UpdateIngredientSelectionText();
+        }
     }
 }

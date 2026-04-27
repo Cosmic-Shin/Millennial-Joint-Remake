@@ -19,13 +19,21 @@ public class AnimationController : MonoBehaviour
     private void Start()
     {
         animator = GetComponent<Animator>();
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
         playerControl = GetComponent<PlayerControl>();
+        if (playerControl == null)
+            playerControl = GetComponentInParent<PlayerControl>();
 
         if (animator == null)
-            Debug.LogError("AnimationController: No Animator found on this GameObject!");
+            Debug.LogError($"AnimationController: No Animator found on '{gameObject.name}' or its children/parents!");
 
         if (playerControl == null)
-            Debug.LogError("AnimationController: No PlayerControl found on this GameObject!");
+            Debug.LogError($"AnimationController: No PlayerControl found on '{gameObject.name}' or its parents!");
+
+        if (animator == null || playerControl == null)
+            enabled = false;
     }
 
     private void Update()

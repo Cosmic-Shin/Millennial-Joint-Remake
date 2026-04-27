@@ -9,10 +9,20 @@ public class PlayerControl : MonoBehaviour
 
     [Header("Movement")]
     public bool doMove = true;
-    public float speed = 6f;
-    public float runMultiplier = 1.5f;
-    public float rotationSmooth = 10f;
-    public float maxVelocity = 6f;
+    public float walkSpeed = 5f;
+    public float sprintSpeed = 8f;  
+    public float rotationSmooth = 14f;
+
+    [Header("Sprint Stamina")]
+    public float sprintDuration = 3f;
+    public float sprintCooldown = 2f;
+
+    [Header("Sprint Effects")]
+    public ParticleSystem sprintDust;
+
+    private float sprintTimer;
+    private float sprintCooldownTimer;
+    private bool sprintOnCooldown;
 
     [Header("Animation")]
     public Animator animator;
@@ -31,17 +41,14 @@ public class PlayerControl : MonoBehaviour
     public KeyCode Run = KeyCode.LeftShift;
     public KeyCode DropItem = KeyCode.Q;
 
-    [Header("Emote Keys - Player 1 (Top Number Row)")]
-    public KeyCode p1Emote1 = KeyCode.Alpha1;
-    public KeyCode p1Emote2 = KeyCode.Alpha2;
-    public KeyCode p1Emote3 = KeyCode.Alpha3;
-    public KeyCode p1Emote4 = KeyCode.Alpha4;
+    [Header("Emote Select")]
+    public KeyCode p1SelectKey = KeyCode.Z;
+    public KeyCode p2SelectKey = KeyCode.Backspace;
+    public string[] emoteSelectionLabels = new string[] { "Dance", "Shuffle", "Gangnam", "Breakdance" };
+    public TextMesh emoteSelectionText;
 
-    [Header("Emote Keys - Player 2 (Right Numpad)")]
-    public KeyCode p2Emote1 = KeyCode.Keypad1;
-    public KeyCode p2Emote2 = KeyCode.Keypad2;
-    public KeyCode p2Emote3 = KeyCode.Keypad3;
-    public KeyCode p2Emote4 = KeyCode.Keypad4;
+    [Header("Emote Lock")]
+    [SerializeField] private float emoteLockDuration = 2.5f;
 
     [Header("Interaction")]
     [SerializeField] private float castRadius = 1.2f;
@@ -81,6 +88,13 @@ public class PlayerControl : MonoBehaviour
     private int emote3Hash;
     private int emote4Hash;
 
+    private bool isSelectingEmote;
+    private bool isEmoting;
+    private int selectedEmoteIndex;
+    public GameObject emoteSelectionObject;
+    public IngredientBox currentIngredientBox;
+    public DrinkMachine currentDrinkMachine;
+
     private void OnValidate()
     {
         if (hitMask.value == 0)
@@ -98,6 +112,14 @@ public class PlayerControl : MonoBehaviour
 
     private void Start()
     {
+
+        sprintTimer = sprintDuration;
+        sprintCooldownTimer = 0f;
+        sprintOnCooldown = false;
+
+        if (sprintDust != null)
+        sprintDust.Stop();
+
         rb = GetComponent<Rigidbody>();
 
         if (animator == null)
@@ -115,10 +137,19 @@ public class PlayerControl : MonoBehaviour
         }
 
         heldItem.Clear();
+        doMove = true;
+        isSelectingEmote = false;
+        isEmoting = false;
+        if (currentIngredientBox != null)
+        {
+            Debug.LogWarning("PlayerControl: clearing stale currentIngredientBox reference at Start.", this);
+            currentIngredientBox = null;
+        }
 
         if (hitMask.value == 0)
             hitMask = ~0;
 
+        CreateEmoteSelectionText();
         UpdateHeldItemHUD();
         RefreshHeldItemVisual();
         UpdateAnimator();
@@ -129,18 +160,33 @@ public class PlayerControl : MonoBehaviour
         if (rb == null)
             return;
 
+        EnsureMovementState();
+
         front = Input.GetKey(MoveUp);
         left = Input.GetKey(MoveLeft);
         back = Input.GetKey(MoveDown);
         right = Input.GetKey(MoveRight);
 
-        direction = new Vector3(
-            (right ? 1 : 0) - (left ? 1 : 0),
-            0f,
-            (front ? 1 : 0) - (back ? 1 : 0)
-        );
+        if (!isSelectingEmote && !isEmoting && currentIngredientBox == null && currentDrinkMachine == null)
+        {
+            direction = new Vector3(
+                (right ? 1 : 0) - (left ? 1 : 0),
+                0f,
+                (front ? 1 : 0) - (back ? 1 : 0)
+            );
+        }
+        else
+        {
+            direction = Vector3.zero;
+        }
 
+        HandleEmoteSelectionInput();
         HandleEmotes();
+
+        if (currentIngredientBox != null)
+        {
+            currentIngredientBox.HandleIngredientSelectionInput();
+        }
 
         if (Input.GetKeyDown(PrimaryAction))
         {
@@ -167,13 +213,19 @@ public class PlayerControl : MonoBehaviour
                           + " | station instanceID: " + mb.gameObject.GetInstanceID());
 
                 BaseStation station = interactable as BaseStation;
-                if (station != null)
+                IngredientBox ingredientBox = interactable as IngredientBox;
+
+                if (station != null && ingredientBox == null)
                 {
                     if (lastOpenStation != null && lastOpenStation != station)
                         lastOpenStation.OpenPanel(false);
 
                     station.OpenPanel(true);
                     lastOpenStation = station;
+                }
+                else if (ingredientBox != null)
+                {
+                    currentIngredientBox = ingredientBox;
                 }
 
                 interactable.Interact(this);
@@ -183,7 +235,7 @@ public class PlayerControl : MonoBehaviour
                 Debug.Log("AFTER INTERACT — " + GetHeldItemDebug()
                           + " | player instanceID: " + GetInstanceID());
 
-                if (station != null)
+                if (station != null && ingredientBox == null)
                     StartCoroutine(CloseAfterDelay(station, 0.5f));
             }
             else
@@ -196,6 +248,11 @@ public class PlayerControl : MonoBehaviour
 
                 Debug.Log("No valid interactable nearby — " + GetHeldItemDebug());
             }
+        }
+
+        if (currentDrinkMachine != null)
+        {
+            currentDrinkMachine.HandleDrinkSelectionInput();
         }
 
         if (Input.GetKeyDown(DropItem) && !heldItem.IsEmpty)
@@ -251,62 +308,190 @@ public class PlayerControl : MonoBehaviour
     }
 
     private void FixedUpdate()
+{
+    if (!doMove || rb == null)
+        return;
+
+    if (isSelectingEmote || isEmoting || currentIngredientBox != null || currentDrinkMachine != null)
     {
-        if (!doMove || rb == null)
-            return;
+        direction = Vector3.zero;
+        rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+        return;
+    }
 
-        if (direction != Vector3.zero)
+    bool hasMovementInput = direction.sqrMagnitude > 0.01f;
+    bool wantsToSprint = Input.GetKey(Run);
+    bool canSprint = wantsToSprint && hasMovementInput && !sprintOnCooldown && sprintTimer > 0f;
+
+    if (sprintDust != null)
+    {
+        if (canSprint && !sprintDust.isPlaying)
+            sprintDust.Play();
+        else if (!canSprint && sprintDust.isPlaying)
+            sprintDust.Stop();
+    }
+
+    float currentMoveSpeed = canSprint ? sprintSpeed : walkSpeed;
+
+    if (canSprint)
+    {
+        sprintTimer -= Time.fixedDeltaTime;
+
+        if (sprintTimer <= 0f)
         {
-            float currentSpeed = Input.GetKey(Run) ? speed * runMultiplier : speed;
-
-            rb.AddForce(direction.normalized * currentSpeed * 10f, ForceMode.Force);
-
-            Vector3 flatVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-            if (flatVelocity.magnitude > maxVelocity)
-            {
-                flatVelocity = flatVelocity.normalized * maxVelocity;
-                rb.linearVelocity = new Vector3(flatVelocity.x, rb.linearVelocity.y, flatVelocity.z);
-            }
-
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRotation,
-                rotationSmooth * Time.fixedDeltaTime
-            );
+            sprintTimer = 0f;
+            sprintOnCooldown = true;
+            sprintCooldownTimer = sprintCooldown;
         }
     }
+
+    if (sprintOnCooldown)
+    {
+        sprintCooldownTimer -= Time.fixedDeltaTime;
+
+        if (sprintCooldownTimer <= 0f)
+        {
+            sprintCooldownTimer = 0f;
+            sprintTimer = sprintDuration;
+            sprintOnCooldown = false;
+        }
+    }
+
+    Vector3 moveVelocity = direction.normalized * currentMoveSpeed;
+    rb.linearVelocity = new Vector3(moveVelocity.x, rb.linearVelocity.y, moveVelocity.z);
+
+    if (hasMovementInput)
+    {
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRotation,
+            rotationSmooth * Time.fixedDeltaTime
+        );
+    }
+}
 
     private void HandleEmotes()
     {
         if (animator == null)
             return;
 
-        if (IsMoving())
+        if (isSelectingEmote)
             return;
 
-        if (playerNumber == 1)
+        if (isEmoting)
+            return;
+
+        if (IsMoving())
+            return;
+    }
+
+    private void HandleEmoteSelectionInput()
+    {
+        KeyCode selectKey = playerNumber == 1 ? p1SelectKey : p2SelectKey;
+
+        if (Input.GetKeyDown(selectKey))
         {
-            if (Input.GetKeyDown(p1Emote1))
-                PlayEmote(emote1Hash);
-            else if (Input.GetKeyDown(p1Emote2))
-                PlayEmote(emote2Hash);
-            else if (Input.GetKeyDown(p1Emote3))
-                PlayEmote(emote3Hash);
-            else if (Input.GetKeyDown(p1Emote4))
-                PlayEmote(emote4Hash);
+            if (!isSelectingEmote)
+            {
+                StartEmoteSelection();
+                return;
+            }
+
+            ConfirmEmoteSelection();
+            return;
         }
-        else if (playerNumber == 2)
+
+        if (!isSelectingEmote)
+            return;
+
+        if (Input.GetKeyDown(MoveLeft))
+            SelectPreviousEmote();
+        else if (Input.GetKeyDown(MoveRight))
+            SelectNextEmote();
+
+        direction = Vector3.zero;
+    }
+
+    private void StartEmoteSelection()
+    {
+        if (emoteSelectionLabels == null || emoteSelectionLabels.Length == 0)
+            return;
+
+        isSelectingEmote = true;
+        selectedEmoteIndex = 0;
+        ShowEmoteSelectionText(true);
+        UpdateEmoteSelectionText();
+    }
+
+    private void ConfirmEmoteSelection()
+    {
+        isSelectingEmote = false;
+        ShowEmoteSelectionText(false);
+        isEmoting = true;
+
+        switch (selectedEmoteIndex)
         {
-            if (Input.GetKeyDown(p2Emote1))
-                PlayEmote(emote1Hash);
-            else if (Input.GetKeyDown(p2Emote2))
-                PlayEmote(emote2Hash);
-            else if (Input.GetKeyDown(p2Emote3))
-                PlayEmote(emote3Hash);
-            else if (Input.GetKeyDown(p2Emote4))
-                PlayEmote(emote4Hash);
+            case 0: PlayEmote(emote1Hash); break;
+            case 1: PlayEmote(emote2Hash); break;
+            case 2: PlayEmote(emote3Hash); break;
+            case 3: PlayEmote(emote4Hash); break;
+            default: break;
         }
+    }
+
+    private void SelectPreviousEmote()
+    {
+        if (emoteSelectionLabels == null || emoteSelectionLabels.Length == 0)
+            return;
+
+        selectedEmoteIndex = (selectedEmoteIndex - 1 + emoteSelectionLabels.Length) % emoteSelectionLabels.Length;
+        UpdateEmoteSelectionText();
+    }
+
+    private void SelectNextEmote()
+    {
+        if (emoteSelectionLabels == null || emoteSelectionLabels.Length == 0)
+            return;
+
+        selectedEmoteIndex = (selectedEmoteIndex + 1) % emoteSelectionLabels.Length;
+        UpdateEmoteSelectionText();
+    }
+
+    private void CreateEmoteSelectionText()
+    {
+        if (emoteSelectionText != null)
+            emoteSelectionObject = emoteSelectionText.gameObject;
+
+        if (emoteSelectionText == null)
+        {
+            emoteSelectionText = GetComponentInChildren<TextMesh>();
+            if (emoteSelectionText != null)
+                emoteSelectionObject = emoteSelectionText.gameObject;
+        }
+
+        if (emoteSelectionText != null)
+        {
+            emoteSelectionObject = emoteSelectionText.gameObject;
+            emoteSelectionText.text = string.Empty;
+        }
+
+        if (emoteSelectionObject != null)
+            emoteSelectionObject.SetActive(false);
+    }
+
+    private void UpdateEmoteSelectionText()
+    {
+        if (emoteSelectionText == null || emoteSelectionLabels == null || emoteSelectionLabels.Length == 0)
+            return;
+
+        emoteSelectionText.text = emoteSelectionLabels[selectedEmoteIndex];
+    }
+
+    private void ShowEmoteSelectionText(bool show)
+    {
+        if (emoteSelectionObject != null)
+            emoteSelectionObject.SetActive(show);
     }
 
     private void PlayEmote(int emoteHash)
@@ -316,7 +501,24 @@ public class PlayerControl : MonoBehaviour
         animator.ResetTrigger(emote3Hash);
         animator.ResetTrigger(emote4Hash);
 
+        rb.linearVelocity = Vector3.zero;
         animator.SetTrigger(emoteHash);
+        StartCoroutine(WaitForEmoteToEnd());
+    }
+
+    private System.Collections.IEnumerator WaitForEmoteToEnd()
+    {
+        yield return new WaitForSeconds(emoteLockDuration);
+        isEmoting = false;
+    }
+
+    private void EnsureMovementState()
+    {
+        if (!doMove && !isSelectingEmote && !isEmoting && currentIngredientBox == null && currentDrinkMachine == null)
+        {
+            doMove = true;
+            Debug.Log("PlayerControl: movement lock cleared automatically.");
+        }
     }
 
     private bool IsMoving()
@@ -350,7 +552,7 @@ public class PlayerControl : MonoBehaviour
 
         Rigidbody droppedRigidbody = droppedObject.AddComponent<Rigidbody>();
         droppedRigidbody.mass = 3f;
-        droppedRigidbody.useGravity = true;
+        droppedRigidbody.useGravity = false; // Disable initially to let item reach peak first
         droppedRigidbody.linearDamping = 4f;
         droppedRigidbody.angularDamping = 4f;
         droppedRigidbody.constraints = RigidbodyConstraints.FreezeRotation;
@@ -359,6 +561,7 @@ public class PlayerControl : MonoBehaviour
 
         DroppedItem droppedItem = droppedObject.AddComponent<DroppedItem>();
         droppedItem.Initialize(itemData, heldItemVisualizer);
+        droppedItem.SetWaitForPeak(); // Enable gravity once item reaches peak
 
         Destroy(droppedObject, droppedItemLifetime);
     }

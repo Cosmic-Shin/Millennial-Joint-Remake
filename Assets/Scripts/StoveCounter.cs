@@ -10,9 +10,20 @@ public class StoveCounter : BaseStation, IInteractable
     public KitchenItemData storedItem = new KitchenItemData();
     public KitchenItemVisualizer storedItemVisualizer;
 
+    [Header("Cooking")]
+    public float cookingTime = 5f; // Adjustable cooking time
+    public float overcookTime = 10f; // Time before cooked item is destroyed
+    public GameObject cookingUIPanel; // UI panel to show during cooking
+    public Transform cookingAnchor; // Where the item is placed for cooking
+
+    private bool isCooking = false;
+    private float cookingTimer = 0f;
+    private bool isOvercooked = false;
+    private float overcookTimer = 0f;
+
     // Valid interactions:
     //   - Stove empty + holding PattyRaw → place it
-    //   - Stove has PattyRaw + empty hands → cook it
+    //   - Stove has PattyRaw + empty hands → check cooking status
     //   - Stove has PattyCooked + empty hands → pick it up
     public bool CanInteractWith(PlayerControl player)
     {
@@ -21,8 +32,8 @@ public class StoveCounter : BaseStation, IInteractable
         if (storedItem.IsEmpty)
             return player.heldItem.type == ItemType.PattyRaw;
 
-        if (storedItem.type == ItemType.PattyRaw)
-            return player.heldItem.IsEmpty; // tap to cook
+        if (storedItem.type == ItemType.PattyRaw || isCooking)
+            return player.heldItem.IsEmpty; // check cooking status
 
         if (storedItem.type == ItemType.PattyCooked)
             return player.heldItem.IsEmpty; // pick up
@@ -34,6 +45,25 @@ public class StoveCounter : BaseStation, IInteractable
     {
         if (player == null) return;
 
+        // If cooking, check if done
+        if (isCooking)
+        {
+            if (cookingTimer <= 0f)
+            {
+                // Cooking finished
+                storedItem.Set(ItemType.PattyCooked);
+                UpdateStoredItemVisual();
+                ShowCookingUI(false);
+                isCooking = false;
+                Show(player, "Patty cooked!");
+            }
+            else
+            {
+                Show(player, $"Cooking... {cookingTimer:F1}s left");
+            }
+            return;
+        }
+
         // Place raw patty
         if (storedItem.IsEmpty)
         {
@@ -42,20 +72,12 @@ public class StoveCounter : BaseStation, IInteractable
                 storedItem.Set(ItemType.PattyRaw);
                 player.heldItem.Clear();
                 UpdateStoredItemVisual();
-                Show(player, "Placed raw patty on stove");
+                StartCooking();
+                Show(player, "Placed raw patty on stove - cooking started");
                 return;
             }
 
             Show(player, "Place a raw patty on the stove");
-            return;
-        }
-
-        // Cook the patty
-        if (storedItem.type == ItemType.PattyRaw)
-        {
-            storedItem.Set(ItemType.PattyCooked);
-            UpdateStoredItemVisual();
-            Show(player, "Patty cooked!");
             return;
         }
 
@@ -65,11 +87,56 @@ public class StoveCounter : BaseStation, IInteractable
             player.heldItem.Set(ItemType.PattyCooked);
             storedItem.Clear();
             UpdateStoredItemVisual();
+            isOvercooked = false;
+            overcookTimer = 0f;
             Show(player, "Picked up cooked patty");
             return;
         }
 
         Show(player, "Cannot use stove right now");
+    }
+
+    private void Update()
+    {
+        if (isCooking)
+        {
+            cookingTimer -= Time.deltaTime;
+            if (cookingTimer <= 0f)
+            {
+                // Cooking finished
+                storedItem.Set(ItemType.PattyCooked);
+                UpdateStoredItemVisual();
+                ShowCookingUI(false);
+                isCooking = false;
+                isOvercooked = true;
+                overcookTimer = overcookTime;
+            }
+        }
+        else if (isOvercooked)
+        {
+            overcookTimer -= Time.deltaTime;
+            if (overcookTimer <= 0f)
+            {
+                // Item overcooked - destroy it
+                storedItem.Clear();
+                UpdateStoredItemVisual();
+                isOvercooked = false;
+                Debug.Log("StoveCounter: Cooked patty overcooked and destroyed!");
+            }
+        }
+    }
+
+    private void StartCooking()
+    {
+        isCooking = true;
+        cookingTimer = cookingTime;
+        ShowCookingUI(true);
+    }
+
+    private void ShowCookingUI(bool show)
+    {
+        if (cookingUIPanel != null)
+            cookingUIPanel.SetActive(show);
     }
 
     private void UpdateStoredItemVisual()
