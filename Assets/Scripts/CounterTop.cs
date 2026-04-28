@@ -9,7 +9,9 @@ public class CounterTop : BaseStation, IInteractable
     // BURGER:   Bun → PattyCooked → VeggieRaw  (complete)
     // SANDWICH: Bread → HamRaw (Ham & Cheese combined = complete)
     // SIDES:    FriesCooked alone | ChickenCooked alone
+    // CHILI DOG: DogBun → HotDogCooked → (ChiliPot adds chili)
     // ------------------------------------------------------------------
+
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
@@ -33,7 +35,7 @@ public class CounterTop : BaseStation, IInteractable
                 && storedItem.plateHasBun && storedItem.plateHasPatty && !storedItem.plateHasVeggie)
                 return true;
 
-            // --- Sandwich path: Bread → Ham & Cheese (done) ---
+            // --- Sandwich path ---
             if (player.heldItem.type == ItemType.Bread
                 && !storedItem.plateHasBread
                 && !storedItem.plateHasBun
@@ -70,6 +72,23 @@ public class CounterTop : BaseStation, IInteractable
                 && !storedItem.plateHasVeggie
                 && !storedItem.plateHasHam
                 && !storedItem.plateHasChicken)
+                return true;
+
+            // --- CHILI DOG ---
+            if (player.heldItem.type == ItemType.DogBun
+                && !storedItem.plateHasDogBun
+                && !storedItem.plateHasBun
+                && !storedItem.plateHasBread
+                && !storedItem.plateHasPatty
+                && !storedItem.plateHasVeggie
+                && !storedItem.plateHasHam
+                && !storedItem.plateHasFries
+                && !storedItem.plateHasChicken)
+                return true;
+
+            if (player.heldItem.type == ItemType.HotDogCooked
+                && storedItem.plateHasDogBun
+                && !storedItem.plateHasHotdog)
                 return true;
 
             return false;
@@ -119,100 +138,80 @@ public class CounterTop : BaseStation, IInteractable
     {
         switch (player.heldItem.type)
         {
-            // ---- Burger ----
+            // ---- BURGER ----
             case ItemType.Bun:
                 if (storedItem.plateHasBun) { Show(player, "Plate already has bun"); return; }
                 storedItem.plateHasBun = true;
-                player.heldItem.Clear();
-                UpdateStoredItemVisual();
-                Show(player, "Placed bun on plate");
                 break;
 
             case ItemType.PattyCooked:
                 if (!storedItem.plateHasBun) { Show(player, "Place bun first"); return; }
                 if (storedItem.plateHasPatty) { Show(player, "Plate already has patty"); return; }
                 storedItem.plateHasPatty = true;
-                player.heldItem.Clear();
-                UpdateStoredItemVisual();
-                Show(player, "Placed cooked patty on plate");
                 break;
 
             case ItemType.VeggieRaw:
-                if (!storedItem.plateHasBun) { Show(player, "Place bun first"); return; }
-                if (!storedItem.plateHasPatty) { Show(player, "Place patty second"); return; }
+                if (!storedItem.plateHasPatty) { Show(player, "Place patty first"); return; }
                 if (storedItem.plateHasVeggie) { Show(player, "Plate already has veggie"); return; }
                 storedItem.plateHasVeggie = true;
-                player.heldItem.Clear();
-                UpdateStoredItemVisual();
-                Show(player, "Placed veggie on plate");
                 break;
 
-            // ---- Sandwich ----
+            // ---- SANDWICH ----
             case ItemType.Bread:
                 if (storedItem.plateHasBread) { Show(player, "Plate already has bread"); return; }
-                if (storedItem.plateHasBun || storedItem.plateHasPatty || storedItem.plateHasVeggie
-                    || storedItem.plateHasHam || storedItem.plateHasFries || storedItem.plateHasChicken)
-                {
-                    Show(player, "Cannot add bread to this plate");
-                    return;
-                }
                 storedItem.plateHasBread = true;
-                player.heldItem.Clear();
-                UpdateStoredItemVisual();
-                Show(player, "Placed bread on plate");
                 break;
 
-            case ItemType.HamRaw:  // Ham & Cheese combined — completes sandwich
+            case ItemType.HamRaw:
                 if (!storedItem.plateHasBread) { Show(player, "Place bread first"); return; }
                 if (storedItem.plateHasHam) { Show(player, "Plate already has Ham & Cheese"); return; }
-                if (storedItem.plateHasBun || storedItem.plateHasPatty || storedItem.plateHasVeggie
-                    || storedItem.plateHasFries || storedItem.plateHasChicken)
-                {
-                    Show(player, "Cannot add Ham & Cheese to this plate");
-                    return;
-                }
                 storedItem.plateHasHam = true;
-                player.heldItem.Clear();
-                UpdateStoredItemVisual();
-                Show(player, "Placed Ham & Cheese on plate — Sandwich complete!");
                 break;
 
-            // ---- Sides ----
+            // ---- SIDES ----
             case ItemType.FriesCooked:
                 if (storedItem.plateHasFries) { Show(player, "Plate already has fries"); return; }
-                if (storedItem.plateHasBun || storedItem.plateHasPatty || storedItem.plateHasVeggie
-                    || storedItem.plateHasHam || storedItem.plateHasChicken)
-                {
-                    Show(player, "Cannot add fries to this plate");
-                    return;
-                }
                 storedItem.plateHasFries = true;
-                player.heldItem.Clear();
-                UpdateStoredItemVisual();
-                Show(player, "Placed fries on plate");
                 break;
 
             case ItemType.ChickenCooked:
-                if (storedItem.plateHasFries || storedItem.plateHasBun || storedItem.plateHasPatty
-                    || storedItem.plateHasVeggie || storedItem.plateHasHam || storedItem.plateHasChicken)
+                if (storedItem.plateHasChicken) { Show(player, "Plate already has chicken"); return; }
+                storedItem.plateHasChicken = true;
+                break;
+
+            // ---- CHILI DOG ----
+            case ItemType.DogBun:
+                if (storedItem.plateHasDogBun) { Show(player, "Plate already has dog bun"); return; }
+
+                if (storedItem.plateHasBun || storedItem.plateHasBread ||
+                    storedItem.plateHasPatty || storedItem.plateHasVeggie ||
+                    storedItem.plateHasHam || storedItem.plateHasFries ||
+                    storedItem.plateHasChicken)
                 {
-                    Show(player, "Cannot add chicken to this plate");
+                    Show(player, "Cannot add dog bun to this plate");
                     return;
                 }
-                storedItem.plateHasChicken = true;
-                player.heldItem.Clear();
-                UpdateStoredItemVisual();
-                Show(player, "Placed cooked chicken on plate");
+
+                storedItem.plateHasDogBun = true;
+                break;
+
+            case ItemType.HotDogCooked:
+                if (!storedItem.plateHasDogBun) { Show(player, "Place dog bun first"); return; }
+                if (storedItem.plateHasHotdog) { Show(player, "Plate already has hotdog"); return; }
+                storedItem.plateHasHotdog = true;
                 break;
 
             case ItemType.PattyRaw:
                 Show(player, "Raw patty must be cooked first");
-                break;
+                return;
 
             default:
                 Show(player, "Wrong item for plate");
-                break;
+                return;
         }
+
+        player.heldItem.Clear();
+        UpdateStoredItemVisual();
     }
 
     private void UpdateStoredItemVisual()

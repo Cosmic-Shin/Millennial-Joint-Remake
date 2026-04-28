@@ -87,6 +87,7 @@ public class PlayerControl : MonoBehaviour
     private int emote2Hash;
     private int emote3Hash;
     private int emote4Hash;
+    public ChiliPotCounter currentChiliPot;
 
     private bool isSelectingEmote;
     private bool isEmoting;
@@ -167,7 +168,7 @@ public class PlayerControl : MonoBehaviour
         back = Input.GetKey(MoveDown);
         right = Input.GetKey(MoveRight);
 
-        if (!isSelectingEmote && !isEmoting && currentIngredientBox == null && currentDrinkMachine == null)
+        if (!isSelectingEmote && !isEmoting && currentIngredientBox == null && currentDrinkMachine == null && currentChiliPot == null)
         {
             direction = new Vector3(
                 (right ? 1 : 0) - (left ? 1 : 0),
@@ -305,6 +306,7 @@ public class PlayerControl : MonoBehaviour
         }
 
         UpdateAnimator();
+        FaceEmoteTextToCamera();
     }
 
     private void FixedUpdate()
@@ -312,7 +314,7 @@ public class PlayerControl : MonoBehaviour
     if (!doMove || rb == null)
         return;
 
-    if (isSelectingEmote || isEmoting || currentIngredientBox != null || currentDrinkMachine != null)
+    if (isSelectingEmote || isEmoting || currentIngredientBox != null || currentDrinkMachine != null || currentChiliPot != null)
     {
         direction = Vector3.zero;
         rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
@@ -370,6 +372,22 @@ public class PlayerControl : MonoBehaviour
         );
     }
 }
+
+    private void FaceEmoteTextToCamera()
+    {
+        if (emoteSelectionObject == null || !emoteSelectionObject.activeInHierarchy)
+            return;
+
+        Camera cam = Camera.main;
+        if (cam == null)
+            return;
+
+        Transform t = emoteSelectionObject.transform;
+
+        Vector3 direction = cam.transform.position - t.position;
+        t.rotation = Quaternion.LookRotation(direction);
+        t.Rotate(0f, 180f, 0f);
+    }
 
     private void HandleEmotes()
     {
@@ -514,7 +532,7 @@ public class PlayerControl : MonoBehaviour
 
     private void EnsureMovementState()
     {
-        if (!doMove && !isSelectingEmote && !isEmoting && currentIngredientBox == null && currentDrinkMachine == null)
+        if (!isSelectingEmote && !isEmoting && currentIngredientBox == null && currentDrinkMachine == null && currentChiliPot == null)
         {
             doMove = true;
             Debug.Log("PlayerControl: movement lock cleared automatically.");

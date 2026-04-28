@@ -16,6 +16,7 @@ public class GameModeSelector : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
         Instance = this;
     }
 
@@ -27,11 +28,7 @@ public class GameModeSelector : MonoBehaviour
         if (speedModeBut != null)
             speedModeBut.onClick.AddListener(() => SelectMode(OrderManager.GameMode.SPEED));
 
-        if (modePanel != null)
-            modePanel.SetActive(true);
-
-        // Start game paused
-        PauseManager.Instance?.Pause();
+        ShowModeSelector();
     }
 
     public void SelectMode(OrderManager.GameMode mode)
@@ -47,6 +44,9 @@ public class GameModeSelector : MonoBehaviour
     {
         if (modePanel != null)
             modePanel.SetActive(true);
+
+        OrderUIManager.Instance?.HideStatus();
+        OrderUIManager.Instance?.ClearOrderImages();
 
         PauseManager.Instance?.Pause();
     }

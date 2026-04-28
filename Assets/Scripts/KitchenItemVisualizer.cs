@@ -1,9 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// Handles visual representation of kitchen items.
-/// Fetches prefabs from ItemPrefabRegistry and instantiates them with proper transforms.
-/// </summary>
 public class KitchenItemVisualizer : MonoBehaviour
 {
     public Transform anchor;
@@ -30,8 +26,10 @@ public class KitchenItemVisualizer : MonoBehaviour
         }
 
         GameObject prefab = ItemPrefabRegistry.Instance.GetPrefabForItem(itemData);
+
         if (prefab == null)
         {
+            Debug.LogWarning("No prefab found for item: " + itemData.GetDisplayName());
             ClearVisual();
             return;
         }
@@ -55,14 +53,13 @@ public class KitchenItemVisualizer : MonoBehaviour
 
     private void CreateVisual(GameObject prefab)
     {
-        if (prefab == null)
-            return;
-
         Transform parent = anchor != null ? anchor : transform;
+
         currentVisual = Instantiate(prefab, parent);
         currentVisual.transform.localPosition = localPosition;
         currentVisual.transform.localEulerAngles = localEulerAngles;
         currentVisual.transform.localScale = localScale;
+
         currentPrefab = prefab;
     }
 }

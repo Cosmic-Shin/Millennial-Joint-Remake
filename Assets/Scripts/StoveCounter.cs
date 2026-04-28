@@ -1,42 +1,47 @@
 using UnityEngine;
+using UnityEngine.UI;
 
-/// <summary>
-/// Stove now only cooks PattyRaw → PattyCooked.
-/// Ham no longer needs cooking (goes directly to sandwich from IngredientBox).
-/// Chicken is handled separately by a FryerCounter if used.
-/// </summary>
 public class StoveCounter : BaseStation, IInteractable
 {
     public KitchenItemData storedItem = new KitchenItemData();
     public KitchenItemVisualizer storedItemVisualizer;
 
     [Header("Cooking")]
-    public float cookingTime = 5f; // Adjustable cooking time
-    public float overcookTime = 10f; // Time before cooked item is destroyed
-    public GameObject cookingUIPanel; // UI panel to show during cooking
-    public Transform cookingAnchor; // Where the item is placed for cooking
+    public float cookingTime = 5f;
+    public float overcookTime = 10f;
+    public GameObject cookingUIPanel;
+    public Transform cookingAnchor;
+
+    [Header("Cooking Animation")]
+    public Image cookingUIImage;
+    public Sprite[] cookingSprites;
+    public int animationLoops = 3;
 
     private bool isCooking = false;
     private float cookingTimer = 0f;
     private bool isOvercooked = false;
     private float overcookTimer = 0f;
 
-    // Valid interactions:
-    //   - Stove empty + holding PattyRaw → place it
-    //   - Stove has PattyRaw + empty hands → check cooking status
-    //   - Stove has PattyCooked + empty hands → pick it up
+    private float animationTimer = 0f;
+    private float animationDurationPerLoop;
+
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
 
+        // 🔥 Accept BOTH Patty and Hotdog
         if (storedItem.IsEmpty)
-            return player.heldItem.type == ItemType.PattyRaw;
+            return player.heldItem.type == ItemType.PattyRaw ||
+                   player.heldItem.type == ItemType.HotDogRaw;
 
-        if (storedItem.type == ItemType.PattyRaw || isCooking)
-            return player.heldItem.IsEmpty; // check cooking status
+        if (storedItem.type == ItemType.PattyRaw ||
+            storedItem.type == ItemType.HotDogRaw ||
+            isCooking)
+            return player.heldItem.IsEmpty;
 
-        if (storedItem.type == ItemType.PattyCooked)
-            return player.heldItem.IsEmpty; // pick up
+        if (storedItem.type == ItemType.PattyCooked ||
+            storedItem.type == ItemType.HotDogCooked)
+            return player.heldItem.IsEmpty;
 
         return false;
     }
@@ -45,17 +50,13 @@ public class StoveCounter : BaseStation, IInteractable
     {
         if (player == null) return;
 
-        // If cooking, check if done
+        // 🔥 If cooking → check status
         if (isCooking)
         {
             if (cookingTimer <= 0f)
             {
-                // Cooking finished
-                storedItem.Set(ItemType.PattyCooked);
-                UpdateStoredItemVisual();
-                ShowCookingUI(false);
-                isCooking = false;
-                Show(player, "Patty cooked!");
+                FinishCooking();
+                Show(player, "Done!");
             }
             else
             {
@@ -64,32 +65,39 @@ public class StoveCounter : BaseStation, IInteractable
             return;
         }
 
-        // Place raw patty
+        // 🔥 Place item (Patty OR Hotdog)
         if (storedItem.IsEmpty)
         {
-            if (player.heldItem.type == ItemType.PattyRaw)
+            if (player.heldItem.type == ItemType.PattyRaw ||
+                player.heldItem.type == ItemType.HotDogRaw)
             {
-                storedItem.Set(ItemType.PattyRaw);
+                storedItem.Set(player.heldItem.type);
                 player.heldItem.Clear();
+
                 UpdateStoredItemVisual();
                 StartCooking();
-                Show(player, "Placed raw patty on stove - cooking started");
+
+                Show(player, "Cooking started");
                 return;
             }
 
-            Show(player, "Place a raw patty on the stove");
+            Show(player, "Place raw patty or raw hotdog");
             return;
         }
 
-        // Pick up cooked patty
-        if (storedItem.type == ItemType.PattyCooked)
+        // 🔥 Pick up cooked item
+        if (storedItem.type == ItemType.PattyCooked ||
+            storedItem.type == ItemType.HotDogCooked)
         {
-            player.heldItem.Set(ItemType.PattyCooked);
+            player.heldItem.Set(storedItem.type);
             storedItem.Clear();
+
             UpdateStoredItemVisual();
+
             isOvercooked = false;
             overcookTimer = 0f;
-            Show(player, "Picked up cooked patty");
+
+            Show(player, "Picked up cooked item");
             return;
         }
 
@@ -101,13 +109,11 @@ public class StoveCounter : BaseStation, IInteractable
         if (isCooking)
         {
             cookingTimer -= Time.deltaTime;
+            UpdateCookingAnimation();
+
             if (cookingTimer <= 0f)
             {
-                // Cooking finished
-                storedItem.Set(ItemType.PattyCooked);
-                UpdateStoredItemVisual();
-                ShowCookingUI(false);
-                isCooking = false;
+                FinishCooking();
                 isOvercooked = true;
                 overcookTimer = overcookTime;
             }
@@ -115,13 +121,14 @@ public class StoveCounter : BaseStation, IInteractable
         else if (isOvercooked)
         {
             overcookTimer -= Time.deltaTime;
+
             if (overcookTimer <= 0f)
             {
-                // Item overcooked - destroy it
                 storedItem.Clear();
                 UpdateStoredItemVisual();
                 isOvercooked = false;
-                Debug.Log("StoveCounter: Cooked patty overcooked and destroyed!");
+
+                Debug.Log("StoveCounter: Item overcooked and destroyed!");
             }
         }
     }
@@ -130,13 +137,56 @@ public class StoveCounter : BaseStation, IInteractable
     {
         isCooking = true;
         cookingTimer = cookingTime;
+
+        animationTimer = 0f;
+        animationDurationPerLoop = cookingTime / Mathf.Max(1, animationLoops);
+
         ShowCookingUI(true);
+    }
+
+    private void FinishCooking()
+    {
+        // 🔥 Convert correctly depending on item
+        if (storedItem.type == ItemType.PattyRaw)
+            storedItem.Set(ItemType.PattyCooked);
+        else if (storedItem.type == ItemType.HotDogRaw)
+            storedItem.Set(ItemType.HotDogCooked);
+
+        UpdateStoredItemVisual();
+        ShowCookingUI(false);
+        isCooking = false;
+    }
+
+    private void UpdateCookingAnimation()
+    {
+        if (cookingUIImage == null || cookingSprites == null || cookingSprites.Length == 0)
+            return;
+
+        animationTimer += Time.deltaTime;
+
+        float timeInLoop = animationTimer % animationDurationPerLoop;
+        float normalizedTime = timeInLoop / animationDurationPerLoop;
+
+        int frameIndex = Mathf.FloorToInt(normalizedTime * cookingSprites.Length);
+        frameIndex = Mathf.Clamp(frameIndex, 0, cookingSprites.Length - 1);
+
+        cookingUIImage.sprite = cookingSprites[frameIndex];
+
+        // heat effect
+        cookingUIImage.color = Color.Lerp(
+            Color.white,
+            new Color(1f, 0.7f, 0.7f),
+            normalizedTime
+        );
     }
 
     private void ShowCookingUI(bool show)
     {
         if (cookingUIPanel != null)
             cookingUIPanel.SetActive(show);
+
+        if (!show && cookingUIImage != null)
+            cookingUIImage.color = Color.white;
     }
 
     private void UpdateStoredItemVisual()

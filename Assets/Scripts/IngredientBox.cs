@@ -12,7 +12,9 @@ public class IngredientBox : BaseStation, IInteractable
         ItemType.PattyRaw,
         ItemType.FrozenFries,
         ItemType.ChickenRaw,
-        ItemType.HamRaw
+        ItemType.HamRaw,
+        ItemType.DogBun,
+        ItemType.HotDogRaw
     };
 
     private PlayerControl currentPlayer;
@@ -32,13 +34,9 @@ public class IngredientBox : BaseStation, IInteractable
         currentPlayer = player;
 
         if (!isSelectingIngredient)
-        {
             StartIngredientSelection();
-        }
         else
-        {
             ConfirmIngredientSelection();
-        }
     }
 
     private void StartIngredientSelection()
@@ -49,8 +47,10 @@ public class IngredientBox : BaseStation, IInteractable
         isSelectingIngredient = true;
         selectedIngredientIndex = 0;
         currentPlayer.doMove = false;
+
         if (currentPlayer.emoteSelectionObject != null)
             currentPlayer.emoteSelectionObject.SetActive(true);
+
         UpdateIngredientSelectionText();
     }
 
@@ -70,14 +70,19 @@ public class IngredientBox : BaseStation, IInteractable
     private void EndIngredientSelection()
     {
         isSelectingIngredient = false;
+
         if (currentPlayer != null)
         {
             currentPlayer.doMove = true;
             currentPlayer.currentIngredientBox = null;
+
             if (currentPlayer.emoteSelectionObject != null)
                 currentPlayer.emoteSelectionObject.SetActive(false);
-            currentPlayer.emoteSelectionText.text = string.Empty;
+
+            if (currentPlayer.emoteSelectionText != null)
+                currentPlayer.emoteSelectionText.text = string.Empty;
         }
+
         currentPlayer = null;
     }
 
@@ -90,8 +95,7 @@ public class IngredientBox : BaseStation, IInteractable
             return;
 
         ItemType selectedType = selectableIngredients[selectedIngredientIndex];
-        string displayName = GetIngredientDisplayName(selectedType);
-        currentPlayer.emoteSelectionText.text = displayName;
+        currentPlayer.emoteSelectionText.text = GetIngredientDisplayName(selectedType);
     }
 
     private string GetIngredientDisplayName(ItemType type)
@@ -101,10 +105,12 @@ public class IngredientBox : BaseStation, IInteractable
             case ItemType.Bun: return "Bun";
             case ItemType.Bread: return "Bread";
             case ItemType.VeggieRaw: return "Veggie";
-            case ItemType.PattyRaw: return "Patty";
+            case ItemType.PattyRaw: return "Raw Patty";
             case ItemType.FrozenFries: return "Frozen Fries";
-            case ItemType.ChickenRaw: return "Chicken";
-            case ItemType.HamRaw: return "Ham";
+            case ItemType.ChickenRaw: return "Raw Chicken";
+            case ItemType.HamRaw: return "Ham & Cheese";
+            case ItemType.DogBun: return "Dog Bun";
+            case ItemType.HotDogRaw: return "Raw Hotdog";
             default: return type.ToString();
         }
     }
@@ -114,7 +120,6 @@ public class IngredientBox : BaseStation, IInteractable
         if (!isSelectingIngredient || currentPlayer == null)
             return;
 
-        // Cancel selection if player moves away
         if (Vector3.Distance(transform.position, currentPlayer.transform.position) > 3f)
         {
             EndIngredientSelection();
@@ -131,5 +136,24 @@ public class IngredientBox : BaseStation, IInteractable
             selectedIngredientIndex = (selectedIngredientIndex + 1) % selectableIngredients.Length;
             UpdateIngredientSelectionText();
         }
+    }
+
+    private void LateUpdate()
+    {
+        if (!isSelectingIngredient || currentPlayer == null)
+            return;
+
+        if (currentPlayer.emoteSelectionObject == null)
+            return;
+
+        Camera cam = Camera.main;
+        if (cam == null)
+            return;
+
+        Transform textTransform = currentPlayer.emoteSelectionObject.transform;
+
+        Vector3 direction = cam.transform.position - textTransform.position;
+        textTransform.rotation = Quaternion.LookRotation(direction);
+        textTransform.Rotate(0f, 180f, 0f);
     }
 }

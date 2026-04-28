@@ -1,21 +1,27 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class FryerCounter : StorageStation
 {
     [Header("Cooking")]
-    public float cookingTime = 7f; // Adjustable cooking time (different from stove)
-    public float overcookTime = 10f; // Time before cooked item is destroyed
-    public GameObject cookingUIPanel; // UI panel to show during cooking
-    public Transform cookingAnchor; // Where the item is placed for cooking
+    public float cookingTime = 7f;
+    public float overcookTime = 10f;
+    public GameObject cookingUIPanel;
+    public Transform cookingAnchor;
+
+    [Header("Cooking Animation")]
+    public Image cookingUIImage;
+    public Sprite[] cookingSprites;
+    public int animationLoops = 3;
 
     private bool isCooking = false;
     private float cookingTimer = 0f;
     private bool isOvercooked = false;
     private float overcookTimer = 0f;
-    // Valid interactions:
-    //   - Fryer empty + holding FrozenFries or ChickenRaw  → place item in fryer
-    //   - Fryer has FrozenFries or ChickenRaw + empty hands  → check cooking status
-    //   - Fryer has FriesCooked or ChickenCooked + empty hands  → pick up cooked item
+
+    private float animationTimer = 0f;
+    private float animationDurationPerLoop;
+
     public override bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
@@ -36,25 +42,18 @@ public class FryerCounter : StorageStation
     {
         if (player == null) return;
 
-        // If cooking, check if done
         if (isCooking)
         {
             if (cookingTimer <= 0f)
             {
-                // Cooking finished
-                if (storedItem.type == ItemType.FrozenFries)
-                    storedItem.Set(ItemType.FriesCooked);
-                else if (storedItem.type == ItemType.ChickenRaw)
-                    storedItem.Set(ItemType.ChickenCooked);
-                UpdateStoredItemVisual();
-                ShowCookingUI(false);
-                isCooking = false;
+                FinishCooking();
                 Show(player, storedItem.type == ItemType.FriesCooked ? "Fries cooked!" : "Chicken cooked!");
             }
             else
             {
                 Show(player, $"Cooking... {cookingTimer:F1}s left");
             }
+
             return;
         }
 
@@ -112,16 +111,11 @@ public class FryerCounter : StorageStation
         if (isCooking)
         {
             cookingTimer -= Time.deltaTime;
+            UpdateCookingAnimation();
+
             if (cookingTimer <= 0f)
             {
-                // Cooking finished
-                if (storedItem.type == ItemType.FrozenFries)
-                    storedItem.Set(ItemType.FriesCooked);
-                else if (storedItem.type == ItemType.ChickenRaw)
-                    storedItem.Set(ItemType.ChickenCooked);
-                UpdateStoredItemVisual();
-                ShowCookingUI(false);
-                isCooking = false;
+                FinishCooking();
                 isOvercooked = true;
                 overcookTimer = overcookTime;
             }
@@ -129,9 +123,9 @@ public class FryerCounter : StorageStation
         else if (isOvercooked)
         {
             overcookTimer -= Time.deltaTime;
+
             if (overcookTimer <= 0f)
             {
-                // Item overcooked - destroy it
                 storedItem.Clear();
                 UpdateStoredItemVisual();
                 isOvercooked = false;
@@ -144,12 +138,53 @@ public class FryerCounter : StorageStation
     {
         isCooking = true;
         cookingTimer = cookingTime;
+
+        animationTimer = 0f;
+        animationDurationPerLoop = cookingTime / Mathf.Max(1, animationLoops);
+
         ShowCookingUI(true);
+    }
+
+    private void FinishCooking()
+    {
+        if (storedItem.type == ItemType.FrozenFries)
+            storedItem.Set(ItemType.FriesCooked);
+        else if (storedItem.type == ItemType.ChickenRaw)
+            storedItem.Set(ItemType.ChickenCooked);
+
+        UpdateStoredItemVisual();
+        ShowCookingUI(false);
+        isCooking = false;
+    }
+
+    private void UpdateCookingAnimation()
+    {
+        if (cookingUIImage == null || cookingSprites == null || cookingSprites.Length == 0)
+            return;
+
+        animationTimer += Time.deltaTime;
+
+        float timeInLoop = animationTimer % animationDurationPerLoop;
+        float normalizedTime = timeInLoop / animationDurationPerLoop;
+
+        int frameIndex = Mathf.FloorToInt(normalizedTime * cookingSprites.Length);
+        frameIndex = Mathf.Clamp(frameIndex, 0, cookingSprites.Length - 1);
+
+        cookingUIImage.sprite = cookingSprites[frameIndex];
+
+        cookingUIImage.color = Color.Lerp(
+            Color.white,
+            new Color(1f, 0.7f, 0.7f),
+            normalizedTime
+        );
     }
 
     private void ShowCookingUI(bool show)
     {
         if (cookingUIPanel != null)
             cookingUIPanel.SetActive(show);
+
+        if (!show && cookingUIImage != null)
+            cookingUIImage.color = Color.white;
     }
 }

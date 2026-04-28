@@ -15,7 +15,12 @@ public enum ItemType
     FrozenFries,
     FriesCooked,
     ChickenRaw,
-    ChickenCooked
+    ChickenCooked,
+
+    DogBun,
+    HotDogRaw,
+    HotDogCooked,
+    Chili
 }
 
 [Serializable]
@@ -28,9 +33,12 @@ public class KitchenItemData
     public bool plateHasBread;
     public bool plateHasPatty;
     public bool plateHasVeggie;
-    public bool plateHasHam;     // Ham & Cheese combined — placing Ham completes the sandwich
+    public bool plateHasHam;    
     public bool plateHasFries;
     public bool plateHasChicken;
+    public bool plateHasDogBun;
+    public bool plateHasHotdog;
+    public bool plateHasChili;
 
     [Header("Cup Contents")]
     public bool cupHasSoda;
@@ -75,6 +83,13 @@ public class KitchenItemData
         type == ItemType.Cup &&
         (cupHasSoda || cupHasIceTea || cupHasOrangeJuice || cupHasCoffee);
 
+    public bool IsCompleteChiliDog =>
+        type == ItemType.Plate &&
+        plateHasDogBun && plateHasHotdog && plateHasChili &&
+        !plateHasBun && !plateHasPatty && !plateHasVeggie &&
+        !plateHasHam && !plateHasBread &&
+        !plateHasFries && !plateHasChicken;
+
     public void Set(ItemType newType)
     {
         type = newType;
@@ -88,6 +103,9 @@ public class KitchenItemData
             plateHasHam     = false;
             plateHasFries   = false;
             plateHasChicken = false;
+            plateHasDogBun  = false;
+            plateHasHotdog  = false;
+            plateHasChili   = false;
         }
 
         if (newType != ItemType.Cup)
@@ -101,46 +119,55 @@ public class KitchenItemData
 
     public void MakePlate()
     {
-        type            = ItemType.Plate;
-        plateHasBun     = false;
-        plateHasBread   = false;
-        plateHasPatty   = false;
-        plateHasVeggie  = false;
-        plateHasHam     = false;
-        plateHasFries   = false;
-        plateHasChicken = false;
+        type              = ItemType.Plate;
+        plateHasBun       = false;
+        plateHasBread     = false;
+        plateHasPatty     = false;
+        plateHasVeggie    = false;
+        plateHasHam       = false;
+        plateHasFries     = false;
+        plateHasChicken   = false;
         cupHasSoda        = false;
         cupHasIceTea      = false;
         cupHasOrangeJuice = false;
         cupHasCoffee      = false;
+        plateHasDogBun    = false;
+        plateHasHotdog    = false;
+        plateHasChili     = false;
     }
 
     public void Clear()
     {
-        type            = ItemType.None;
-        plateHasBun     = false;
-        plateHasBread   = false;
-        plateHasPatty   = false;
-        plateHasVeggie  = false;
-        plateHasHam     = false;
-        plateHasFries   = false;
-        plateHasChicken = false;
+        type              = ItemType.None;
+        plateHasBun       = false;
+        plateHasBread     = false;
+        plateHasPatty     = false;
+        plateHasVeggie    = false;
+        plateHasHam       = false;
+        plateHasFries     = false;
+        plateHasChicken   = false;
         cupHasSoda        = false;
         cupHasIceTea      = false;
         cupHasOrangeJuice = false;
         cupHasCoffee      = false;
+        plateHasDogBun    = false;
+        plateHasHotdog    = false;
+        plateHasChili     = false;
     }
 
     public void CopyFrom(KitchenItemData other)
     {
-        type            = other.type;
-        plateHasBun     = other.plateHasBun;
-        plateHasBread   = other.plateHasBread;
-        plateHasPatty   = other.plateHasPatty;
-        plateHasVeggie  = other.plateHasVeggie;
-        plateHasHam     = other.plateHasHam;
-        plateHasFries   = other.plateHasFries;
-        plateHasChicken = other.plateHasChicken;
+        type              = other.type;
+        plateHasBun       = other.plateHasBun;
+        plateHasBread     = other.plateHasBread;
+        plateHasPatty     = other.plateHasPatty;
+        plateHasVeggie    = other.plateHasVeggie;
+        plateHasHam       = other.plateHasHam;
+        plateHasFries     = other.plateHasFries;
+        plateHasChicken   = other.plateHasChicken;
+        plateHasDogBun    = other.plateHasDogBun;
+        plateHasHotdog    = other.plateHasHotdog;
+        plateHasChili     = other.plateHasChili;
         cupHasSoda        = other.cupHasSoda;
         cupHasIceTea      = other.cupHasIceTea;
         cupHasOrangeJuice = other.cupHasOrangeJuice;
@@ -170,11 +197,15 @@ public class KitchenItemData
             result += plateHasHam     ? " + Ham & Cheese"  : "";
             result += plateHasFries   ? " + Fries"         : "";
             result += plateHasChicken ? " + CookedChicken" : "";
+            result += plateHasDogBun ? " + Dog Bun" : "";
+            result += plateHasHotdog ? " + Hotdog" : "";
+            result += plateHasChili ? " + Chili" : "";
 
             if (IsCompleteSandwich)          result += " (Complete Sandwich)";
             else if (IsCompleteBurger)       result += " (Complete Burger)";
             else if (IsCompleteFriedChicken) result += " (Complete Fried Chicken)";
             else if (IsCompleteFries)        result += " (Complete Fries)";
+            else if (IsCompleteChiliDog) result += " (Chili Dog)";
 
             return result;
         }

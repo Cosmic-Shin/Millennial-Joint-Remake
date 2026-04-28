@@ -7,14 +7,6 @@ public class Order
     public OrderItem[] items = new OrderItem[2];
     private bool[] served = new bool[2];
 
-    public Order()
-    {
-        items[0] = null;
-        items[1] = null;
-        served[0] = false;
-        served[1] = false;
-    }
-
     public void GenerateRandomOrder()
     {
         items[0] = new OrderItem(GetRandomItemType());
@@ -34,8 +26,10 @@ public class Order
             OrderItemType.Soda,
             OrderItemType.IceTea,
             OrderItemType.OrangeJuice,
-            OrderItemType.Coffee
+            OrderItemType.Coffee,
+            OrderItemType.ChiliDog
         };
+
         return types[UnityEngine.Random.Range(0, types.Length)];
     }
 
@@ -44,18 +38,37 @@ public class Order
         for (int i = 0; i < items.Length; i++)
         {
             if (items[i] == null || served[i]) continue;
+
             if (items[i].IsMatching(item))
             {
                 served[i] = true;
                 return items[i].type;
             }
         }
+
         return null;
     }
 
-    public bool IsComplete() => served[0] && served[1];
+    public bool IsComplete()
+    {
+        return served[0] && served[1];
+    }
 
-    public int GetServedCount() => (served[0] ? 1 : 0) + (served[1] ? 1 : 0);
+    public bool IsServed(int index)
+    {
+        if (index < 0 || index >= served.Length)
+            return false;
+
+        return served[index];
+    }
+
+    public OrderItem GetItem(int index)
+    {
+        if (index < 0 || index >= items.Length)
+            return null;
+
+        return items[index];
+    }
 
     public string GetDisplayText()
     {
