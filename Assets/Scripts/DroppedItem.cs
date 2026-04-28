@@ -15,17 +15,7 @@ public class DroppedItem : MonoBehaviour, IInteractable
 
     private void Update()
     {
-        // If gravity is disabled and we're waiting for the item to reach peak,
-        // check if it has started falling (vertical velocity is zero or negative)
-        if (isWaitingForPeak && rb != null && !rb.useGravity)
-        {
-            if (rb.linearVelocity.y <= 0f)
-            {
-                // Item has reached its peak, enable gravity
-                rb.useGravity = true;
-                isWaitingForPeak = false;
-            }
-        }
+        // Gravity is now enabled immediately from spawn
     }
 
     public void Initialize(KitchenItemData sourceItem, KitchenItemVisualizer sourceVisualizer)
@@ -47,7 +37,7 @@ public class DroppedItem : MonoBehaviour, IInteractable
 
     public void SetWaitForPeak()
     {
-        isWaitingForPeak = true;
+        // No longer needed - gravity is enabled immediately
     }
 
     public bool CanInteractWith(PlayerControl player)
@@ -63,6 +53,7 @@ public class DroppedItem : MonoBehaviour, IInteractable
 
         player.heldItem.CopyFrom(item);
         player.RefreshHeldItemDisplay();
+        AudioManager.Instance?.PlayCounterTopInteractSFX();
         Destroy(gameObject);
     }
 }

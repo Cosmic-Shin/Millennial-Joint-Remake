@@ -17,5 +17,6 @@ public class PlateCounter : BaseStation, IInteractable
         player.heldItem.MakePlate();
         Debug.Log("PlateCounter.Interact completed | player holding after: " + player.GetHeldItemDebug());
         Show(player, "Picked up plate");
+        AudioManager.Instance?.PlayIngredientInTableSFX();
     }
 }

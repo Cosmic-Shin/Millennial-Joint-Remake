@@ -4,7 +4,6 @@ public class ServingCounter : BaseStation, IInteractable
 {
     public int totalServed;
 
-    // Accepts complete plates OR any filled cup (Ice Tea, Soda, Orange Juice)
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
@@ -13,7 +12,8 @@ public class ServingCounter : BaseStation, IInteractable
             (player.heldItem.IsCompleteBurger ||
              player.heldItem.IsCompleteSandwich ||
              player.heldItem.IsCompleteFriedChicken ||
-             player.heldItem.IsCompleteFries);
+             player.heldItem.IsCompleteFries ||
+             player.heldItem.IsCompleteChiliDog);
 
         bool hasCompleteDrink = player.heldItem.IsCompleteDrink;
 
@@ -25,6 +25,7 @@ public class ServingCounter : BaseStation, IInteractable
         if (player == null) return;
 
         bool served = false;
+
         if (OrderManager.Instance != null)
             served = OrderManager.Instance.TryServeItem(player.heldItem);
         else
@@ -37,9 +38,12 @@ public class ServingCounter : BaseStation, IInteractable
         }
 
         string servedName = player.heldItem.GetDisplayName();
+
         player.heldItem.Clear();
         player.RefreshHeldItemDisplay();
+
         totalServed++;
         Show(player, servedName + " served! Total served: " + totalServed);
+        AudioManager.Instance?.PlayServeFoodSFX();
     }
 }

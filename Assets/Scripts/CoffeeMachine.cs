@@ -35,6 +35,8 @@ public class CoffeeMachine : BaseStation, IInteractable
                     currentPlayer.RefreshHeldItemDisplay();
                     currentPlayer.doMove = true;
                     Show(currentPlayer, "Grabbed coffee!");
+                    AudioManager.Instance?.PlayFinishedDrinkCoffeeSFX();
+                    AudioManager.Instance?.PlayGetPlateAndCupSFX();
                 }
 
                 ShowPouringUI(false);
@@ -77,6 +79,7 @@ public class CoffeeMachine : BaseStation, IInteractable
 
         ShowPouringUI(true);
         Show(player, "Pouring coffee...");
+        AudioManager.Instance?.PlayStartDrinkCoffeeSFX();
     }
 
     private void UpdatePouringAnimation()

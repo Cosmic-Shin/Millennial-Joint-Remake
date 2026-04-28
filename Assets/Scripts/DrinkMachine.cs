@@ -120,6 +120,7 @@ public class DrinkMachine : BaseStation, IInteractable
 
         ShowPouringUI(true);
         Show(currentPlayer, "Pouring drink...");
+        AudioManager.Instance?.PlayStartDrinkCoffeeSFX();
     }
 
     private void FinishPouring()
@@ -149,6 +150,8 @@ public class DrinkMachine : BaseStation, IInteractable
             }
 
             currentPlayer.RefreshHeldItemDisplay();
+            AudioManager.Instance?.PlayFinishedDrinkCoffeeSFX();
+            AudioManager.Instance?.PlayGetPlateAndCupSFX();
         }
 
         EndDrinkMachineUse();

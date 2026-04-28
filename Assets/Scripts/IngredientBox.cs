@@ -63,6 +63,7 @@ public class IngredientBox : BaseStation, IInteractable
         currentPlayer.heldItem.Set(selectedType);
         currentPlayer.RefreshHeldItemDisplay();
         Show(currentPlayer, "Picked up " + currentPlayer.heldItem.GetDisplayName());
+        AudioManager.Instance?.PlayGetIngredientFromBoxSFX();
 
         EndIngredientSelection();
     }

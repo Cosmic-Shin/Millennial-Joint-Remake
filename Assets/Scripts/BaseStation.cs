@@ -26,6 +26,7 @@ public class BaseStation : MonoBehaviour
         }
         else
         {
+            AudioManager.Instance?.PlayDoneInteractingSFX();
             interactionPanel.panelCanvas.transform
                 .LeanScale(Vector3.zero, animationTime)
                 .setEaseOutQuint()

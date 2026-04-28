@@ -21,5 +21,6 @@ public class CupTable : BaseStation, IInteractable
         player.heldItem.Set(ItemType.Cup);
         player.RefreshHeldItemDisplay();
         Show(player, "Picked up empty cup");
+        AudioManager.Instance?.PlayIngredientInTableSFX();
     }
 }

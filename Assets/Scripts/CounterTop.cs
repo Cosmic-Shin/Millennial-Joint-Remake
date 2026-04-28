@@ -212,6 +212,7 @@ public class CounterTop : BaseStation, IInteractable
 
         player.heldItem.Clear();
         UpdateStoredItemVisual();
+        AudioManager.Instance?.PlayIngredientOnPlateSFX();
     }
 
     private void UpdateStoredItemVisual()

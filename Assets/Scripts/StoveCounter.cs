@@ -98,6 +98,7 @@ public class StoveCounter : BaseStation, IInteractable
             overcookTimer = 0f;
 
             Show(player, "Picked up cooked item");
+            AudioManager.Instance?.PlayCounterTopInteractSFX();
             return;
         }
 
@@ -142,6 +143,7 @@ public class StoveCounter : BaseStation, IInteractable
         animationDurationPerLoop = cookingTime / Mathf.Max(1, animationLoops);
 
         ShowCookingUI(true);
+        AudioManager.Instance?.PlayStartCookingSFX();
     }
 
     private void FinishCooking()
@@ -155,6 +157,7 @@ public class StoveCounter : BaseStation, IInteractable
         UpdateStoredItemVisual();
         ShowCookingUI(false);
         isCooking = false;
+        AudioManager.Instance?.PlayFinishedCookingSFX();
     }
 
     private void UpdateCookingAnimation()

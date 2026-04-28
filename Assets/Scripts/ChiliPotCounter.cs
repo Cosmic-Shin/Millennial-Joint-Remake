@@ -92,6 +92,7 @@ public class ChiliPotCounter : BaseStation, IInteractable
 
         ShowChiliUI(true);
         Show(currentPlayer, "Adding chili...");
+        AudioManager.Instance?.PlayStartChiliSFX();
     }
 
     private void FinishApplyingChili()
@@ -102,6 +103,8 @@ public class ChiliPotCounter : BaseStation, IInteractable
             currentPlayer.RefreshHeldItemDisplay();
 
             Show(currentPlayer, "Chili Dog complete!");
+            AudioManager.Instance?.PlayFinishedChiliSFX();
+            AudioManager.Instance?.PlayCounterTopInteractSFX();
         }
 
         EndChiliUse();

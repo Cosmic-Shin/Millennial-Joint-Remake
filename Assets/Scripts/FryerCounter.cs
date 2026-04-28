@@ -91,6 +91,7 @@ public class FryerCounter : StorageStation
             isOvercooked = false;
             overcookTimer = 0f;
             Show(player, "Picked up cooked fries");
+            AudioManager.Instance?.PlayCounterTopInteractSFX();
             return;
         }
 
@@ -102,6 +103,7 @@ public class FryerCounter : StorageStation
             isOvercooked = false;
             overcookTimer = 0f;
             Show(player, "Picked up cooked chicken");
+            AudioManager.Instance?.PlayCounterTopInteractSFX();
             return;
         }
     }
@@ -143,6 +145,7 @@ public class FryerCounter : StorageStation
         animationDurationPerLoop = cookingTime / Mathf.Max(1, animationLoops);
 
         ShowCookingUI(true);
+        AudioManager.Instance?.PlayStartFryingSFX();
     }
 
     private void FinishCooking()
@@ -155,6 +158,7 @@ public class FryerCounter : StorageStation
         UpdateStoredItemVisual();
         ShowCookingUI(false);
         isCooking = false;
+        AudioManager.Instance?.PlayFinishedFryingSFX();
     }
 
     private void UpdateCookingAnimation()

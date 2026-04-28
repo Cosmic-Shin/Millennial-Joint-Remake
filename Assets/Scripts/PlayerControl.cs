@@ -5,12 +5,12 @@ using UnityEngine.UI;
 public class PlayerControl : MonoBehaviour
 {
     [Header("Player")]
-    public int playerNumber = 1; // 1 or 2
+    public int playerNumber = 1;
 
     [Header("Movement")]
     public bool doMove = true;
     public float walkSpeed = 5f;
-    public float sprintSpeed = 8f;  
+    public float sprintSpeed = 8f;
     public float rotationSmooth = 14f;
 
     [Header("Sprint Stamina")]
@@ -20,9 +20,15 @@ public class PlayerControl : MonoBehaviour
     [Header("Sprint Effects")]
     public ParticleSystem sprintDust;
 
+    [Header("Sprint Audio")]
+    public AudioSource sprintAudioSource;
+    public AudioClip sprintClip;
+    [Range(0f, 1f)] public float sprintVolume = 1f;
+
     private float sprintTimer;
     private float sprintCooldownTimer;
     private bool sprintOnCooldown;
+    private bool isCurrentlySprinting;
 
     [Header("Animation")]
     public Animator animator;
@@ -87,11 +93,13 @@ public class PlayerControl : MonoBehaviour
     private int emote2Hash;
     private int emote3Hash;
     private int emote4Hash;
+
     public ChiliPotCounter currentChiliPot;
 
     private bool isSelectingEmote;
     private bool isEmoting;
     private int selectedEmoteIndex;
+
     public GameObject emoteSelectionObject;
     public IngredientBox currentIngredientBox;
     public DrinkMachine currentDrinkMachine;
@@ -113,13 +121,15 @@ public class PlayerControl : MonoBehaviour
 
     private void Start()
     {
-
         sprintTimer = sprintDuration;
         sprintCooldownTimer = 0f;
         sprintOnCooldown = false;
+        isCurrentlySprinting = false;
 
         if (sprintDust != null)
-        sprintDust.Stop();
+            sprintDust.Stop();
+
+        SetupSprintAudio();
 
         rb = GetComponent<Rigidbody>();
 
@@ -141,6 +151,7 @@ public class PlayerControl : MonoBehaviour
         doMove = true;
         isSelectingEmote = false;
         isEmoting = false;
+
         if (currentIngredientBox != null)
         {
             Debug.LogWarning("PlayerControl: clearing stale currentIngredientBox reference at Start.", this);
@@ -156,6 +167,17 @@ public class PlayerControl : MonoBehaviour
         UpdateAnimator();
     }
 
+    private void SetupSprintAudio()
+    {
+        if (sprintAudioSource == null)
+            sprintAudioSource = gameObject.AddComponent<AudioSource>();
+
+        sprintAudioSource.clip = sprintClip;
+        sprintAudioSource.loop = true;
+        sprintAudioSource.playOnAwake = false;
+        sprintAudioSource.volume = sprintVolume;
+    }
+
     private void Update()
     {
         if (rb == null)
@@ -168,7 +190,7 @@ public class PlayerControl : MonoBehaviour
         back = Input.GetKey(MoveDown);
         right = Input.GetKey(MoveRight);
 
-        if (!isSelectingEmote && !isEmoting && currentIngredientBox == null && currentDrinkMachine == null && currentChiliPot == null)
+        if (!IsMovementLocked())
         {
             direction = new Vector3(
                 (right ? 1 : 0) - (left ? 1 : 0),
@@ -185,77 +207,208 @@ public class PlayerControl : MonoBehaviour
         HandleEmotes();
 
         if (currentIngredientBox != null)
-        {
             currentIngredientBox.HandleIngredientSelectionInput();
-        }
 
         if (Input.GetKeyDown(PrimaryAction))
-        {
-            Debug.Log("PLAYER INSTANCE ID: " + GetInstanceID());
-
-            IInteractable interactable = null;
-
-            if (heldItem.IsEmpty)
-                interactable = GetNearestValidDroppedItem(pickupRadius);
-
-            if (interactable == null)
-            {
-                interactable = GetNearestValidInteractable(castRadius);
-
-                if (interactable == null && heldItem.IsEmpty)
-                    interactable = GetNearestValidInteractable(pickupRadius);
-            }
-
-            if (interactable != null)
-            {
-                MonoBehaviour mb = interactable as MonoBehaviour;
-                Debug.Log("Interacting with: " + mb.name
-                          + " | component: " + interactable.GetType().Name
-                          + " | station instanceID: " + mb.gameObject.GetInstanceID());
-
-                BaseStation station = interactable as BaseStation;
-                IngredientBox ingredientBox = interactable as IngredientBox;
-
-                if (station != null && ingredientBox == null)
-                {
-                    if (lastOpenStation != null && lastOpenStation != station)
-                        lastOpenStation.OpenPanel(false);
-
-                    station.OpenPanel(true);
-                    lastOpenStation = station;
-                }
-                else if (ingredientBox != null)
-                {
-                    currentIngredientBox = ingredientBox;
-                }
-
-                interactable.Interact(this);
-                UpdateHeldItemHUD();
-                RefreshHeldItemVisual();
-
-                Debug.Log("AFTER INTERACT — " + GetHeldItemDebug()
-                          + " | player instanceID: " + GetInstanceID());
-
-                if (station != null && ingredientBox == null)
-                    StartCoroutine(CloseAfterDelay(station, 0.5f));
-            }
-            else
-            {
-                if (lastOpenStation != null)
-                {
-                    lastOpenStation.OpenPanel(false);
-                    lastOpenStation = null;
-                }
-
-                Debug.Log("No valid interactable nearby — " + GetHeldItemDebug());
-            }
-        }
+            HandleInteraction();
 
         if (currentDrinkMachine != null)
-        {
             currentDrinkMachine.HandleDrinkSelectionInput();
+
+        HandleDropInput();
+
+        UpdateAnimator();
+        FaceEmoteTextToCamera();
+    }
+
+    private void FixedUpdate()
+    {
+        if (!doMove || rb == null)
+        {
+            StopSprintAudio();
+            return;
         }
 
+        if (IsMovementLocked())
+        {
+            direction = Vector3.zero;
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            StopSprintAudio();
+            StopSprintDust();
+            return;
+        }
+
+        bool hasMovementInput = direction.sqrMagnitude > 0.01f;
+        bool wantsToSprint = Input.GetKey(Run);
+        bool canSprint = wantsToSprint && hasMovementInput && !sprintOnCooldown && sprintTimer > 0f;
+
+        HandleSprintEffects(canSprint);
+
+        float currentMoveSpeed = canSprint ? sprintSpeed : walkSpeed;
+
+        if (canSprint)
+        {
+            sprintTimer -= Time.fixedDeltaTime;
+
+            if (sprintTimer <= 0f)
+            {
+                sprintTimer = 0f;
+                sprintOnCooldown = true;
+                sprintCooldownTimer = sprintCooldown;
+                StopSprintAudio();
+                StopSprintDust();
+            }
+        }
+
+        if (sprintOnCooldown)
+        {
+            sprintCooldownTimer -= Time.fixedDeltaTime;
+
+            if (sprintCooldownTimer <= 0f)
+            {
+                sprintCooldownTimer = 0f;
+                sprintTimer = sprintDuration;
+                sprintOnCooldown = false;
+            }
+        }
+
+        Vector3 moveVelocity = direction.normalized * currentMoveSpeed;
+        rb.linearVelocity = new Vector3(moveVelocity.x, rb.linearVelocity.y, moveVelocity.z);
+
+        if (hasMovementInput)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                rotationSmooth * Time.fixedDeltaTime
+            );
+        }
+    }
+
+    private bool IsMovementLocked()
+    {
+        return isSelectingEmote ||
+               isEmoting ||
+               currentIngredientBox != null ||
+               currentDrinkMachine != null ||
+               currentChiliPot != null;
+    }
+
+    private void HandleSprintEffects(bool canSprint)
+    {
+        if (canSprint)
+        {
+            StartSprintAudio();
+
+            if (sprintDust != null && !sprintDust.isPlaying)
+                sprintDust.Play();
+        }
+        else
+        {
+            StopSprintAudio();
+            StopSprintDust();
+        }
+    }
+
+    private void StartSprintAudio()
+    {
+        if (isCurrentlySprinting)
+            return;
+
+        if (sprintAudioSource == null || sprintClip == null)
+            return;
+
+        sprintAudioSource.clip = sprintClip;
+        sprintAudioSource.loop = true;
+        sprintAudioSource.volume = sprintVolume;
+        sprintAudioSource.Play();
+
+        isCurrentlySprinting = true;
+    }
+
+    private void StopSprintAudio()
+    {
+        if (!isCurrentlySprinting)
+            return;
+
+        if (sprintAudioSource != null)
+            sprintAudioSource.Stop();
+
+        isCurrentlySprinting = false;
+    }
+
+    private void StopSprintDust()
+    {
+        if (sprintDust != null && sprintDust.isPlaying)
+            sprintDust.Stop();
+    }
+
+    private void HandleInteraction()
+    {
+        Debug.Log("PLAYER INSTANCE ID: " + GetInstanceID());
+
+        IInteractable interactable = null;
+
+        if (heldItem.IsEmpty)
+            interactable = GetNearestValidDroppedItem(pickupRadius);
+
+        if (interactable == null)
+        {
+            interactable = GetNearestValidInteractable(castRadius);
+
+            if (interactable == null && heldItem.IsEmpty)
+                interactable = GetNearestValidInteractable(pickupRadius);
+        }
+
+        if (interactable != null)
+        {
+            MonoBehaviour mb = interactable as MonoBehaviour;
+
+            Debug.Log("Interacting with: " + mb.name
+                      + " | component: " + interactable.GetType().Name
+                      + " | station instanceID: " + mb.gameObject.GetInstanceID());
+
+            BaseStation station = interactable as BaseStation;
+            IngredientBox ingredientBox = interactable as IngredientBox;
+
+            if (station != null && ingredientBox == null)
+            {
+                if (lastOpenStation != null && lastOpenStation != station)
+                    lastOpenStation.OpenPanel(false);
+
+                station.OpenPanel(true);
+                lastOpenStation = station;
+            }
+            else if (ingredientBox != null)
+            {
+                currentIngredientBox = ingredientBox;
+            }
+
+            interactable.Interact(this);
+            UpdateHeldItemHUD();
+            RefreshHeldItemVisual();
+
+            Debug.Log("AFTER INTERACT — " + GetHeldItemDebug()
+                      + " | player instanceID: " + GetInstanceID());
+
+            if (station != null && ingredientBox == null)
+                StartCoroutine(CloseAfterDelay(station, 0.5f));
+        }
+        else
+        {
+            if (lastOpenStation != null)
+            {
+                lastOpenStation.OpenPanel(false);
+                lastOpenStation = null;
+            }
+
+            Debug.Log("No valid interactable nearby — " + GetHeldItemDebug());
+        }
+    }
+
+    private void HandleDropInput()
+    {
         if (Input.GetKeyDown(DropItem) && !heldItem.IsEmpty)
         {
             dropButtonHeld = true;
@@ -286,6 +439,7 @@ public class PlayerControl : MonoBehaviour
                     velocity = transform.forward * strength + Vector3.up * throwUpwardBoost;
 
                     Debug.Log($"Thrown with charge {charge:F2}: {heldItem.GetDisplayName()}");
+                    AudioManager.Instance?.PlayThrowSFX();
                 }
                 else
                 {
@@ -304,74 +458,7 @@ public class PlayerControl : MonoBehaviour
             dropButtonHeld = false;
             dropButtonHoldTime = 0f;
         }
-
-        UpdateAnimator();
-        FaceEmoteTextToCamera();
     }
-
-    private void FixedUpdate()
-{
-    if (!doMove || rb == null)
-        return;
-
-    if (isSelectingEmote || isEmoting || currentIngredientBox != null || currentDrinkMachine != null || currentChiliPot != null)
-    {
-        direction = Vector3.zero;
-        rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
-        return;
-    }
-
-    bool hasMovementInput = direction.sqrMagnitude > 0.01f;
-    bool wantsToSprint = Input.GetKey(Run);
-    bool canSprint = wantsToSprint && hasMovementInput && !sprintOnCooldown && sprintTimer > 0f;
-
-    if (sprintDust != null)
-    {
-        if (canSprint && !sprintDust.isPlaying)
-            sprintDust.Play();
-        else if (!canSprint && sprintDust.isPlaying)
-            sprintDust.Stop();
-    }
-
-    float currentMoveSpeed = canSprint ? sprintSpeed : walkSpeed;
-
-    if (canSprint)
-    {
-        sprintTimer -= Time.fixedDeltaTime;
-
-        if (sprintTimer <= 0f)
-        {
-            sprintTimer = 0f;
-            sprintOnCooldown = true;
-            sprintCooldownTimer = sprintCooldown;
-        }
-    }
-
-    if (sprintOnCooldown)
-    {
-        sprintCooldownTimer -= Time.fixedDeltaTime;
-
-        if (sprintCooldownTimer <= 0f)
-        {
-            sprintCooldownTimer = 0f;
-            sprintTimer = sprintDuration;
-            sprintOnCooldown = false;
-        }
-    }
-
-    Vector3 moveVelocity = direction.normalized * currentMoveSpeed;
-    rb.linearVelocity = new Vector3(moveVelocity.x, rb.linearVelocity.y, moveVelocity.z);
-
-    if (hasMovementInput)
-    {
-        Quaternion targetRotation = Quaternion.LookRotation(direction);
-        transform.rotation = Quaternion.Slerp(
-            transform.rotation,
-            targetRotation,
-            rotationSmooth * Time.fixedDeltaTime
-        );
-    }
-}
 
     private void FaceEmoteTextToCamera()
     {
@@ -384,8 +471,8 @@ public class PlayerControl : MonoBehaviour
 
         Transform t = emoteSelectionObject.transform;
 
-        Vector3 direction = cam.transform.position - t.position;
-        t.rotation = Quaternion.LookRotation(direction);
+        Vector3 directionToCamera = cam.transform.position - t.position;
+        t.rotation = Quaternion.LookRotation(directionToCamera);
         t.Rotate(0f, 180f, 0f);
     }
 
@@ -436,6 +523,9 @@ public class PlayerControl : MonoBehaviour
         if (emoteSelectionLabels == null || emoteSelectionLabels.Length == 0)
             return;
 
+        StopSprintAudio();
+        StopSprintDust();
+
         isSelectingEmote = true;
         selectedEmoteIndex = 0;
         ShowEmoteSelectionText(true);
@@ -454,7 +544,6 @@ public class PlayerControl : MonoBehaviour
             case 1: PlayEmote(emote2Hash); break;
             case 2: PlayEmote(emote3Hash); break;
             case 3: PlayEmote(emote4Hash); break;
-            default: break;
         }
     }
 
@@ -484,6 +573,7 @@ public class PlayerControl : MonoBehaviour
         if (emoteSelectionText == null)
         {
             emoteSelectionText = GetComponentInChildren<TextMesh>();
+
             if (emoteSelectionText != null)
                 emoteSelectionObject = emoteSelectionText.gameObject;
         }
@@ -514,6 +604,9 @@ public class PlayerControl : MonoBehaviour
 
     private void PlayEmote(int emoteHash)
     {
+        StopSprintAudio();
+        StopSprintDust();
+
         animator.ResetTrigger(emote1Hash);
         animator.ResetTrigger(emote2Hash);
         animator.ResetTrigger(emote3Hash);
@@ -532,11 +625,8 @@ public class PlayerControl : MonoBehaviour
 
     private void EnsureMovementState()
     {
-        if (!isSelectingEmote && !isEmoting && currentIngredientBox == null && currentDrinkMachine == null && currentChiliPot == null)
-        {
+        if (!IsMovementLocked())
             doMove = true;
-            Debug.Log("PlayerControl: movement lock cleared automatically.");
-        }
     }
 
     private bool IsMoving()
@@ -569,9 +659,9 @@ public class PlayerControl : MonoBehaviour
         collider.material = null;
 
         Rigidbody droppedRigidbody = droppedObject.AddComponent<Rigidbody>();
-        droppedRigidbody.mass = 3f;
-        droppedRigidbody.useGravity = false; // Disable initially to let item reach peak first
-        droppedRigidbody.linearDamping = 4f;
+        droppedRigidbody.mass = 5f;
+        droppedRigidbody.useGravity = true;
+        droppedRigidbody.linearDamping = 2.5f;
         droppedRigidbody.angularDamping = 4f;
         droppedRigidbody.constraints = RigidbodyConstraints.FreezeRotation;
         droppedRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
@@ -579,7 +669,6 @@ public class PlayerControl : MonoBehaviour
 
         DroppedItem droppedItem = droppedObject.AddComponent<DroppedItem>();
         droppedItem.Initialize(itemData, heldItemVisualizer);
-        droppedItem.SetWaitForPeak(); // Enable gravity once item reaches peak
 
         Destroy(droppedObject, droppedItemLifetime);
     }
@@ -601,10 +690,15 @@ public class PlayerControl : MonoBehaviour
         foreach (Collider hit in hits)
         {
             IInteractable interactable = GetBestInteractable(hit);
-            if (interactable == null) continue;
-            if (!interactable.CanInteractWith(this)) continue;
+
+            if (interactable == null)
+                continue;
+
+            if (!interactable.CanInteractWith(this))
+                continue;
 
             float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
+
             if (dist < nearestDist)
             {
                 nearestDist = dist;
@@ -626,13 +720,18 @@ public class PlayerControl : MonoBehaviour
         foreach (Collider hit in hits)
         {
             DroppedItem dropped = hit.GetComponent<DroppedItem>() ?? hit.GetComponentInParent<DroppedItem>();
+
             if (dropped == null && hit.attachedRigidbody != null)
                 dropped = hit.attachedRigidbody.GetComponent<DroppedItem>();
 
-            if (dropped == null) continue;
-            if (!dropped.CanInteractWith(this)) continue;
+            if (dropped == null)
+                continue;
+
+            if (!dropped.CanInteractWith(this))
+                continue;
 
             float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
+
             if (dist < nearestDist)
             {
                 nearestDist = dist;
@@ -650,13 +749,18 @@ public class PlayerControl : MonoBehaviour
             foreach (Collider hit in hits)
             {
                 DroppedItem dropped = hit.GetComponent<DroppedItem>() ?? hit.GetComponentInParent<DroppedItem>();
+
                 if (dropped == null && hit.attachedRigidbody != null)
                     dropped = hit.attachedRigidbody.GetComponent<DroppedItem>();
 
-                if (dropped == null) continue;
-                if (!dropped.CanInteractWith(this)) continue;
+                if (dropped == null)
+                    continue;
+
+                if (!dropped.CanInteractWith(this))
+                    continue;
 
                 float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
+
                 if (dist < nearestDist)
                 {
                     nearestDist = dist;
@@ -717,6 +821,17 @@ public class PlayerControl : MonoBehaviour
             heldItemText.text = "Holding: Nothing";
         else
             heldItemText.text = "Holding: " + heldItem.GetDisplayName();
+    }
+
+    private void OnDisable()
+    {
+        StopSprintAudio();
+        StopSprintDust();
+    }
+
+    private void OnDestroy()
+    {
+        StopSprintAudio();
     }
 
     private void OnDrawGizmos()
