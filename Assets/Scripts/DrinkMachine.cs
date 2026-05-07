@@ -47,7 +47,8 @@ public class DrinkMachine : BaseStation, IInteractable
         if (!isPouring)
             return;
 
-        pouringTimer -= Time.deltaTime;
+        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
+        pouringTimer -= Time.deltaTime * (1f / cookingSpeedMultiplier);
         UpdatePouringAnimation();
 
         if (pouringTimer <= 0f)
@@ -114,7 +115,8 @@ public class DrinkMachine : BaseStation, IInteractable
         if (currentPlayer.emoteSelectionText != null)
             currentPlayer.emoteSelectionText.text = string.Empty;
 
-        pouringTimer = pouringTime;
+        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
+        pouringTimer = pouringTime * cookingSpeedMultiplier;
         animationTimer = 0f;
         animationDurationPerLoop = pouringTime / Mathf.Max(1, animationLoops);
 

@@ -4,6 +4,12 @@ public class ServingCounter : BaseStation, IInteractable
 {
     public int totalServed;
 
+    [Header("Price Popup")]
+    public GameObject pricePopupPrefab;
+
+    [Header("Popup Settings")]
+    public float popupYOffset = 1.5f;
+
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
@@ -16,22 +22,21 @@ public class ServingCounter : BaseStation, IInteractable
              player.heldItem.IsCompleteChiliDog);
 
         bool hasCompleteDrink = player.heldItem.IsCompleteDrink;
+        bool hasIceCream = player.heldItem.HasIceCream;
 
-        return hasCompletePlate || hasCompleteDrink;
+        return hasCompletePlate || hasCompleteDrink || hasIceCream;
     }
 
     public void Interact(PlayerControl player)
     {
         if (player == null) return;
 
-        bool served = false;
+        float earned = 0f;
 
         if (OrderManager.Instance != null)
-            served = OrderManager.Instance.TryServeItem(player.heldItem);
-        else
-            served = true;
+            earned = OrderManager.Instance.TryServeItem(player, player.heldItem);
 
-        if (!served)
+        if (earned <= 0f)
         {
             Show(player, player.heldItem.GetDisplayName() + " is not part of the current order");
             return;
@@ -43,7 +48,35 @@ public class ServingCounter : BaseStation, IInteractable
         player.RefreshHeldItemDisplay();
 
         totalServed++;
-        Show(player, servedName + " served! Total served: " + totalServed);
+
+        if (OrderManager.Instance != null &&
+            OrderManager.Instance.GetCurrentMode() == OrderManager.GameMode.VERSUS)
+        {
+            Show(player, "Player " + player.playerNumber + " served " + servedName + "!");
+        }
+        else
+        {
+            Show(player, servedName + " served! Total served: " + totalServed);
+        }
+
+        SpawnPricePopup(earned);
+
         AudioManager.Instance?.PlayServeFoodSFX();
+    }
+
+    private void SpawnPricePopup(float earned)
+    {
+        if (pricePopupPrefab == null)
+            return;
+
+        Vector3 popupPos = transform.position + Vector3.up * popupYOffset;
+        GameObject popup = Instantiate(pricePopupPrefab, popupPos, Quaternion.identity);
+
+        WorldTextFade fade = popup.GetComponent<WorldTextFade>();
+
+        if (fade != null)
+            fade.Play("$" + Mathf.RoundToInt(earned), Color.green);
+        else
+            Debug.LogWarning("Price popup prefab needs WorldTextFade script.");
     }
 }

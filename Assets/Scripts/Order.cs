@@ -4,15 +4,17 @@ using UnityEngine;
 [Serializable]
 public class Order
 {
-    public OrderItem[] items = new OrderItem[2];
-    private bool[] served = new bool[2];
+    public OrderItem[] items = new OrderItem[3];
+    private bool[] served = new bool[3];
 
     public void GenerateRandomOrder()
     {
         items[0] = new OrderItem(GetRandomItemType());
         items[1] = new OrderItem(GetRandomItemType());
+        items[2] = new OrderItem(GetRandomItemType());
         served[0] = false;
         served[1] = false;
+        served[2] = false;
     }
 
     private OrderItemType GetRandomItemType()
@@ -27,7 +29,10 @@ public class Order
             OrderItemType.IceTea,
             OrderItemType.OrangeJuice,
             OrderItemType.Coffee,
-            OrderItemType.ChiliDog
+            OrderItemType.ChiliDog,
+            OrderItemType.StrawberryIceCream,  // ADD THESE
+            OrderItemType.BubblegumIceCream,   // ADD THESE
+            OrderItemType.MangoIceCream        // ADD THESE
         };
 
         return types[UnityEngine.Random.Range(0, types.Length)];
@@ -51,7 +56,7 @@ public class Order
 
     public bool IsComplete()
     {
-        return served[0] && served[1];
+        return served[0] && served[1] && served[2];
     }
 
     public bool IsServed(int index)
@@ -74,7 +79,8 @@ public class Order
     {
         string text = "Order:\n";
         text += (served[0] ? "[✓] " : "[ ] ") + items[0].GetDisplayName() + "\n";
-        text += (served[1] ? "[✓] " : "[ ] ") + items[1].GetDisplayName();
+        text += (served[1] ? "[✓] " : "[ ] ") + items[1].GetDisplayName() + "\n";
+        text += (served[2] ? "[✓] " : "[ ] ") + items[2].GetDisplayName();
         return text;
     }
 }

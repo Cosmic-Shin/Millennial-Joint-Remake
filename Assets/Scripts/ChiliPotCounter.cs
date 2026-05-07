@@ -37,7 +37,8 @@ public class ChiliPotCounter : BaseStation, IInteractable
         if (!isApplyingChili)
             return;
 
-        chiliTimer -= Time.deltaTime;
+        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
+        chiliTimer -= Time.deltaTime * (1f / cookingSpeedMultiplier);
         UpdateChiliAnimation();
 
         if (chiliTimer <= 0f)
@@ -86,7 +87,8 @@ public class ChiliPotCounter : BaseStation, IInteractable
 
         currentPlayer.doMove = false;
 
-        chiliTimer = chiliTime;
+        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
+        chiliTimer = chiliTime * cookingSpeedMultiplier;
         animationTimer = 0f;
         animationDurationPerLoop = chiliTime / Mathf.Max(1, animationLoops);
 

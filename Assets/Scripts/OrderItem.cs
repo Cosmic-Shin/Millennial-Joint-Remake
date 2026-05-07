@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 
 public enum OrderItemType
 {
@@ -11,7 +10,10 @@ public enum OrderItemType
     IceTea,
     OrangeJuice,
     Coffee,
-    ChiliDog
+    ChiliDog,
+    StrawberryIceCream,
+    BubblegumIceCream,
+    MangoIceCream
 }
 
 [Serializable]
@@ -33,11 +35,15 @@ public class OrderItem
         if (type == OrderItemType.FriedChicken) return item.IsPlate && item.IsCompleteFriedChicken;
         if (type == OrderItemType.Fries) return item.IsPlate && item.IsCompleteFries;
         if (type == OrderItemType.ChiliDog) return item.IsPlate && item.IsCompleteChiliDog;
-
+        
         if (type == OrderItemType.Soda) return item.IsCup && item.cupHasSoda;
         if (type == OrderItemType.IceTea) return item.IsCup && item.cupHasIceTea;
         if (type == OrderItemType.OrangeJuice) return item.IsCup && item.cupHasOrangeJuice;
         if (type == OrderItemType.Coffee) return item.IsCup && item.cupHasCoffee;
+        
+        if (type == OrderItemType.StrawberryIceCream) return item.IsCup && item.coneHasStrawberryIceCream;
+        if (type == OrderItemType.BubblegumIceCream) return item.IsCup && item.coneHasBubblegumIceCream;
+        if (type == OrderItemType.MangoIceCream) return item.IsCup && item.coneHasMangoIceCream;
 
         return false;
     }
@@ -55,6 +61,9 @@ public class OrderItem
             OrderItemType.OrangeJuice => "Orange Juice",
             OrderItemType.Coffee => "Coffee",
             OrderItemType.ChiliDog => "Chili Dog",
+            OrderItemType.StrawberryIceCream => "Strawberry Ice Cream",
+            OrderItemType.BubblegumIceCream => "Bubblegum Ice Cream",
+            OrderItemType.MangoIceCream => "Mango Ice Cream",
             _ => "Unknown"
         };
     }

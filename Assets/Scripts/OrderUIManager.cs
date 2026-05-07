@@ -10,10 +10,12 @@ public class OrderUIManager : MonoBehaviour
     [Header("Order Images")]
     public Image order1Image;
     public Image order2Image;
+    public Image order3Image;
 
     [Header("Served Overlay / Indicator Images")]
     public GameObject order1ServedOverlay;
     public GameObject order2ServedOverlay;
+    public GameObject order3ServedOverlay;
 
     [Header("Served Indicator Fade")]
     public float servedIndicatorStayTime = 0.5f;
@@ -29,12 +31,18 @@ public class OrderUIManager : MonoBehaviour
     public Sprite orangeJuiceSprite;
     public Sprite coffeeSprite;
     public Sprite chiliDogSprite;
+    public Sprite strawberryIceCreamSprite;
+    public Sprite bubblegumIceCreamSprite;
+    public Sprite mangoIceCreamSprite;
 
     [Header("TMP UI")]
     public TextMeshProUGUI moneyText;
     public TextMeshProUGUI goalText;
     public TextMeshProUGUI timerText;
     public TextMeshProUGUI statusText;
+
+    [Header("Normal Gameplay UI Root")]
+    public GameObject normalGameplayPanel;
 
     private bool isChangingOrders;
     private Order pendingOrder;
@@ -74,17 +82,21 @@ public class OrderUIManager : MonoBehaviour
 
         bool order1Served = order.IsServed(0);
         bool order2Served = order.IsServed(1);
-        bool bothServed = order1Served && order2Served;
+        bool order3Served = order.IsServed(2);
+
+        bool allServed = order1Served && order2Served && order3Served;
 
         UpdateOrderImage(order1Image, order.GetItem(0));
         UpdateOrderImage(order2Image, order.GetItem(1));
+        UpdateOrderImage(order3Image, order.GetItem(2));
 
         SetOverlay(order1ServedOverlay, order1Served, 1f);
         SetOverlay(order2ServedOverlay, order2Served, 1f);
+        SetOverlay(order3ServedOverlay, order3Served, 1f);
 
         UpdateMoneyDisplay();
 
-        if (bothServed)
+        if (allServed)
         {
             if (changeOrderCoroutine != null)
                 StopCoroutine(changeOrderCoroutine);
@@ -93,12 +105,25 @@ public class OrderUIManager : MonoBehaviour
         }
     }
 
+    public void ShowNormalGameplayUI()
+    {
+        if (normalGameplayPanel != null)
+            normalGameplayPanel.SetActive(true);
+    }
+
+    public void HideNormalGameplayUI()
+    {
+        if (normalGameplayPanel != null)
+            normalGameplayPanel.SetActive(false);
+    }
+
     private IEnumerator ShowServedThenChangeOrder()
     {
         isChangingOrders = true;
 
         SetOverlay(order1ServedOverlay, true, 1f);
         SetOverlay(order2ServedOverlay, true, 1f);
+        SetOverlay(order3ServedOverlay, true, 1f);
 
         yield return new WaitForSeconds(servedIndicatorStayTime);
 
@@ -106,6 +131,7 @@ public class OrderUIManager : MonoBehaviour
 
         CanvasGroup overlay1Group = GetCanvasGroup(order1ServedOverlay);
         CanvasGroup overlay2Group = GetCanvasGroup(order2ServedOverlay);
+        CanvasGroup overlay3Group = GetCanvasGroup(order3ServedOverlay);
 
         while (timer < servedIndicatorFadeTime)
         {
@@ -118,11 +144,15 @@ public class OrderUIManager : MonoBehaviour
             if (overlay2Group != null)
                 overlay2Group.alpha = alpha;
 
+            if (overlay3Group != null)
+                overlay3Group.alpha = alpha;
+
             yield return null;
         }
 
         SetOverlay(order1ServedOverlay, false, 1f);
         SetOverlay(order2ServedOverlay, false, 1f);
+        SetOverlay(order3ServedOverlay, false, 1f);
 
         isChangingOrders = false;
 
@@ -167,6 +197,9 @@ public class OrderUIManager : MonoBehaviour
             OrderItemType.OrangeJuice => orangeJuiceSprite,
             OrderItemType.Coffee => coffeeSprite,
             OrderItemType.ChiliDog => chiliDogSprite,
+            OrderItemType.StrawberryIceCream => strawberryIceCreamSprite,
+            OrderItemType.BubblegumIceCream => bubblegumIceCreamSprite,
+            OrderItemType.MangoIceCream => mangoIceCreamSprite,
             _ => null
         };
     }
@@ -261,7 +294,14 @@ public class OrderUIManager : MonoBehaviour
             order2Image.enabled = false;
         }
 
+        if (order3Image != null)
+        {
+            order3Image.sprite = null;
+            order3Image.enabled = false;
+        }
+
         SetOverlay(order1ServedOverlay, false, 1f);
         SetOverlay(order2ServedOverlay, false, 1f);
+        SetOverlay(order3ServedOverlay, false, 1f);
     }
 }

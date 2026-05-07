@@ -109,7 +109,8 @@ public class StoveCounter : BaseStation, IInteractable
     {
         if (isCooking)
         {
-            cookingTimer -= Time.deltaTime;
+            float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
+            cookingTimer -= Time.deltaTime * (1f / cookingSpeedMultiplier);
             UpdateCookingAnimation();
 
             if (cookingTimer <= 0f)
@@ -137,7 +138,8 @@ public class StoveCounter : BaseStation, IInteractable
     private void StartCooking()
     {
         isCooking = true;
-        cookingTimer = cookingTime;
+        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
+        cookingTimer = cookingTime * cookingSpeedMultiplier;
 
         animationTimer = 0f;
         animationDurationPerLoop = cookingTime / Mathf.Max(1, animationLoops);

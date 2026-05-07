@@ -16,6 +16,7 @@ public class PlayerControl : MonoBehaviour
     [Header("Sprint Stamina")]
     public float sprintDuration = 3f;
     public float sprintCooldown = 2f;
+    public float staminaRecoveryRate = 1.5f;
 
     [Header("Sprint Effects")]
     public ParticleSystem sprintDust;
@@ -67,6 +68,9 @@ public class PlayerControl : MonoBehaviour
     [Header("Held Item Visuals")]
     public KitchenItemVisualizer heldItemVisualizer;
 
+    [Header("Carrying Slowdown")]
+    [SerializeField] private float carryingSpeedMultiplier = 0.75f;
+
     [Header("Dropped Item")]
     public float dropForwardOffset = 0.8f;
     public float dropUpOffset = 0.5f;
@@ -95,6 +99,7 @@ public class PlayerControl : MonoBehaviour
     private int emote4Hash;
 
     public ChiliPotCounter currentChiliPot;
+    public CoffeeMachine currentCoffeeMachine;
 
     private bool isSelectingEmote;
     private bool isEmoting;
@@ -103,6 +108,7 @@ public class PlayerControl : MonoBehaviour
     public GameObject emoteSelectionObject;
     public IngredientBox currentIngredientBox;
     public DrinkMachine currentDrinkMachine;
+    public IceCreamMachine currentIceCreamMachine;
 
     private void OnValidate()
     {
@@ -215,6 +221,9 @@ public class PlayerControl : MonoBehaviour
         if (currentDrinkMachine != null)
             currentDrinkMachine.HandleDrinkSelectionInput();
 
+        if (currentIceCreamMachine != null)
+            currentIceCreamMachine.HandleIceCreamSelectionInput();
+
         HandleDropInput();
 
         UpdateAnimator();
@@ -240,13 +249,17 @@ public class PlayerControl : MonoBehaviour
 
         bool hasMovementInput = direction.sqrMagnitude > 0.01f;
         bool wantsToSprint = Input.GetKey(Run);
-        bool canSprint = wantsToSprint && hasMovementInput && !sprintOnCooldown && sprintTimer > 0f;
+        bool hasUnlimitedStamina = PowerUpManager.Instance != null && PowerUpManager.Instance.HasUnlimitedStamina;
+        bool canSprint = wantsToSprint && hasMovementInput && (hasUnlimitedStamina || (!sprintOnCooldown && sprintTimer > 0f));
 
         HandleSprintEffects(canSprint);
 
         float currentMoveSpeed = canSprint ? sprintSpeed : walkSpeed;
 
-        if (canSprint)
+        if (!heldItem.IsEmpty)
+            currentMoveSpeed *= carryingSpeedMultiplier;
+
+        if (canSprint && !hasUnlimitedStamina)
         {
             sprintTimer -= Time.fixedDeltaTime;
 
@@ -258,6 +271,14 @@ public class PlayerControl : MonoBehaviour
                 StopSprintAudio();
                 StopSprintDust();
             }
+        }
+
+            else if (!sprintOnCooldown)
+        {
+            sprintTimer += staminaRecoveryRate * Time.fixedDeltaTime;
+
+            if (sprintTimer > sprintDuration)
+                sprintTimer = sprintDuration;
         }
 
         if (sprintOnCooldown)
@@ -288,11 +309,13 @@ public class PlayerControl : MonoBehaviour
 
     private bool IsMovementLocked()
     {
-        return isSelectingEmote ||
+        return isSelectingEmote ||  
                isEmoting ||
                currentIngredientBox != null ||
                currentDrinkMachine != null ||
-               currentChiliPot != null;
+               currentChiliPot != null ||
+               currentCoffeeMachine != null ||
+               currentIceCreamMachine != null;
     }
 
     private void HandleSprintEffects(bool canSprint)
@@ -640,6 +663,18 @@ public class PlayerControl : MonoBehaviour
             return;
 
         animator.SetBool(isMovingHash, IsMoving());
+    }
+
+    public void DropItemAtPosition(Vector3 position)
+    {
+        if (heldItem.IsEmpty)
+            return;
+
+        Vector3 velocity = Vector3.up * dropUpwardVelocity;
+        SpawnDroppedItem(heldItem, position, velocity);
+        heldItem.Clear();
+        UpdateHeldItemHUD();
+        RefreshHeldItemVisual();
     }
 
     private void SpawnDroppedItem(KitchenItemData itemData, Vector3 position, Vector3 velocity)

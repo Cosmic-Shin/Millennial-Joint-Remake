@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class AudioManager : MonoBehaviour
 {
@@ -8,9 +9,20 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioSource sfxSource;
     [SerializeField] private AudioSource musicSource;
 
-    [Header("Background Music")]
-    [SerializeField] private AudioClip[] backgroundMusicArray;
+    [Header("Menu Music")]
+    [SerializeField] private AudioClip menuBGM;
+
+    [Header("Gameplay Music")]
+    [SerializeField] private AudioClip[] gameplayBGMArray;
     private int currentMusicIndex = -1;
+    private bool isGameplayMusicMode = false;
+
+    [Header("Game End Music")]
+    [SerializeField] private AudioClip gameEndBGM;
+
+    [Header("UI Button SFX")]
+    [SerializeField] private AudioClip buttonClickSFX;
+    [SerializeField] private Button[] buttonsWithSFX;
 
     [Header("Sound Effects")]
     [SerializeField] private AudioClip ingredientOnPlateSFX;
@@ -33,8 +45,8 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioClip finishedChiliSFX;
 
     [Header("Volume")]
-    [SerializeField] private float sfxVolume = 1f;
-    [SerializeField] private float musicVolume = 0.7f;
+    [Range(0f, 1f)] [SerializeField] private float sfxVolume = 1f;
+    [Range(0f, 1f)] [SerializeField] private float musicVolume = 0.7f;
 
     private void Awake()
     {
@@ -47,15 +59,35 @@ public class AudioManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
+        SetupSources();
+    }
+
+    private void Start()
+    {
+        RegisterButtonSFX();
+        PlayMenuBGM();
+    }
+
+    private void Update()
+    {
+        if (isGameplayMusicMode &&
+            musicSource != null &&
+            !musicSource.isPlaying &&
+            gameplayBGMArray != null &&
+            gameplayBGMArray.Length > 0)
+        {
+            PlayNextGameplayBGM();
+        }
+    }
+
+    private void SetupSources()
+    {
         if (sfxSource == null)
         {
             GameObject sfxObj = new GameObject("SFX_Source");
             sfxObj.transform.SetParent(transform);
             sfxSource = sfxObj.AddComponent<AudioSource>();
         }
-
-        sfxSource.volume = sfxVolume;
-        sfxSource.loop = false;
 
         if (musicSource == null)
         {
@@ -64,133 +96,115 @@ public class AudioManager : MonoBehaviour
             musicSource = musicObj.AddComponent<AudioSource>();
         }
 
-        musicSource.loop = false;
+        sfxSource.loop = false;
+        sfxSource.playOnAwake = false;
+        sfxSource.volume = sfxVolume;
+
+        musicSource.loop = true;
+        musicSource.playOnAwake = false;
         musicSource.volume = musicVolume;
     }
 
-    private void Start()
+    private void RegisterButtonSFX()
     {
-        if (backgroundMusicArray != null && backgroundMusicArray.Length > 0)
-        {
-            PlayNextBackgroundMusic();
-        }
-    }
-
-    private void Update()
-    {
-        if (musicSource != null &&
-            !musicSource.isPlaying &&
-            backgroundMusicArray != null &&
-            backgroundMusicArray.Length > 0)
-        {
-            PlayNextBackgroundMusic();
-        }
-    }
-
-    private void PlayNextBackgroundMusic()
-    {
-        if (backgroundMusicArray == null || backgroundMusicArray.Length == 0)
+        if (buttonsWithSFX == null)
             return;
 
-        int newIndex = Random.Range(0, backgroundMusicArray.Length);
-
-        while (backgroundMusicArray.Length > 1 && newIndex == currentMusicIndex)
+        foreach (Button button in buttonsWithSFX)
         {
-            newIndex = Random.Range(0, backgroundMusicArray.Length);
+            if (button == null)
+                continue;
+
+            button.onClick.RemoveListener(PlayButtonClickSFX);
+            button.onClick.AddListener(PlayButtonClickSFX);
         }
+    }
+
+    public void PlayMenuBGM()
+    {
+        isGameplayMusicMode = false;
+
+        if (menuBGM == null || musicSource == null)
+            return;
+
+        if (musicSource.clip == menuBGM && musicSource.isPlaying)
+            return;
+
+        musicSource.Stop();
+        musicSource.loop = true;
+        musicSource.clip = menuBGM;
+        musicSource.volume = musicVolume;
+        musicSource.Play();
+    }
+
+    public void PlayGameplayBGM()
+    {
+        isGameplayMusicMode = true;
+        currentMusicIndex = -1;
+        PlayNextGameplayBGM();
+    }
+
+    private void PlayNextGameplayBGM()
+    {
+        if (gameplayBGMArray == null || gameplayBGMArray.Length == 0 || musicSource == null)
+            return;
+
+        int newIndex = Random.Range(0, gameplayBGMArray.Length);
+
+        while (gameplayBGMArray.Length > 1 && newIndex == currentMusicIndex)
+            newIndex = Random.Range(0, gameplayBGMArray.Length);
 
         currentMusicIndex = newIndex;
-        musicSource.clip = backgroundMusicArray[newIndex];
+
+        musicSource.Stop();
+        musicSource.loop = false;
+        musicSource.clip = gameplayBGMArray[currentMusicIndex];
+        musicSource.volume = musicVolume;
+        musicSource.Play();
+    }
+
+    public void PlayGameEndBGM()
+    {
+        isGameplayMusicMode = false;
+
+        if (gameEndBGM == null || musicSource == null)
+            return;
+
+        musicSource.Stop();
+        musicSource.loop = true;
+        musicSource.clip = gameEndBGM;
+        musicSource.volume = musicVolume;
         musicSource.Play();
     }
 
     private void PlaySFX(AudioClip clip)
     {
         if (clip != null && sfxSource != null)
-        {
             sfxSource.PlayOneShot(clip, sfxVolume);
-        }
     }
 
-    public void PlayIngredientOnPlateSFX()
+    public void PlayButtonClickSFX()
     {
-        PlaySFX(ingredientOnPlateSFX);
+        PlaySFX(buttonClickSFX);
     }
 
-    public void PlayIngredientInTableSFX()
-    {
-        PlaySFX(ingredientInTableSFX);
-    }
+    public void PlayIngredientOnPlateSFX() => PlaySFX(ingredientOnPlateSFX);
+    public void PlayIngredientInTableSFX() => PlaySFX(ingredientInTableSFX);
+    public void PlayGetIngredientFromBoxSFX() => PlaySFX(getIngredientFromBoxSFX);
+    public void PlayServeFoodSFX() => PlaySFX(serveFoodSFX);
+    public void PlayThrowSFX() => PlaySFX(throwSFX);
+    public void PlayDoneInteractingSFX() => PlaySFX(doneInteractingSFX);
+    public void PlayGetPlateAndCupSFX() => PlaySFX(getPlateAndCupSFX);
+    public void PlayCounterTopInteractSFX() => PlaySFX(counterTopInteractSFX);
 
-    public void PlayGetIngredientFromBoxSFX()
-    {
-        PlaySFX(getIngredientFromBoxSFX);
-    }
-
-    public void PlayServeFoodSFX()
-    {
-        PlaySFX(serveFoodSFX);
-    }
-
-    public void PlayThrowSFX()
-    {
-        PlaySFX(throwSFX);
-    }
-
-    public void PlayDoneInteractingSFX()
-    {
-        PlaySFX(doneInteractingSFX);
-    }
-
-    public void PlayGetPlateAndCupSFX()
-    {
-        PlaySFX(getPlateAndCupSFX);
-    }
-
-    public void PlayCounterTopInteractSFX()
-    {
-        PlaySFX(counterTopInteractSFX);
-    }
-
-    public void PlayStartCookingSFX()
-    {
-        PlaySFX(startCookingSFX);
-    }
-
-    public void PlayFinishedCookingSFX()
-    {
-        PlaySFX(finishedCookingSFX);
-    }
-
-    public void PlayStartFryingSFX()
-    {
-        PlaySFX(startFryingSFX);
-    }
-
-    public void PlayFinishedFryingSFX()
-    {
-        PlaySFX(finishedFryingSFX);
-    }
-
-    public void PlayStartDrinkCoffeeSFX()
-    {
-        PlaySFX(startDrinkCoffeeSFX);
-    }
-
-    public void PlayFinishedDrinkCoffeeSFX()
-    {
-        PlaySFX(finishedDrinkCoffeeSFX);
-    }
-
-    public void PlayStartChiliSFX()
-    {
-        PlaySFX(startChiliSFX);
-    }
-
-    public void PlayFinishedChiliSFX()
-    {
-        PlaySFX(finishedChiliSFX);
-    }
+    public void PlayStartCookingSFX() => PlaySFX(startCookingSFX);
+    public void PlayFinishedCookingSFX() => PlaySFX(finishedCookingSFX);
+    public void PlayStartFryingSFX() => PlaySFX(startFryingSFX);
+    public void PlayFinishedFryingSFX() => PlaySFX(finishedFryingSFX);
+    public void PlayStartDrinkCoffeeSFX() => PlaySFX(startDrinkCoffeeSFX);
+    public void PlayFinishedDrinkCoffeeSFX() => PlaySFX(finishedDrinkCoffeeSFX);
+    public void PlayStartChiliSFX() => PlaySFX(startChiliSFX);
+    public void PlayFinishedChiliSFX() => PlaySFX(finishedChiliSFX);
 
     public void SetSFXVolume(float volume)
     {

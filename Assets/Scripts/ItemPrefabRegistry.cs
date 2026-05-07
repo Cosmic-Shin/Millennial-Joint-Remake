@@ -15,7 +15,7 @@ public class ItemPrefabRegistry : MonoBehaviour
     public GameObject plateWithChickenPrefab;
     public GameObject plateWithFriesPrefab;
 
-    // 🔥 NEW CHILI DOG PREFABS
+    // CHILI DOG PREFABS
     public GameObject plateWithDogBunPrefab;
     public GameObject plateWithDogBunAndHotdogPrefab;
     public GameObject plateCompleteChiliDogPrefab;
@@ -26,6 +26,11 @@ public class ItemPrefabRegistry : MonoBehaviour
     public GameObject cupIceTeaPrefab;
     public GameObject cupOrangeJuicePrefab;
     public GameObject cupCoffeePrefab;
+    
+    [Header("Ice Cream Prefabs (Direct Items - No Cup)")]
+    public GameObject strawberryIceCreamPrefab;
+    public GameObject bubblegumIceCreamPrefab;
+    public GameObject mangoIceCreamPrefab;
 
     [Header("Ingredient Prefabs")]
     public GameObject bunPrefab;
@@ -39,7 +44,7 @@ public class ItemPrefabRegistry : MonoBehaviour
     public GameObject frozenFriesPrefab;
     public GameObject cookedFriesPrefab;
 
-    // 🔥 NEW INGREDIENT PREFABS
+    // NEW INGREDIENT PREFABS
     public GameObject dogBunPrefab;
     public GameObject hotdogRawPrefab;
     public GameObject hotdogCookedPrefab;
@@ -73,11 +78,13 @@ public class ItemPrefabRegistry : MonoBehaviour
             { ItemType.FriesCooked, cookedFriesPrefab },
             { ItemType.ChickenRaw, rawChickenPrefab },
             { ItemType.ChickenCooked, cookedChickenPrefab },
-
-            // 🔥 NEW
             { ItemType.DogBun, dogBunPrefab },
             { ItemType.HotDogRaw, hotdogRawPrefab },
-            { ItemType.HotDogCooked, hotdogCookedPrefab }
+            { ItemType.HotDogCooked, hotdogCookedPrefab },
+            // Ice cream as direct items (no cup needed)
+            { ItemType.StrawberryIceCream, strawberryIceCreamPrefab },
+            { ItemType.BubblegumIceCream, bubblegumIceCreamPrefab },
+            { ItemType.MangoIceCream, mangoIceCreamPrefab }
         };
 
         platePrefabLookup = new Dictionary<string, GameObject>
@@ -90,12 +97,9 @@ public class ItemPrefabRegistry : MonoBehaviour
             { "bun", plateWithBunPrefab },
             { "chicken", plateWithChickenPrefab },
             { "fries", plateWithFriesPrefab },
-
-            // 🔥 NEW CHILI DOG STATES
             { "dogbun", plateWithDogBunPrefab },
             { "dogbun_hotdog", plateWithDogBunAndHotdogPrefab },
             { "complete_chilidog", plateCompleteChiliDogPrefab },
-
             { "empty", platePrefab }
         };
     }
@@ -105,12 +109,15 @@ public class ItemPrefabRegistry : MonoBehaviour
         if (itemData == null || itemData.IsEmpty)
             return null;
 
+        // Handle Cup items
         if (itemData.type == ItemType.Cup)
             return GetCupPrefab(itemData);
 
+        // Handle Plate items
         if (itemData.type == ItemType.Plate)
             return GetPlatePrefab(itemData);
 
+        // Handle all other items (including ice cream)
         if (simplePrefabLookup.TryGetValue(itemData.type, out GameObject prefab))
             return prefab;
 
@@ -119,6 +126,7 @@ public class ItemPrefabRegistry : MonoBehaviour
 
     private GameObject GetCupPrefab(KitchenItemData itemData)
     {
+        // Remove ice cream from cup since you don't need it
         if (itemData.cupHasCoffee) return cupCoffeePrefab;
         if (itemData.cupHasIceTea) return cupIceTeaPrefab;
         if (itemData.cupHasSoda) return cupSodaPrefab;
@@ -129,7 +137,7 @@ public class ItemPrefabRegistry : MonoBehaviour
 
     private GameObject GetPlatePrefab(KitchenItemData itemData)
     {
-        // 🔥 CHILI DOG (TOP PRIORITY)
+        // CHILI DOG (TOP PRIORITY)
         if (itemData.IsCompleteChiliDog)
             return platePrefabLookup["complete_chilidog"];
 

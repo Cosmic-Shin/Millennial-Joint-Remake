@@ -23,13 +23,16 @@ public class CoffeeMachine : BaseStation, IInteractable
     {
         if (isPouring)
         {
-            pouringTimer -= Time.deltaTime;
+            float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
+            pouringTimer -= Time.deltaTime * (1f / cookingSpeedMultiplier);
             UpdatePouringAnimation();
 
             if (pouringTimer <= 0f)
             {
                 if (currentPlayer != null)
                 {
+                    currentPlayer.currentCoffeeMachine = null;
+                    
                     currentPlayer.heldItem.Set(ItemType.Cup);
                     currentPlayer.heldItem.cupHasCoffee = true;
                     currentPlayer.RefreshHeldItemDisplay();
@@ -69,10 +72,12 @@ public class CoffeeMachine : BaseStation, IInteractable
         }
 
         currentPlayer = player;
+        currentPlayer.currentCoffeeMachine = this;
         currentPlayer.doMove = false;
 
         isPouring = true;
-        pouringTimer = pouringTime;
+        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
+        pouringTimer = pouringTime * cookingSpeedMultiplier;
 
         animationTimer = 0f;
         animationDurationPerLoop = pouringTime / Mathf.Max(1, animationLoops);

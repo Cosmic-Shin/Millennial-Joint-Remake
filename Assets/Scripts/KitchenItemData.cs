@@ -16,11 +16,13 @@ public enum ItemType
     FriesCooked,
     ChickenRaw,
     ChickenCooked,
-
     DogBun,
     HotDogRaw,
     HotDogCooked,
-    Chili
+    Chili,
+    StrawberryIceCream,
+    BubblegumIceCream,
+    MangoIceCream
 }
 
 [Serializable]
@@ -46,6 +48,11 @@ public class KitchenItemData
     public bool cupHasOrangeJuice;
     public bool cupHasCoffee;
 
+    [Header("Ice Cream")]
+    public bool coneHasStrawberryIceCream;
+    public bool coneHasBubblegumIceCream;
+    public bool coneHasMangoIceCream;
+
     public bool IsEmpty  => type == ItemType.None;
     public bool IsPlate  => type == ItemType.Plate;
     public bool IsCup    => type == ItemType.Cup;
@@ -53,6 +60,10 @@ public class KitchenItemData
     public bool IsIceTea      => type == ItemType.Cup && cupHasIceTea;
     public bool IsOrangeJuice => type == ItemType.Cup && cupHasOrangeJuice;
     public bool IsCoffee      => type == ItemType.Cup && cupHasCoffee;
+    public bool IsStrawberryIceCream => type == ItemType.Cup && coneHasStrawberryIceCream;
+    public bool IsBubblegumIceCream => type == ItemType.Cup && coneHasBubblegumIceCream;
+    public bool IsMangoIceCream => type == ItemType.Cup && coneHasMangoIceCream;
+    public bool HasIceCream => coneHasStrawberryIceCream || coneHasBubblegumIceCream || coneHasMangoIceCream;
 
     public bool IsCompleteBurger =>
         type == ItemType.Plate &&
@@ -114,6 +125,9 @@ public class KitchenItemData
             cupHasIceTea      = false;
             cupHasOrangeJuice = false;
             cupHasCoffee      = false;
+            coneHasStrawberryIceCream = false;
+            coneHasBubblegumIceCream = false;
+            coneHasMangoIceCream = false;
         }
     }
 
@@ -153,6 +167,9 @@ public class KitchenItemData
         plateHasDogBun    = false;
         plateHasHotdog    = false;
         plateHasChili     = false;
+        coneHasStrawberryIceCream = false;
+        coneHasBubblegumIceCream = false;
+        coneHasMangoIceCream = false;
     }
 
     public void CopyFrom(KitchenItemData other)
@@ -212,6 +229,9 @@ public class KitchenItemData
 
         if (type == ItemType.Cup)
         {
+            if (coneHasStrawberryIceCream) return "Cup + Strawberry Ice Cream";
+            if (coneHasBubblegumIceCream) return "Cup + Bubblegum Ice Cream";
+            if (coneHasMangoIceCream) return "Cup + Mango Ice Cream";
             if (cupHasCoffee)      return "Coffee";
             if (cupHasIceTea)      return "Cup + Ice Tea";
             if (cupHasSoda)        return "Cup + Soda";

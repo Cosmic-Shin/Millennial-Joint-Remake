@@ -8,6 +8,7 @@ public class GameModeSelector : MonoBehaviour
     public GameObject modePanel;
     public Button timeModeBut;
     public Button speedModeBut;
+    public Button versusModeBut;
 
     private void Awake()
     {
@@ -28,7 +29,8 @@ public class GameModeSelector : MonoBehaviour
         if (speedModeBut != null)
             speedModeBut.onClick.AddListener(() => SelectMode(OrderManager.GameMode.SPEED));
 
-        ShowModeSelector();
+        if (versusModeBut != null)
+            versusModeBut.onClick.AddListener(() => SelectMode(OrderManager.GameMode.VERSUS));
     }
 
     public void SelectMode(OrderManager.GameMode mode)
@@ -36,8 +38,11 @@ public class GameModeSelector : MonoBehaviour
         if (modePanel != null)
             modePanel.SetActive(false);
 
+        Time.timeScale = 1f;
+
         OrderManager.Instance?.SetGameMode(mode);
         PauseManager.Instance?.Resume();
+        AudioManager.Instance?.PlayGameplayBGM();
     }
 
     public void ShowModeSelector()
@@ -47,6 +52,7 @@ public class GameModeSelector : MonoBehaviour
 
         OrderUIManager.Instance?.HideStatus();
         OrderUIManager.Instance?.ClearOrderImages();
+        VersusUIManager.Instance?.HideVersusUI();
 
         PauseManager.Instance?.Pause();
     }
