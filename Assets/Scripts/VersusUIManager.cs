@@ -110,35 +110,53 @@ public class VersusUIManager : MonoBehaviour
             timerText.text = Mathf.CeilToInt(OrderManager.Instance.GetCurrentTime()) + "s";
 
         if (player1MoneyText != null)
-            player1MoneyText.text = "P1: $" + OrderManager.Instance.player1Money.ToString("0.00");
+            player1MoneyText.text = "$" + OrderManager.Instance.player1Money.ToString("0.00");
 
         if (player2MoneyText != null)
-            player2MoneyText.text = "P2: $" + OrderManager.Instance.player2Money.ToString("0.00");
+            player2MoneyText.text = "$" + OrderManager.Instance.player2Money.ToString("0.00");
 
-        UpdatePlayer1Orders(OrderManager.Instance.GetPlayer1VersusOrder());
-        UpdatePlayer2Orders(OrderManager.Instance.GetPlayer2VersusOrder());
+        UpdatePlayer1Orders(OrderManager.Instance.GetPlayer1OrderQueue());
+        UpdatePlayer2Orders(OrderManager.Instance.GetPlayer2OrderQueue());
     }
 
-    private void UpdatePlayer1Orders(Order order)
+    private void UpdatePlayer1Orders(System.Collections.Generic.List<QueuedOrder> queue)
     {
-        UpdateOrderImage(p1Order1Image, order?.GetItem(0));
-        UpdateOrderImage(p1Order2Image, order?.GetItem(1));
-        UpdateOrderImage(p1Order3Image, order?.GetItem(2));
+        for (int i = 0; i < 3; i++)
+        {
+            Image[] images = new[] { p1Order1Image, p1Order2Image, p1Order3Image };
+            GameObject[] overlays = new[] { p1Order1ServedOverlay, p1Order2ServedOverlay, p1Order3ServedOverlay };
 
-        SetOverlay(p1Order1ServedOverlay, order != null && order.IsServed(0));
-        SetOverlay(p1Order2ServedOverlay, order != null && order.IsServed(1));
-        SetOverlay(p1Order3ServedOverlay, order != null && order.IsServed(2));
+            if (i < queue.Count && queue[i] != null)
+            {
+                UpdateOrderImage(images[i], queue[i].item);
+                SetOverlay(overlays[i], queue[i].IsServed());
+            }
+            else
+            {
+                UpdateOrderImage(images[i], null);
+                SetOverlay(overlays[i], false);
+            }
+        }
     }
 
-    private void UpdatePlayer2Orders(Order order)
+    private void UpdatePlayer2Orders(System.Collections.Generic.List<QueuedOrder> queue)
     {
-        UpdateOrderImage(p2Order1Image, order?.GetItem(0));
-        UpdateOrderImage(p2Order2Image, order?.GetItem(1));
-        UpdateOrderImage(p2Order3Image, order?.GetItem(2));
+        for (int i = 0; i < 3; i++)
+        {
+            Image[] images = new[] { p2Order1Image, p2Order2Image, p2Order3Image };
+            GameObject[] overlays = new[] { p2Order1ServedOverlay, p2Order2ServedOverlay, p2Order3ServedOverlay };
 
-        SetOverlay(p2Order1ServedOverlay, order != null && order.IsServed(0));
-        SetOverlay(p2Order2ServedOverlay, order != null && order.IsServed(1));
-        SetOverlay(p2Order3ServedOverlay, order != null && order.IsServed(2));
+            if (i < queue.Count && queue[i] != null)
+            {
+                UpdateOrderImage(images[i], queue[i].item);
+                SetOverlay(overlays[i], queue[i].IsServed());
+            }
+            else
+            {
+                UpdateOrderImage(images[i], null);
+                SetOverlay(overlays[i], false);
+            }
+        }
     }
 
     private void UpdateOrderImage(Image image, OrderItem item)

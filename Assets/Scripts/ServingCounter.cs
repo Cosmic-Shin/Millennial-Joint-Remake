@@ -22,7 +22,11 @@ public class ServingCounter : BaseStation, IInteractable
              player.heldItem.IsCompleteChiliDog);
 
         bool hasCompleteDrink = player.heldItem.IsCompleteDrink;
-        bool hasIceCream = player.heldItem.HasIceCream;
+        
+        // Check for direct ice cream items (not in cup)
+        bool hasIceCream = player.heldItem.type == ItemType.StrawberryIceCream ||
+                          player.heldItem.type == ItemType.BubblegumIceCream ||
+                          player.heldItem.type == ItemType.MangoIceCream;
 
         return hasCompletePlate || hasCompleteDrink || hasIceCream;
     }

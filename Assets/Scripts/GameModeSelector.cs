@@ -41,7 +41,13 @@ public class GameModeSelector : MonoBehaviour
         Time.timeScale = 1f;
 
         OrderManager.Instance?.SetGameMode(mode);
-        PauseManager.Instance?.Resume();
+        
+        // Make sure pause is fully reset
+        if (PauseManager.Instance != null)
+        {
+            PauseManager.Instance.ForceResume();
+        }
+        
         AudioManager.Instance?.PlayGameplayBGM();
     }
 
@@ -54,6 +60,7 @@ public class GameModeSelector : MonoBehaviour
         OrderUIManager.Instance?.ClearOrderImages();
         VersusUIManager.Instance?.HideVersusUI();
 
-        PauseManager.Instance?.Pause();
+        // DON'T call Pause() here - just show the selector
+        // Time scale should already be 1 from Retry
     }
 }

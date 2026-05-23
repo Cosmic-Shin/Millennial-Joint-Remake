@@ -55,7 +55,7 @@ public class PauseManager : MonoBehaviour
             retryButton.onClick.AddListener(Retry);
 
         if (quitButton != null)
-            quitButton.onClick.AddListener(Quit);
+            quitButton.onClick.AddListener(QuitToMainMenu);
 
         if (howToPlayCloseButton != null)
             howToPlayCloseButton.onClick.AddListener(BackToPausePanel);
@@ -105,6 +105,18 @@ public class PauseManager : MonoBehaviour
         Debug.Log("Game Resumed");
     }
 
+    public void ForceResume()
+    {
+        isPaused = false;
+        Time.timeScale = 1f;
+
+        SetPanel(pausePanel, false);
+        SetPanel(howToPlayPanel, false);
+
+        if (ScoreManager.Instance != null && ScoreManager.Instance.scorePanel != null)
+            ScoreManager.Instance.scorePanel.SetActive(false);
+    }
+
     public void OpenHowToPlay()
     {
         SetPanel(pausePanel, false);
@@ -135,20 +147,95 @@ public class PauseManager : MonoBehaviour
     public void Retry()
     {
         Time.timeScale = 1f;
+
+        SetPanel(pausePanel, false);
+        SetPanel(howToPlayPanel, false);
+
+        isPaused = false;
+
+        MainMenuManager.skipMainMenuOnLoad = true;
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+
+        Debug.Log("Reloading scene for retry");
     }
 
-    public void Quit()
+    public void QuitToMainMenu()
     {
-        Debug.Log("Quit Game");
-
+        // Reset time scale
         Time.timeScale = 1f;
+        
+        // Close all panels
+        SetPanel(pausePanel, false);
+        SetPanel(howToPlayPanel, false);
+        isPaused = false;
+        
+        // Reload the scene
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        
+        // After scene reloads, show main menu
+        StartCoroutine(ShowMainMenuAfterLoad());
+        
+        Debug.Log("Returning to Main Menu");
+    }
 
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
+    private System.Collections.IEnumerator ShowGameModeSelectorAfterLoad()
+    {
+        // Wait for the scene to fully load (wait 2 frames)
+        yield return null;
+        yield return null;
+        
+        // Find and hide main menu panel
+        if (MainMenuManager.Instance != null)
+        {
+            if (MainMenuManager.Instance.mainMenuPanel != null)
+                MainMenuManager.Instance.mainMenuPanel.SetActive(false);
+            
+            if (MainMenuManager.Instance.startPanel != null)
+                MainMenuManager.Instance.startPanel.SetActive(false);
+        }
+        
+        // Hide any order UI
+        if (OrderUIManager.Instance != null)
+            OrderUIManager.Instance.HideNormalGameplayUI();
+        
+        if (VersusUIManager.Instance != null)
+            VersusUIManager.Instance.HideVersusUI();
+        
+        // Show game mode selector
+        if (GameModeSelector.Instance != null)
+        {
+            GameModeSelector.Instance.ShowModeSelector();
+        }
+        
+        // Make sure time scale is 1
+        Time.timeScale = 1f;
+        
+        Debug.Log("Game Mode Selector shown, Main Menu hidden");
+    }
+
+    private System.Collections.IEnumerator ShowMainMenuAfterLoad()
+    {
+        // Wait for the scene to fully load (wait 2 frames)
+        yield return null;
+        yield return null;
+        
+        // Show main menu
+        if (MainMenuManager.Instance != null)
+        {
+            MainMenuManager.Instance.ShowMainMenu();
+        }
+        
+        // Hide game mode selector if it's visible
+        if (GameModeSelector.Instance != null && GameModeSelector.Instance.modePanel != null)
+        {
+            GameModeSelector.Instance.modePanel.SetActive(false);
+        }
+        
+        // Make sure time scale is 1
+        Time.timeScale = 1f;
+        
+        Debug.Log("Main Menu shown");
     }
 
     private void SetupVolumeSliders()

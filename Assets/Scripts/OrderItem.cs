@@ -41,9 +41,10 @@ public class OrderItem
         if (type == OrderItemType.OrangeJuice) return item.IsCup && item.cupHasOrangeJuice;
         if (type == OrderItemType.Coffee) return item.IsCup && item.cupHasCoffee;
         
-        if (type == OrderItemType.StrawberryIceCream) return item.IsCup && item.coneHasStrawberryIceCream;
-        if (type == OrderItemType.BubblegumIceCream) return item.IsCup && item.coneHasBubblegumIceCream;
-        if (type == OrderItemType.MangoIceCream) return item.IsCup && item.coneHasMangoIceCream;
+        // FIXED: Check for direct ice cream items (not in cup)
+        if (type == OrderItemType.StrawberryIceCream) return item.type == ItemType.StrawberryIceCream;
+        if (type == OrderItemType.BubblegumIceCream) return item.type == ItemType.BubblegumIceCream;
+        if (type == OrderItemType.MangoIceCream) return item.type == ItemType.MangoIceCream;
 
         return false;
     }

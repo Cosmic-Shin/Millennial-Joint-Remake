@@ -6,9 +6,12 @@ public class MainMenuManager : MonoBehaviour
 {
     public static MainMenuManager Instance;
 
+    // ADD THIS
+    public static bool skipMainMenuOnLoad = false;
+
     [Header("Panels")]
     public GameObject mainMenuPanel;
-    public GameObject startPanel; // your mode panel
+    public GameObject startPanel;
     public GameObject pausePanel;
 
     [Header("Buttons")]
@@ -28,10 +31,29 @@ public class MainMenuManager : MonoBehaviour
 
     private void Start()
     {
-        // 🔥 INITIAL STATE
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
-        if (startPanel != null) startPanel.SetActive(false);
-        if (pausePanel != null) pausePanel.SetActive(false);
+        // =========================
+        // NORMAL START
+        // =========================
+        if (!skipMainMenuOnLoad)
+        {
+            if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
+            if (startPanel != null) startPanel.SetActive(false);
+        }
+        // =========================
+        // RETRY START
+        // =========================
+        else
+        {
+            skipMainMenuOnLoad = false;
+
+            if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+            if (startPanel != null) startPanel.SetActive(false);
+
+            StartCoroutine(ShowModeSelectorNextFrame());
+        }
+
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
 
         SetFade(0f);
 
@@ -43,6 +65,16 @@ public class MainMenuManager : MonoBehaviour
 
         if (backButton != null)
             backButton.onClick.AddListener(OnBack);
+    }
+
+    private IEnumerator ShowModeSelectorNextFrame()
+    {
+        yield return null;
+
+        if (GameModeSelector.Instance != null)
+        {
+            GameModeSelector.Instance.ShowModeSelector();
+        }
     }
 
     // =========================
@@ -79,6 +111,48 @@ public class MainMenuManager : MonoBehaviour
         if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
 
         yield return StartCoroutine(Fade(0f, fadeOutSpeed));
+    }
+
+    // =========================
+    // SHOW MAIN MENU
+    // =========================
+    public void ShowMainMenu()
+    {
+        StartCoroutine(FadeAndShowMainMenu());
+    }
+
+    private IEnumerator FadeAndShowMainMenu()
+    {
+        yield return StartCoroutine(Fade(1f, fadeInSpeed));
+
+        if (GameModeSelector.Instance != null && GameModeSelector.Instance.modePanel != null)
+            GameModeSelector.Instance.modePanel.SetActive(false);
+
+        if (OrderUIManager.Instance != null)
+            OrderUIManager.Instance.HideNormalGameplayUI();
+
+        if (VersusUIManager.Instance != null)
+            VersusUIManager.Instance.HideVersusUI();
+
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
+        if (startPanel != null) startPanel.SetActive(false);
+        if (pausePanel != null) pausePanel.SetActive(false);
+
+        AudioManager.Instance?.PlayMenuBGM();
+
+        yield return StartCoroutine(Fade(0f, fadeOutSpeed));
+    }
+
+    // =========================
+    // HIDE MAIN MENU
+    // =========================
+    public void HideMainMenu()
+    {
+        if (mainMenuPanel != null)
+            mainMenuPanel.SetActive(false);
+
+        if (startPanel != null)
+            startPanel.SetActive(false);
     }
 
     // =========================

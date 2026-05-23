@@ -1,10 +1,12 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class OrderManager : MonoBehaviour
 {
     public static OrderManager Instance { get; private set; }
 
     public enum GameMode { TIME, SPEED, VERSUS }
+    private const int ORDER_QUEUE_SIZE = 3;
 
     [Header("Order Prices")]
     public float burgerPrice = 8f;
@@ -34,9 +36,9 @@ public class OrderManager : MonoBehaviour
     public float versusModeDuration = 120f;
 
     private float currentTime;
-    private Order currentOrder;
-    private Order player1VersusOrder;
-    private Order player2VersusOrder;
+    private List<QueuedOrder> orderQueue = new List<QueuedOrder>();
+    private List<QueuedOrder> player1OrderQueue = new List<QueuedOrder>();
+    private List<QueuedOrder> player2OrderQueue = new List<QueuedOrder>();
 
     private GameMode currentMode = GameMode.TIME;
     private bool gameEnding;
@@ -73,6 +75,11 @@ public class OrderManager : MonoBehaviour
         gameEnding = false;
         state = GameState.Playing;
 
+        // Clear old queues
+        orderQueue.Clear();
+        player1OrderQueue.Clear();
+        player2OrderQueue.Clear();
+
         if (mode == GameMode.VERSUS)
         {
             currentTime = versusModeDuration;
@@ -80,13 +87,19 @@ public class OrderManager : MonoBehaviour
             OrderUIManager.Instance?.ClearOrderImages();
             OrderUIManager.Instance?.HideStatus();
 
-            GenerateVersusOrders();
+            // Initialize both player queues with 3 orders each
+            for (int i = 0; i < ORDER_QUEUE_SIZE; i++)
+    {
+        player1OrderQueue.Add(new QueuedOrder(QueuedOrder.VERSUS_TIMER_DURATION));
+        player2OrderQueue.Add(new QueuedOrder(QueuedOrder.VERSUS_TIMER_DURATION));
+    }
 
             VersusUIManager.Instance?.ShowVersusUI();
             VersusUIManager.Instance?.UpdateAllUI();
 
             OrderUIManager.Instance?.HideNormalGameplayUI();
             VersusUIManager.Instance?.ShowVersusUI();
+            OrderUIManager.Instance?.UpdateVersusDisplay(player1OrderQueue, player2OrderQueue);
 
             Debug.Log("Versus Mode Started");
         }
@@ -105,10 +118,15 @@ public class OrderManager : MonoBehaviour
                 moneyQuota = speedModeQuota;
             }
 
+            // Initialize normal mode queue with 3 orders
+            for (int i = 0; i < ORDER_QUEUE_SIZE; i++)
+            {
+                orderQueue.Add(new QueuedOrder(QueuedOrder.TIMER_DURATION));
+            }
+
             OrderUIManager.Instance?.ShowNormalGameplayUI();
             VersusUIManager.Instance?.HideVersusUI();
-
-            GenerateNewOrder();
+            OrderUIManager.Instance?.UpdateNormalDisplay(orderQueue);
             OrderUIManager.Instance?.UpdateGameUI();
 
             Debug.Log($"Game Mode: {mode} | Goal: ${moneyQuota}");
@@ -120,6 +138,18 @@ public class OrderManager : MonoBehaviour
         if (state != GameState.Playing || gameEnding)
             return;
 
+        // Update order queue timers
+        if (currentMode == GameMode.VERSUS)
+        {
+            UpdateQueueTimers(player1OrderQueue);
+            UpdateQueueTimers(player2OrderQueue);
+        }
+        else
+        {
+            UpdateQueueTimers(orderQueue);
+        }
+
+        // Update game timers
         if (currentMode == GameMode.TIME)
         {
             float timeMultiplier = 1f;
@@ -165,113 +195,33 @@ public class OrderManager : MonoBehaviour
         }
     }
 
-    public void GenerateNewOrder()
+    private void UpdateQueueTimers(List<QueuedOrder> queue)
     {
-        if (state != GameState.Playing)
-            return;
-
-        currentOrder = new Order();
-        currentOrder.GenerateRandomOrder();
-
-        Debug.Log("New order generated:\n" + currentOrder.GetDisplayText());
-        OrderUIManager.Instance?.UpdateDisplay(currentOrder);
-    }
-
-    private void GenerateVersusOrders()
-    {
-        player1VersusOrder = new Order();
-        player1VersusOrder.GenerateRandomOrder();
-
-        player2VersusOrder = new Order();
-        player2VersusOrder.GenerateRandomOrder();
-    }
-
-    public float TryServeItem(PlayerControl player, KitchenItemData item)
-    {
-        if (state != GameState.Playing || item == null)
-            return 0f;
-
-        if (currentMode == GameMode.VERSUS)
-            return TryServeVersusItem(player, item);
-
-        return TryServeNormalItem(item);
-    }
-
-    public float TryServeItem(KitchenItemData item)
-    {
-        return TryServeNormalItem(item);
-    }
-
-    private float TryServeNormalItem(KitchenItemData item)
-    {
-        if (currentOrder == null)
-            return 0f;
-
-        OrderItemType? servedType = currentOrder.TryServeItem(item);
-
-        if (servedType == null)
-            return 0f;
-
-        float earned = GetPriceForType(servedType.Value);
-        money += earned;
-
-        if (currentOrder.IsComplete())
+        for (int i = 0; i < queue.Count; i++)
         {
-            Debug.Log("Order complete! Generating new order.");
-            GenerateNewOrder();
-        }
-        else
-        {
-            OrderUIManager.Instance?.UpdateDisplay(currentOrder);
-        }
+            queue[i].UpdateTimer(Time.deltaTime);
 
-        OrderUIManager.Instance?.UpdateGameUI();
-
-        if (currentMode == GameMode.SPEED && money >= moneyQuota)
-            EndGame(true);
-
-        return earned;
-    }
-
-    private float TryServeVersusItem(PlayerControl player, KitchenItemData item)
-    {
-        if (player == null)
-            return 0f;
-
-        Order targetOrder = player.playerNumber == 1 ? player1VersusOrder : player2VersusOrder;
-
-        if (targetOrder == null)
-            return 0f;
-
-        OrderItemType? servedType = targetOrder.TryServeItem(item);
-
-        if (servedType == null)
-            return 0f;
-
-        float earned = GetPriceForType(servedType.Value);
-
-        if (player.playerNumber == 1)
-            player1Money += earned;
-        else
-            player2Money += earned;
-
-        if (targetOrder.IsComplete())
-        {
-            if (player.playerNumber == 1)
+            // If order expired, replace it
+            if (queue[i].IsExpired())
             {
-                player1VersusOrder = new Order();
-                player1VersusOrder.GenerateRandomOrder();
-            }
-            else
-            {
-                player2VersusOrder = new Order();
-                player2VersusOrder.GenerateRandomOrder();
+                float duration = currentMode == GameMode.VERSUS ? QueuedOrder.VERSUS_TIMER_DURATION : QueuedOrder.TIMER_DURATION;
+                queue[i] = new QueuedOrder(duration);
+                
+                if (currentMode == GameMode.VERSUS)
+                    OrderUIManager.Instance?.UpdateVersusDisplay(player1OrderQueue, player2OrderQueue);
+                else
+                    OrderUIManager.Instance?.UpdateNormalDisplay(orderQueue);
             }
         }
+    }
 
-        VersusUIManager.Instance?.UpdateAllUI();
-
-        return earned;
+    private void ShiftOrderQueue(List<QueuedOrder> queue)
+    {
+        if (queue.Count > 0)
+        {
+            queue.RemoveAt(0);
+            orderQueue.Add(new QueuedOrder(QueuedOrder.TIMER_DURATION));
+        }
     }
 
     private void EndGame(bool won)
@@ -310,13 +260,99 @@ public class OrderManager : MonoBehaviour
         VersusUIManager.Instance?.ShowVersusEndPanel(result);
     }
 
-    private void ResetToWaiting()
+    public float TryServeItem(PlayerControl player, KitchenItemData item)
+    {
+        if (state != GameState.Playing || item == null)
+            return 0f;
+
+        if (currentMode == GameMode.VERSUS)
+            return TryServeVersusItem(player, item);
+
+        return TryServeNormalItem(item);
+    }
+
+    public float TryServeItem(KitchenItemData item)
+    {
+        return TryServeNormalItem(item);
+    }
+
+    private float TryServeNormalItem(KitchenItemData item)
+    {
+        if (orderQueue.Count == 0)
+            return 0f;
+
+        // Try to serve any order in the queue
+        for (int i = 0; i < orderQueue.Count; i++)
+        {
+            if (orderQueue[i].TryServe(item))
+            {
+                float earned = GetPriceForType(orderQueue[i].item.type);
+                money += earned;
+
+                Debug.Log($"Order {i + 1} served! Earned: ${earned}");
+
+                int servedIndex = i;
+                OrderUIManager.Instance?.OnOrderServed(servedIndex, () =>
+                {
+                    orderQueue.RemoveAt(servedIndex);
+                    orderQueue.Add(new QueuedOrder(QueuedOrder.TIMER_DURATION));
+                });
+                OrderUIManager.Instance?.UpdateGameUI();
+
+                if (currentMode == GameMode.SPEED && money >= moneyQuota)
+                    EndGame(true);
+
+                return earned;
+            }
+        }
+        return 0f;
+    }
+
+    private float TryServeVersusItem(PlayerControl player, KitchenItemData item)
+    {
+        if (player == null)
+            return 0f;
+
+        List<QueuedOrder> targetQueue = player.playerNumber == 1 ? player1OrderQueue : player2OrderQueue;
+
+        if (targetQueue.Count == 0)
+            return 0f;
+
+        for (int i = 0; i < targetQueue.Count; i++)
+        {
+            if (targetQueue[i].TryServe(item))
+            {
+                float earned = GetPriceForType(targetQueue[i].item.type);
+
+                if (player.playerNumber == 1)
+                    player1Money += earned;
+                else
+                    player2Money += earned;
+
+                Debug.Log($"Player {player.playerNumber} served order {i + 1}! Earned: ${earned}");
+
+                int servedIndex = i;
+                OrderUIManager.Instance?.OnVersusOrderServed(player.playerNumber, servedIndex, () =>
+                {
+                    targetQueue.RemoveAt(servedIndex);
+                    targetQueue.Add(new QueuedOrder(QueuedOrder.VERSUS_TIMER_DURATION));
+                });
+                OrderUIManager.Instance?.UpdateVersusDisplay(player1OrderQueue, player2OrderQueue);
+                VersusUIManager.Instance?.UpdateAllUI();
+
+                return earned;
+            }
+        }
+        return 0f;
+    }
+
+    public void ResetToWaiting()
     {
         state = GameState.Waiting;
         gameEnding = false;
-        currentOrder = null;
-        player1VersusOrder = null;
-        player2VersusOrder = null;
+        orderQueue.Clear();
+        player1OrderQueue.Clear();
+        player2OrderQueue.Clear();
         currentTime = 0f;
         money = 0f;
         player1Money = 0f;
@@ -349,8 +385,8 @@ public class OrderManager : MonoBehaviour
     }
 
     public float GetCurrentTime() => currentTime;
-    public Order GetCurrentOrder() => currentOrder;
-    public Order GetPlayer1VersusOrder() => player1VersusOrder;
-    public Order GetPlayer2VersusOrder() => player2VersusOrder;
+    public List<QueuedOrder> GetOrderQueue() => orderQueue;
+    public List<QueuedOrder> GetPlayer1OrderQueue() => player1OrderQueue;
+    public List<QueuedOrder> GetPlayer2OrderQueue() => player2OrderQueue;
     public GameMode GetCurrentMode() => currentMode;
 }

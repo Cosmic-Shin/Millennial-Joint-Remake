@@ -17,6 +17,19 @@ public class OrderUIManager : MonoBehaviour
     public GameObject order2ServedOverlay;
     public GameObject order3ServedOverlay;
 
+    [Header("Order Timer TMPs")]
+    public TextMeshProUGUI order1TimerText;
+    public TextMeshProUGUI order2TimerText;
+    public TextMeshProUGUI order3TimerText;
+
+    [Header("Versus Mode Timer TMPs")]
+    public TextMeshProUGUI player1Order1TimerText;
+    public TextMeshProUGUI player1Order2TimerText;
+    public TextMeshProUGUI player1Order3TimerText;
+    public TextMeshProUGUI player2Order1TimerText;
+    public TextMeshProUGUI player2Order2TimerText;
+    public TextMeshProUGUI player2Order3TimerText;
+
     [Header("Served Indicator Fade")]
     public float servedIndicatorStayTime = 0.5f;
     public float servedIndicatorFadeTime = 0.5f;
@@ -45,8 +58,11 @@ public class OrderUIManager : MonoBehaviour
     public GameObject normalGameplayPanel;
 
     private bool isChangingOrders;
-    private Order pendingOrder;
-    private Coroutine changeOrderCoroutine;
+    private bool isChangingPlayer1Orders;
+    private bool isChangingPlayer2Orders;
+    private Coroutine shiftOrdersCoroutine;
+    private Coroutine versusShiftPlayer1Coroutine;
+    private Coroutine versusShiftPlayer2Coroutine;
 
     private void Awake()
     {
@@ -66,44 +82,202 @@ public class OrderUIManager : MonoBehaviour
         UpdateMoneyDisplay();
     }
 
-    public void UpdateDisplay(Order order)
+    private void Update()
+    {
+        if (OrderManager.Instance == null || OrderManager.Instance.state != OrderManager.GameState.Playing)
+            return;
+
+        if (OrderManager.Instance.GetCurrentMode() == OrderManager.GameMode.VERSUS)
+            UpdateVersusDisplay(OrderManager.Instance.GetPlayer1OrderQueue(), OrderManager.Instance.GetPlayer2OrderQueue());
+        else
+            UpdateNormalDisplay(OrderManager.Instance.GetOrderQueue());
+    }
+
+    public void UpdateNormalDisplay(System.Collections.Generic.List<QueuedOrder> queue)
     {
         if (isChangingOrders)
-        {
-            pendingOrder = order;
             return;
-        }
 
-        if (order == null)
+        Image[] images = new[] { order1Image, order2Image, order3Image };
+        TextMeshProUGUI[] timerTexts = new[] { order1TimerText, order2TimerText, order3TimerText };
+
+        for (int i = 0; i < 3; i++)
         {
-            ClearOrderImages();
-            return;
+            if (i < queue.Count && queue[i] != null)
+            {
+                // Display the order
+                if (images[i] != null)
+                {
+                    images[i].sprite = GetSpriteForOrder(queue[i].item.type);
+                    images[i].enabled = true;
+                }
+
+                // Update timer
+                if (timerTexts[i] != null)
+                {
+                    int timerDisplayValue = Mathf.CeilToInt(Mathf.Max(0, queue[i].timer));
+                    timerTexts[i].text = timerDisplayValue.ToString();
+                    timerTexts[i].color = queue[i].timer <= 10f ? Color.red : Color.white;
+                }
+            }
+            else
+            {
+                // Clear slot
+                if (images[i] != null)
+                {
+                    images[i].sprite = null;
+                    images[i].enabled = false;
+                }
+                if (timerTexts[i] != null)
+                    timerTexts[i].text = "";
+            }
         }
-
-        bool order1Served = order.IsServed(0);
-        bool order2Served = order.IsServed(1);
-        bool order3Served = order.IsServed(2);
-
-        bool allServed = order1Served && order2Served && order3Served;
-
-        UpdateOrderImage(order1Image, order.GetItem(0));
-        UpdateOrderImage(order2Image, order.GetItem(1));
-        UpdateOrderImage(order3Image, order.GetItem(2));
-
-        SetOverlay(order1ServedOverlay, order1Served, 1f);
-        SetOverlay(order2ServedOverlay, order2Served, 1f);
-        SetOverlay(order3ServedOverlay, order3Served, 1f);
 
         UpdateMoneyDisplay();
+    }
 
-        if (allServed)
+   public void UpdateVersusDisplay(System.Collections.Generic.List<QueuedOrder> player1Queue, System.Collections.Generic.List<QueuedOrder> player2Queue)
+{
+    TextMeshProUGUI[] p1TimerTexts = new[] { player1Order1TimerText, player1Order2TimerText, player1Order3TimerText };
+    TextMeshProUGUI[] p2TimerTexts = new[] { player2Order1TimerText, player2Order2TimerText, player2Order3TimerText };
+    Image[] images = new[] { order1Image, order2Image, order3Image };
+
+    if (!isChangingPlayer1Orders)
+    {
+        for (int i = 0; i < 3; i++)
         {
-            if (changeOrderCoroutine != null)
-                StopCoroutine(changeOrderCoroutine);
-
-            changeOrderCoroutine = StartCoroutine(ShowServedThenChangeOrder());
+            if (i < player1Queue.Count && player1Queue[i] != null)
+            {
+                if (images[i] != null)
+                {
+                    images[i].sprite = GetSpriteForOrder(player1Queue[i].item.type);
+                    images[i].enabled = true;
+                }
+                if (p1TimerTexts[i] != null)
+                {
+                    int timerDisplayValue = Mathf.CeilToInt(Mathf.Max(0, player1Queue[i].timer));
+                    p1TimerTexts[i].text = timerDisplayValue.ToString();
+                    p1TimerTexts[i].color = player1Queue[i].timer <= 10f ? Color.red : Color.white;
+                }
+            }
+            else
+            {
+                if (images[i] != null) { images[i].sprite = null; images[i].enabled = false; }
+                if (p1TimerTexts[i] != null) p1TimerTexts[i].text = "";
+            }
         }
     }
+
+    if (!isChangingPlayer2Orders)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (i < player2Queue.Count && player2Queue[i] != null)
+            {
+                if (p2TimerTexts[i] != null)
+                {
+                    int timerDisplayValue = Mathf.CeilToInt(Mathf.Max(0, player2Queue[i].timer));
+                    p2TimerTexts[i].text = timerDisplayValue.ToString();
+                    p2TimerTexts[i].color = player2Queue[i].timer <= 10f ? Color.red : Color.white;
+                }
+            }
+            else
+            {
+                if (p2TimerTexts[i] != null) p2TimerTexts[i].text = "";
+            }
+        }
+    }
+}
+
+    public void OnOrderServed(int index, System.Action onComplete)
+    {
+        if (shiftOrdersCoroutine != null)
+            StopCoroutine(shiftOrdersCoroutine);
+
+        shiftOrdersCoroutine = StartCoroutine(ShiftOrdersCoroutine(index, onComplete));
+    }
+
+    private IEnumerator ShiftOrdersCoroutine(int index, System.Action onComplete)
+{
+    isChangingOrders = true;
+
+    GameObject[] overlays = new[] { order1ServedOverlay, order2ServedOverlay, order3ServedOverlay };
+
+    if (index >= 0 && index < overlays.Length && overlays[index] != null)
+    {
+        SetOverlay(overlays[index], true, 1f);
+
+        yield return new WaitForSeconds(servedIndicatorStayTime);
+
+        float timer = 0f;
+        CanvasGroup overlayGroup = GetCanvasGroup(overlays[index]);
+
+        while (timer < servedIndicatorFadeTime)
+        {
+            timer += Time.deltaTime;
+            float alpha = Mathf.Lerp(1f, 0f, timer / servedIndicatorFadeTime);
+            if (overlayGroup != null)
+                overlayGroup.alpha = alpha;
+            yield return null;
+        }
+
+        SetOverlay(overlays[index], false, 1f);
+    }
+
+    onComplete?.Invoke();
+
+    isChangingOrders = false;
+}
+
+    public void OnVersusOrderServed(int playerNumber, int index, System.Action onComplete)
+{
+    if (playerNumber == 1)
+    {
+        if (versusShiftPlayer1Coroutine != null)
+            StopCoroutine(versusShiftPlayer1Coroutine);
+        versusShiftPlayer1Coroutine = StartCoroutine(ShiftVersusOrdersCoroutine(playerNumber, index, onComplete));
+    }
+    else
+    {
+        if (versusShiftPlayer2Coroutine != null)
+            StopCoroutine(versusShiftPlayer2Coroutine);
+        versusShiftPlayer2Coroutine = StartCoroutine(ShiftVersusOrdersCoroutine(playerNumber, index, onComplete));
+    }
+}
+
+private IEnumerator ShiftVersusOrdersCoroutine(int playerNumber, int index, System.Action onComplete)
+{
+    if (playerNumber == 1) isChangingPlayer1Orders = true;
+    else isChangingPlayer2Orders = true;
+
+    GameObject[] overlays = new[] { order1ServedOverlay, order2ServedOverlay, order3ServedOverlay };
+
+    if (index >= 0 && index < overlays.Length && overlays[index] != null)
+    {
+        SetOverlay(overlays[index], true, 1f);
+
+        yield return new WaitForSeconds(servedIndicatorStayTime);
+
+        float timer = 0f;
+        CanvasGroup overlayGroup = GetCanvasGroup(overlays[index]);
+
+        while (timer < servedIndicatorFadeTime)
+        {
+            timer += Time.deltaTime;
+            float alpha = Mathf.Lerp(1f, 0f, timer / servedIndicatorFadeTime);
+            if (overlayGroup != null)
+                overlayGroup.alpha = alpha;
+            yield return null;
+        }
+
+        SetOverlay(overlays[index], false, 1f);
+    }
+
+    onComplete?.Invoke();
+
+    if (playerNumber == 1) isChangingPlayer1Orders = false;
+    else isChangingPlayer2Orders = false;
+}
 
     public void ShowNormalGameplayUI()
     {
@@ -115,57 +289,6 @@ public class OrderUIManager : MonoBehaviour
     {
         if (normalGameplayPanel != null)
             normalGameplayPanel.SetActive(false);
-    }
-
-    private IEnumerator ShowServedThenChangeOrder()
-    {
-        isChangingOrders = true;
-
-        SetOverlay(order1ServedOverlay, true, 1f);
-        SetOverlay(order2ServedOverlay, true, 1f);
-        SetOverlay(order3ServedOverlay, true, 1f);
-
-        yield return new WaitForSeconds(servedIndicatorStayTime);
-
-        float timer = 0f;
-
-        CanvasGroup overlay1Group = GetCanvasGroup(order1ServedOverlay);
-        CanvasGroup overlay2Group = GetCanvasGroup(order2ServedOverlay);
-        CanvasGroup overlay3Group = GetCanvasGroup(order3ServedOverlay);
-
-        while (timer < servedIndicatorFadeTime)
-        {
-            timer += Time.deltaTime;
-            float alpha = Mathf.Lerp(1f, 0f, timer / servedIndicatorFadeTime);
-
-            if (overlay1Group != null)
-                overlay1Group.alpha = alpha;
-
-            if (overlay2Group != null)
-                overlay2Group.alpha = alpha;
-
-            if (overlay3Group != null)
-                overlay3Group.alpha = alpha;
-
-            yield return null;
-        }
-
-        SetOverlay(order1ServedOverlay, false, 1f);
-        SetOverlay(order2ServedOverlay, false, 1f);
-        SetOverlay(order3ServedOverlay, false, 1f);
-
-        isChangingOrders = false;
-
-        if (pendingOrder != null)
-        {
-            Order nextOrder = pendingOrder;
-            pendingOrder = null;
-            UpdateDisplay(nextOrder);
-        }
-        else
-        {
-            ClearOrderImages();
-        }
     }
 
     private void UpdateOrderImage(Image image, OrderItem item)
@@ -303,5 +426,9 @@ public class OrderUIManager : MonoBehaviour
         SetOverlay(order1ServedOverlay, false, 1f);
         SetOverlay(order2ServedOverlay, false, 1f);
         SetOverlay(order3ServedOverlay, false, 1f);
+
+        if (order1TimerText != null) order1TimerText.text = "";
+        if (order2TimerText != null) order2TimerText.text = "";
+        if (order3TimerText != null) order3TimerText.text = "";
     }
 }

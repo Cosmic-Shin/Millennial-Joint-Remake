@@ -47,14 +47,18 @@ public class ScoreManager : MonoBehaviour
         if (gameEndRetryButton != null) gameEndRetryButton.onClick.AddListener(Retry);
         if (gameEndQuitButton != null) gameEndQuitButton.onClick.AddListener(Quit);
 
-        if (scoreCloseButton != null) scoreCloseButton.onClick.AddListener(CloseScorePanel);
+        if (scoreCloseButton != null) scoreCloseButton.onClick.AddListener(() =>
+        {
+            CloseScorePanel();
+            PauseManager.Instance?.BackToPausePanel();
+        });
+        
         if (modeButton != null) modeButton.onClick.AddListener(ToggleScoreMode);
 
         if (nameInputField != null)
-    {
+        {
         nameInputField.characterLimit = maxNameLength;
-    }
-
+        }
         ShowTimeScores();
     }
 
@@ -69,7 +73,14 @@ public class ScoreManager : MonoBehaviour
             gameEndPanel.SetActive(true);
 
         if (nameInputField != null)
+        {
             nameInputField.text = "";
+            nameInputField.interactable = true;
+            nameInputField.readOnly = false;
+        }
+
+        if (enterNameButton != null)
+            enterNameButton.interactable = true;
 
         if (gameEndScoreText != null)
         {
