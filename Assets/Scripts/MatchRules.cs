@@ -156,6 +156,10 @@ public class MatchRules : MonoBehaviour
             Refresh(rule);
         }
 
+        var focus = panel.GetComponent<SelectFirstOnEnable>();
+        if (focus != null && rules.Count > 0)
+            focus.firstSelected = rules[0].row.GetComponent<Selectable>();
+
         if (returnPanel != null)
             returnPanel.SetActive(false);
         panel.SetActive(true);
@@ -190,7 +194,12 @@ public class MatchRules : MonoBehaviour
         PlayerPrefs.Save();
         panel.SetActive(false);
         if (returnPanel != null)
+        {
+            var returnFocus = returnPanel.GetComponent<SelectFirstOnEnable>();
+            if (returnFocus != null)
+                returnFocus.FocusNextOpen(openButton);
             returnPanel.SetActive(true);
+        }
         GameModeSelector.Instance?.FillModeDescriptions();
     }
 

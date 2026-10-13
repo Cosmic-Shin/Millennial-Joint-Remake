@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class ChalkButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
+public class ChalkButton : MonoBehaviour, IPointerEnterHandler, IPointerMoveHandler, ISelectHandler, IDeselectHandler
 {
     [Tooltip("Image set to Filled / Horizontal / Left; fillAmount is animated")]
     public Image underline;
@@ -26,8 +26,13 @@ public class ChalkButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             underline.fillAmount = Mathf.MoveTowards(underline.fillAmount, target, Time.unscaledDeltaTime / drawTime);
     }
 
-    public void OnPointerEnter(PointerEventData eventData) => SetDrawn(true);
-    public void OnPointerExit(PointerEventData eventData) => SetDrawn(false);
+    public void OnPointerEnter(PointerEventData eventData) => OnPointerMove(eventData);
+
+    public void OnPointerMove(PointerEventData eventData)
+    {
+        if (target < 1f && MenuFocus.PointerMoved(eventData))
+            MenuFocus.Hover(gameObject);
+    }
     public void OnSelect(BaseEventData eventData) => SetDrawn(true);
     public void OnDeselect(BaseEventData eventData) => SetDrawn(false);
 

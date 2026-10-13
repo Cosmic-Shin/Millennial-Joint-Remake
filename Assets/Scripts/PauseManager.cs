@@ -164,7 +164,15 @@ public class PauseManager : MonoBehaviour
         if (OrderManager.Instance != null && OrderManager.Instance.state != OrderManager.GameState.Playing)
             return;
 
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.JoystickButton7))
+        if (isPaused && howToPlayPanel != null && howToPlayPanel.activeSelf
+            && (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.JoystickButton1)))
+        {
+            BackToPausePanel();
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.JoystickButton7)
+            || (isPaused && Input.GetKeyDown(KeyCode.JoystickButton1)))
         {
             if (isPaused)
                 Resume();
