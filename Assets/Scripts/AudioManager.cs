@@ -44,6 +44,17 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioClip startChiliSFX;
     [SerializeField] private AudioClip finishedChiliSFX;
 
+    [Header("Game Event Sounds")]
+    [SerializeField] private AudioClip countdownBeepSFX;
+    [SerializeField] private AudioClip goHornSFX;
+    [SerializeField] private AudioClip tipSFX;
+    [SerializeField] private AudioClip penaltySFX;
+    [SerializeField] private AudioClip freezeSFX;
+    [SerializeField] private AudioClip comboUpSFX;
+    [SerializeField] private AudioClip comboLostSFX;
+    [SerializeField] private AudioClip chalkHoverSFX;
+    [SerializeField] private AudioClip burnSizzleSFX;
+
     [Header("Volume")]
     [Range(0f, 1f)] [SerializeField] private float sfxVolume = 1f;
     [Range(0f, 1f)] [SerializeField] private float musicVolume = 0.7f;
@@ -52,12 +63,17 @@ public class AudioManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
+            Instance.buttonsWithSFX = buttonsWithSFX;
+            Instance.RegisterButtonSFX();
             Destroy(gameObject);
             return;
         }
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        sfxVolume = PlayerPrefs.GetFloat("SFXVolume", sfxVolume);
+        musicVolume = PlayerPrefs.GetFloat("MusicVolume", musicVolume);
 
         SetupSources();
     }
@@ -188,6 +204,36 @@ public class AudioManager : MonoBehaviour
         PlaySFX(buttonClickSFX);
     }
 
+    public void PlayOneShot(AudioClip clip) => PlaySFX(clip);
+
+    public void PlayCountdownBeep() => PlaySFX(countdownBeepSFX);
+    public void PlayGoHorn() => PlaySFX(goHornSFX);
+    public void PlayTipSFX() => PlaySFX(tipSFX);
+    public void PlayPenaltySFX() => PlaySFX(penaltySFX);
+    public void PlayFreezeSFX() => PlaySFX(freezeSFX);
+    public void PlayComboLostSFX() => PlaySFX(comboLostSFX);
+    public void PlayChalkHoverSFX() => PlaySFX(chalkHoverSFX);
+
+    public AudioClip BurnSizzleClip => burnSizzleSFX;
+
+    public void PlayComboUpSFX(float multiplier)
+    {
+        if (comboUpSFX == null)
+            return;
+
+        if (pitchedSource == null)
+        {
+            pitchedSource = new GameObject("Pitched_SFX_Source").AddComponent<AudioSource>();
+            pitchedSource.transform.SetParent(transform);
+            pitchedSource.playOnAwake = false;
+        }
+
+        pitchedSource.pitch = Mathf.Lerp(1f, 1.5f, Mathf.Clamp01((multiplier - 1f) / 1f));
+        pitchedSource.PlayOneShot(comboUpSFX, sfxVolume);
+    }
+
+    private AudioSource pitchedSource;
+
     public void PlayIngredientOnPlateSFX() => PlaySFX(ingredientOnPlateSFX);
     public void PlayIngredientInTableSFX() => PlaySFX(ingredientInTableSFX);
     public void PlayGetIngredientFromBoxSFX() => PlaySFX(getIngredientFromBoxSFX);
@@ -209,6 +255,7 @@ public class AudioManager : MonoBehaviour
     public void SetSFXVolume(float volume)
     {
         sfxVolume = Mathf.Clamp01(volume);
+        PlayerPrefs.SetFloat("SFXVolume", sfxVolume);
 
         if (sfxSource != null)
             sfxSource.volume = sfxVolume;
@@ -217,6 +264,7 @@ public class AudioManager : MonoBehaviour
     public void SetMusicVolume(float volume)
     {
         musicVolume = Mathf.Clamp01(volume);
+        PlayerPrefs.SetFloat("MusicVolume", musicVolume);
 
         if (musicSource != null)
             musicSource.volume = musicVolume;

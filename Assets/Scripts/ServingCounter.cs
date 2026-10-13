@@ -10,6 +10,9 @@ public class ServingCounter : BaseStation, IInteractable
     [Header("Popup Settings")]
     public float popupYOffset = 1.5f;
 
+    [Header("Serve Burst")]
+    public ParticleSystem serveBurst;
+
     public bool CanInteractWith(PlayerControl player)
     {
         if (player == null) return false;
@@ -22,8 +25,7 @@ public class ServingCounter : BaseStation, IInteractable
              player.heldItem.IsCompleteChiliDog);
 
         bool hasCompleteDrink = player.heldItem.IsCompleteDrink;
-        
-        // Check for direct ice cream items (not in cup)
+
         bool hasIceCream = player.heldItem.type == ItemType.StrawberryIceCream ||
                           player.heldItem.type == ItemType.BubblegumIceCream ||
                           player.heldItem.type == ItemType.MangoIceCream;
@@ -65,6 +67,17 @@ public class ServingCounter : BaseStation, IInteractable
 
         SpawnPricePopup(earned);
 
+        if (serveBurst != null)
+            serveBurst.Play();
+
+        if (CameraMovement.Instance != null)
+        {
+            bool bigServe = OrderManager.Instance != null && OrderManager.Instance.LastServeMultiplier >= 1.5f;
+            CameraMovement.Instance.Shake(bigServe ? 0.3f : 0.12f, bigServe ? 0.35f : 0.2f);
+            if (bigServe)
+                CameraMovement.Instance.HitStop(0.08f);
+        }
+
         AudioManager.Instance?.PlayServeFoodSFX();
     }
 
@@ -78,8 +91,15 @@ public class ServingCounter : BaseStation, IInteractable
 
         WorldTextFade fade = popup.GetComponent<WorldTextFade>();
 
+        float tip = OrderManager.Instance != null ? OrderManager.Instance.LastServeTip : 0f;
+        float multiplier = OrderManager.Instance != null ? OrderManager.Instance.LastServeMultiplier : 1f;
+
+        string text = "$" + earned.ToString("0.##")
+            + (tip > 0f ? "  tip!" : "")
+            + (multiplier > 1f ? "  x" + multiplier.ToString("0.##") + " combo" : "");
+
         if (fade != null)
-            fade.Play("$" + Mathf.RoundToInt(earned), Color.green);
+            fade.Play(text, Color.green);
         else
             Debug.LogWarning("Price popup prefab needs WorldTextFade script.");
     }

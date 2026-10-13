@@ -58,7 +58,7 @@ public class KitchenItemVisualizer : MonoBehaviour
         currentVisual = Instantiate(prefab, parent);
         currentVisual.transform.localPosition = localPosition;
         currentVisual.transform.localEulerAngles = localEulerAngles;
-        currentVisual.transform.localScale = localScale;
+        currentVisual.transform.localScale = localScale * ItemPrefabRegistry.Instance.foodScale;
 
         currentPrefab = prefab;
     }

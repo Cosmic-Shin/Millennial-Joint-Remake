@@ -27,12 +27,18 @@ public class KeybindManager : MonoBehaviour
     [SerializeField] private Button p2ThrowButton;
     [SerializeField] private Button p2EmoteButton;
 
+    [Header("Panel Titles (shows chosen device)")]
+    [SerializeField] private TextMeshProUGUI p1TitleText;
+    [SerializeField] private TextMeshProUGUI p2TitleText;
+
     [Header("Control Buttons")]
     [SerializeField] private Button resetButton;
 
     [Header("Warning Message")]
-    [SerializeField] private TextMeshProUGUI warningText; // Optional: shows "Key already in use!"
+    [SerializeField] private TextMeshProUGUI warningText;
     [SerializeField] private float warningDisplayTime = 2f;
+
+    private static readonly string[] PadButtonNames = { "A", "B", "X", "Y", "LB", "RB", "BACK", "START", "LSB", "RSB" };
 
     private PlayerControl player1Control;
     private PlayerControl player2Control;
@@ -42,6 +48,10 @@ public class KeybindManager : MonoBehaviour
     private bool isListeningForKey = false;
     private int currentPlayerNumber = 0;
     private string currentKeybindType = "";
+    private int listenStartFrame = -1;
+    private int escapeCancelFrame = -1;
+
+    public bool IsCapturingInput => isListeningForKey || escapeCancelFrame == Time.frameCount;
 
     private struct KeybindMapping
     {
@@ -67,11 +77,11 @@ public class KeybindManager : MonoBehaviour
     private void Start()
     {
         FindPlayerControls();
+        LoadBindings();
         SetupKeybindButtons();
         SetupResetButton();
         RefreshAllKeybindDisplay();
 
-        // Hide warning initially
         if (warningText != null)
             warningText.gameObject.SetActive(false);
     }
@@ -84,7 +94,7 @@ public class KeybindManager : MonoBehaviour
 
     private void FindPlayerControls()
     {
-        PlayerControl[] allPlayers = FindObjectsOfType<PlayerControl>();
+        PlayerControl[] allPlayers = FindObjectsByType<PlayerControl>(FindObjectsSortMode.None);
 
         foreach (PlayerControl player in allPlayers)
         {
@@ -98,9 +108,42 @@ public class KeybindManager : MonoBehaviour
             Debug.LogWarning("KeybindManager: Could not find both player controls!");
     }
 
+    private PlayerControl GetPlayer(int playerNumber)
+    {
+        bool swapped = ControlSwapManager.Instance != null && ControlSwapManager.Instance.IsSwapped;
+        return (playerNumber == 1) != swapped ? player1Control : player2Control;
+    }
+
+    private void SaveBindings()
+    {
+        for (int n = 1; n <= 2; n++)
+        {
+            PlayerControl player = GetPlayer(n);
+            if (player != null)
+                PlayerPrefs.SetString("Bindings_P" + n, JsonUtility.ToJson(player.Bindings));
+        }
+
+        PlayerPrefs.Save();
+    }
+
+    private void LoadBindings()
+    {
+        for (int n = 1; n <= 2; n++)
+        {
+            PlayerControl player = GetPlayer(n);
+            string json = PlayerPrefs.GetString("Bindings_P" + n, "");
+            if (player == null || string.IsNullOrEmpty(json))
+                continue;
+
+            PlayerControl.InputBindings saved = JsonUtility.FromJson<PlayerControl.InputBindings>(json);
+            saved.scheme = player.controlScheme;
+            saved.joystickNumber = player.joystickNumber;
+            player.Bindings = saved;
+        }
+    }
+
     private void SetupKeybindButtons()
     {
-        // Player 1
         SetupButtonMapping(p1MoveUpButton, 1, "MoveUp", "Move Up");
         SetupButtonMapping(p1MoveLeftButton, 1, "MoveLeft", "Move Left");
         SetupButtonMapping(p1MoveDownButton, 1, "MoveDown", "Move Down");
@@ -110,7 +153,6 @@ public class KeybindManager : MonoBehaviour
         SetupButtonMapping(p1ThrowButton, 1, "DropItem", "Throw");
         SetupButtonMapping(p1EmoteButton, 1, "EmoteSelectKey", "Emote");
 
-        // Player 2
         SetupButtonMapping(p2MoveUpButton, 2, "MoveUp", "Move Up");
         SetupButtonMapping(p2MoveLeftButton, 2, "MoveLeft", "Move Left");
         SetupButtonMapping(p2MoveDownButton, 2, "MoveDown", "Move Down");
@@ -147,18 +189,26 @@ public class KeybindManager : MonoBehaviour
 
     private KeyCode GetCurrentKeyCode(int playerNumber, string fieldName)
     {
-        PlayerControl player = playerNumber == 1 ? player1Control : player2Control;
+        PlayerControl player = GetPlayer(playerNumber);
 
         if (player == null)
             return KeyCode.None;
 
-        // Handle emote key separately for each player
-        if (fieldName == "EmoteSelectKey")
+        if (player.UsesJoystick)
         {
-            return playerNumber == 1 ? player.p1SelectKey : player.p2SelectKey;
+            return fieldName switch
+            {
+                "PrimaryAction" => player.padInteractKey,
+                "Run" => player.padRunKey,
+                "EmoteSelectKey" => player.padEmoteKey,
+                "DropItem" => player.padThrowKey,
+                _ => KeyCode.None
+            };
         }
 
-        // Use reflection to get the field
+        if (fieldName == "EmoteSelectKey")
+            return player.EmoteKey;
+
         var field = typeof(PlayerControl).GetField(fieldName);
         if (field != null)
         {
@@ -172,22 +222,29 @@ public class KeybindManager : MonoBehaviour
 
     private void SetKeyCode(int playerNumber, string fieldName, KeyCode keyCode)
     {
-        PlayerControl player = playerNumber == 1 ? player1Control : player2Control;
+        PlayerControl player = GetPlayer(playerNumber);
 
         if (player == null)
             return;
 
-        // Handle emote key separately for each player
-        if (fieldName == "EmoteSelectKey")
+        if (player.UsesJoystick)
         {
-            if (playerNumber == 1)
-                player.p1SelectKey = keyCode;
-            else
-                player.p2SelectKey = keyCode;
+            switch (fieldName)
+            {
+                case "PrimaryAction": player.padInteractKey = keyCode; break;
+                case "Run": player.padRunKey = keyCode; break;
+                case "EmoteSelectKey": player.padEmoteKey = keyCode; break;
+                case "DropItem": player.padThrowKey = keyCode; break;
+            }
             return;
         }
 
-        // Use reflection to set the field
+        if (fieldName == "EmoteSelectKey")
+        {
+            player.EmoteKey = keyCode;
+            return;
+        }
+
         var field = typeof(PlayerControl).GetField(fieldName);
         if (field != null)
         {
@@ -195,33 +252,31 @@ public class KeybindManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Checks if a key is already used by ANY keybind
-    /// Returns true if the key is a duplicate
-    /// </summary>
-    private bool IsKeyAlreadyBound(KeyCode key, int excludePlayerNumber, string excludeFieldName)
+    private bool SharesDevice(int playerA, int playerB)
     {
-        foreach (var mapping in keybindMappings)
-        {
-            // Skip the current binding being changed
-            if (mapping.playerNumber == excludePlayerNumber && mapping.fieldName == excludeFieldName)
-                continue;
+        if (playerA == playerB)
+            return true;
 
-            KeyCode existingKey = GetCurrentKeyCode(mapping.playerNumber, mapping.fieldName);
-            if (existingKey == key)
-                return true;
-        }
-
-        return false;
+        PlayerControl a = GetPlayer(playerA);
+        PlayerControl b = GetPlayer(playerB);
+        return a != null && b != null && !a.UsesJoystick && !b.UsesJoystick;
     }
 
-    /// <summary>
-    /// Finds which binding is using a specific key
-    /// </summary>
-    private (int playerNumber, string displayName) GetBindingUsingKey(KeyCode key)
+    private bool IsKeyAlreadyBound(KeyCode key, int excludePlayerNumber, string excludeFieldName)
+    {
+        return GetBindingUsingKey(key, excludePlayerNumber, excludeFieldName).playerNumber != -1;
+    }
+
+    private (int playerNumber, string displayName) GetBindingUsingKey(KeyCode key, int listeningPlayer, string excludeFieldName)
     {
         foreach (var mapping in keybindMappings)
         {
+            if (mapping.playerNumber == listeningPlayer && mapping.fieldName == excludeFieldName)
+                continue;
+
+            if (!SharesDevice(mapping.playerNumber, listeningPlayer))
+                continue;
+
             KeyCode existingKey = GetCurrentKeyCode(mapping.playerNumber, mapping.fieldName);
             if (existingKey == key)
                 return (mapping.playerNumber, mapping.displayName);
@@ -230,125 +285,104 @@ public class KeybindManager : MonoBehaviour
         return (-1, "");
     }
 
-    /// <summary>
-    /// Clears a specific key from the player who currently has it
-    /// </summary>
-    private void ClearKeyFromOtherBinding(KeyCode key, int excludePlayerNumber, string excludeFieldName)
-    {
-        foreach (var mapping in keybindMappings)
-        {
-            if (mapping.playerNumber == excludePlayerNumber && mapping.fieldName == excludeFieldName)
-                continue;
-
-            KeyCode existingKey = GetCurrentKeyCode(mapping.playerNumber, mapping.fieldName);
-            if (existingKey == key)
-            {
-                // Set to None to clear it
-                SetKeyCode(mapping.playerNumber, mapping.fieldName, KeyCode.None);
-                
-                // Update the button text
-                TextMeshProUGUI btnText = mapping.button.GetComponentInChildren<TextMeshProUGUI>();
-                if (btnText != null)
-                    btnText.text = "None";
-                
-                break;
-            }
-        }
-    }
-
     private void StartKeybindListening(int playerNumber, string fieldName, Button button)
     {
         if (isListeningForKey)
             return;
 
         isListeningForKey = true;
+        listenStartFrame = Time.frameCount;
         currentPlayerNumber = playerNumber;
         currentKeybindType = fieldName;
         currentReBindingButton = button;
         currentButtonText = button.GetComponentInChildren<TextMeshProUGUI>();
 
-        // Hide warning
         if (warningText != null)
             warningText.gameObject.SetActive(false);
 
-        // Visual feedback
+        PlayerControl player = GetPlayer(playerNumber);
+        bool joystick = player != null && player.UsesJoystick;
+
         button.GetComponent<Image>().color = new Color(0.4f, 0.6f, 1f, 1f);
         if (currentButtonText != null)
-            currentButtonText.text = "Press any key...";
-
-        Debug.Log($"Listening for keybind input for Player {playerNumber}: {fieldName}");
+            currentButtonText.text = joystick ? "Press a button/stick..." : "Press any key...";
     }
 
     private void Update()
     {
-        if (!isListeningForKey)
+        if (!isListeningForKey || Time.frameCount == listenStartFrame)
             return;
 
-        // Listen for any key press
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            escapeCancelFrame = Time.frameCount;
+            CancelKeybindListening();
+            return;
+        }
+
+        PlayerControl player = GetPlayer(currentPlayerNumber);
+        if (player == null)
+        {
+            CancelKeybindListening();
+            return;
+        }
+
+        if (player.UsesJoystick && currentKeybindType.StartsWith("Move"))
+        {
+            foreach (ControllerAxisSource source in System.Enum.GetValues(typeof(ControllerAxisSource)))
+            {
+                float h = Input.GetAxisRaw(PlayerControl.AxisName(player.joystickNumber, source, true));
+                float v = Input.GetAxisRaw(PlayerControl.AxisName(player.joystickNumber, source, false));
+
+                if (Mathf.Abs(h) > 0.5f || Mathf.Abs(v) > 0.5f)
+                {
+                    player.padMovementAxis = source;
+                    FinishListening();
+                    return;
+                }
+            }
+
+            return;
+        }
+
         foreach (KeyCode key in System.Enum.GetValues(typeof(KeyCode)))
         {
-            if (Input.GetKeyDown(key))
+            if (key == KeyCode.None || !Input.GetKeyDown(key))
+                continue;
+
+            bool isPadKey = key >= KeyCode.JoystickButton0;
+            if (isPadKey != player.UsesJoystick)
+                continue;
+
+            KeyCode bindKey = isPadKey ? KeyCode.Joystick1Button0 + (key - KeyCode.JoystickButton0) % 20 : key;
+
+            if (IsKeyAlreadyBound(bindKey, currentPlayerNumber, currentKeybindType))
             {
-                // ESC cancels the rebinding
-                if (key == KeyCode.Escape)
-                {
-                    CancelKeybindListening();
-                    return;
-                }
-
-                // Ignore None key
-                if (key == KeyCode.None)
-                    continue;
-
-                // Check if this key is already used by another binding
-                if (IsKeyAlreadyBound(key, currentPlayerNumber, currentKeybindType))
-                {
-                    // Show warning
-                    var (boundPlayer, boundAction) = GetBindingUsingKey(key);
-                    ShowWarning($"Key '{key}' is already used by Player {boundPlayer}: {boundAction}");
-
-                    // Option 1: Just cancel and don't allow duplicate
-                    CancelKeybindListening();
-                    
-                    // Option 2: Uncomment below to STEAL the key (clear old binding and assign new one)
-                    // ClearKeyFromOtherBinding(key, currentPlayerNumber, currentKeybindType);
-                    // ApplyNewKeybind(key);
-                    
-                    return;
-                }
-
-                // Key is free, apply it
-                ApplyNewKeybind(key);
+                var (boundPlayer, boundAction) = GetBindingUsingKey(bindKey, currentPlayerNumber, currentKeybindType);
+                ShowWarning($"Key '{FormatKey(player, bindKey)}' is already used by Player {boundPlayer}: {boundAction}");
+                CancelKeybindListening();
                 return;
             }
+
+            ApplyNewKeybind(bindKey);
+            return;
         }
+    }
+
+    private void FinishListening()
+    {
+        if (currentReBindingButton != null)
+            currentReBindingButton.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.2f, 1f);
+
+        isListeningForKey = false;
+        SaveBindings();
+        RefreshAllKeybindDisplay();
     }
 
     private void ApplyNewKeybind(KeyCode key)
     {
         SetKeyCode(currentPlayerNumber, currentKeybindType, key);
-
-        // Find the display name for this keybind
-        string displayName = currentKeybindType;
-        foreach (var mapping in keybindMappings)
-        {
-            if (mapping.button == currentReBindingButton)
-            {
-                displayName = mapping.displayName;
-                break;
-            }
-        }
-
-        // Update UI with new keybind
-        if (currentButtonText != null)
-            currentButtonText.text = $"{key}";
-
-        // Reset visual feedback
-        if (currentReBindingButton != null)
-            currentReBindingButton.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.2f, 1f);
-
-        isListeningForKey = false;
-        Debug.Log($"Keybind set: {displayName} (P{currentPlayerNumber}) = {key}");
+        FinishListening();
     }
 
     private void ShowWarning(string message)
@@ -359,8 +393,6 @@ public class KeybindManager : MonoBehaviour
         {
             warningText.text = message;
             warningText.gameObject.SetActive(true);
-            
-            // Auto-hide after delay
             CancelInvoke(nameof(HideWarning));
             Invoke(nameof(HideWarning), warningDisplayTime);
         }
@@ -377,74 +409,83 @@ public class KeybindManager : MonoBehaviour
         if (currentReBindingButton != null)
         {
             currentReBindingButton.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.2f, 1f);
-            
-            // Restore the current key text
-            foreach (var mapping in keybindMappings)
-            {
-                if (mapping.button == currentReBindingButton)
-                {
-                    KeyCode currentKey = GetCurrentKeyCode(mapping.playerNumber, mapping.fieldName);
-                    if (currentButtonText != null)
-                        currentButtonText.text = $"{currentKey}";
-                    break;
-                }
-            }
         }
 
         isListeningForKey = false;
-        Debug.Log("Keybind listening cancelled");
+        RefreshAllKeybindDisplay();
     }
 
     public void RefreshAllKeybindDisplay()
     {
         foreach (var mapping in keybindMappings)
         {
-            if (mapping.button == null)
-                continue;
+            if (mapping.button == null) continue;
 
             TextMeshProUGUI buttonText = mapping.button.GetComponentInChildren<TextMeshProUGUI>();
             if (buttonText != null)
             {
-                KeyCode currentKey = GetCurrentKeyCode(mapping.playerNumber, mapping.fieldName);
-                buttonText.text = $"{currentKey}";
+                buttonText.text = GetFormattedDisplayString(mapping.playerNumber, mapping.fieldName);
             }
         }
+
+        RefreshTitle(p1TitleText, 1);
+        RefreshTitle(p2TitleText, 2);
+    }
+
+    private void RefreshTitle(TextMeshProUGUI title, int playerNumber)
+    {
+        PlayerControl player = GetPlayer(playerNumber);
+        if (title == null || player == null)
+            return;
+
+        title.text = $"Player {playerNumber} - {(player.UsesJoystick ? "Joystick" : "Keyboard")}";
     }
 
     private void ResetKeybindsToDefault()
     {
-        // Reset Player 1 & 2 to default keybinds
-        ResetPlayerKeybinds(1);
-        ResetPlayerKeybinds(2);
+        ControlSwapManager.Instance?.RestoreOriginalControls();
+
+        if (player1Control != null) player1Control.ResetBindingsToDefault();
+        if (player2Control != null) player2Control.ResetBindingsToDefault();
+        SaveBindings();
         RefreshAllKeybindDisplay();
-        Debug.Log("Keybinds reset to default");
     }
 
-    private void ResetPlayerKeybinds(int playerNumber)
+    private string FormatKey(PlayerControl player, KeyCode code)
     {
-        if (playerNumber == 1)
+        if (player.UsesJoystick && code >= KeyCode.JoystickButton0)
         {
-            // Player 1 defaults
-            SetKeyCode(playerNumber, "MoveUp", KeyCode.W);
-            SetKeyCode(playerNumber, "MoveLeft", KeyCode.A);
-            SetKeyCode(playerNumber, "MoveDown", KeyCode.S);
-            SetKeyCode(playerNumber, "MoveRight", KeyCode.D);
-            SetKeyCode(playerNumber, "PrimaryAction", KeyCode.F);
-            SetKeyCode(playerNumber, "Run", KeyCode.LeftShift);
-            SetKeyCode(playerNumber, "DropItem", KeyCode.Q);
-            SetKeyCode(playerNumber, "EmoteSelectKey", KeyCode.Z);
+            int index = (code - KeyCode.JoystickButton0) % 20;
+            return index < PadButtonNames.Length ? PadButtonNames[index] : "BUTTON" + index;
         }
-        else
+
+        return code.ToString().ToUpper();
+    }
+
+    private string GetFormattedDisplayString(int playerNumber, string fieldName)
+    {
+        PlayerControl player = GetPlayer(playerNumber);
+        if (player == null) return "";
+
+        if (player.UsesJoystick && fieldName.StartsWith("Move"))
         {
-            // Player 2 defaults
-            SetKeyCode(playerNumber, "MoveUp", KeyCode.UpArrow);
-            SetKeyCode(playerNumber, "MoveLeft", KeyCode.LeftArrow);
-            SetKeyCode(playerNumber, "MoveDown", KeyCode.DownArrow);
-            SetKeyCode(playerNumber, "MoveRight", KeyCode.RightArrow);
-            SetKeyCode(playerNumber, "PrimaryAction", KeyCode.Return);
-            SetKeyCode(playerNumber, "Run", KeyCode.LeftShift);
-            SetKeyCode(playerNumber, "DropItem", KeyCode.RightControl);
-            SetKeyCode(playerNumber, "EmoteSelectKey", KeyCode.Backspace);
+            string stickPrefix = player.padMovementAxis switch
+            {
+                ControllerAxisSource.RSB => "RSB",
+                ControllerAxisSource.DPad => "DPAD_",
+                _ => "LSB"
+            };
+
+            return fieldName switch
+            {
+                "MoveUp" => $"{stickPrefix}UP",
+                "MoveLeft" => $"{stickPrefix}LEFT",
+                "MoveDown" => $"{stickPrefix}DOWN",
+                "MoveRight" => $"{stickPrefix}RIGHT",
+                _ => ""
+            };
         }
+
+        return FormatKey(player, GetCurrentKeyCode(playerNumber, fieldName));
     }
 }

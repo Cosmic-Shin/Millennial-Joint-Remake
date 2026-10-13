@@ -4,8 +4,8 @@ public class PowerUp : MonoBehaviour
 {
     [Header("Physics")]
     [SerializeField] private Rigidbody rb;
-    [SerializeField] private Collider solidCollider;      // Is Trigger OFF
-    [SerializeField] private Collider pickupTrigger;      // Is Trigger ON
+    [SerializeField] private Collider solidCollider;
+    [SerializeField] private Collider pickupTrigger;
 
     [Header("Rotation")]
     [SerializeField] private float yRotationSpeed = 90f;
@@ -86,10 +86,13 @@ public class PowerUp : MonoBehaviour
         if (hasLanded)
             return;
 
-        if (collision.gameObject.CompareTag("Ground") ||
-            collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        foreach (ContactPoint contact in collision.contacts)
         {
-            LandPowerUp();
+            if (contact.normal.y > 0.5f)
+            {
+                LandPowerUp();
+                return;
+            }
         }
     }
 
@@ -135,8 +138,6 @@ public class PowerUp : MonoBehaviour
         if (pickupSound != null)
             AudioSource.PlayClipAtPoint(pickupSound, transform.position, pickupVolume);
 
-        Debug.Log($"Player {player.playerNumber} picked up {powerUpType} power-up!");
-
         ApplyPowerUpEffect(player);
 
         Destroy(gameObject);
@@ -145,9 +146,12 @@ public class PowerUp : MonoBehaviour
     private void RandomizePowerUpType()
     {
         PowerUpType[] types = (PowerUpType[])System.Enum.GetValues(typeof(PowerUpType));
-        powerUpType = types[Random.Range(0, types.Length)];
 
-        Debug.Log($"Power-Up randomized into: {powerUpType}");
+        bool versus = OrderManager.Instance != null && OrderManager.Instance.GetCurrentMode() == OrderManager.GameMode.VERSUS;
+        if (!versus)
+            types = System.Array.FindAll(types, t => !PowerUpManager.IsSabotage(t));
+
+        powerUpType = types[Random.Range(0, types.Length)];
     }
 
     private void ApplyPowerUpEffect(PlayerControl player)
@@ -155,18 +159,26 @@ public class PowerUp : MonoBehaviour
         switch (powerUpType)
         {
             case PowerUpType.UnlimitedStamina:
-                PowerUpManager.Instance?.ActivateUnlimitedStamina();
+                PowerUpManager.Instance?.ActivateUnlimitedStamina(player.playerNumber);
                 break;
 
             case PowerUpType.HalvedCookingTime:
-                PowerUpManager.Instance?.ActivateHalvedCookingTime();
+                PowerUpManager.Instance?.ActivateHalvedCookingTime(player.playerNumber);
                 break;
 
             case PowerUpType.RandomFood:
                 GiveRandomCompleteFood(player);
                 break;
             case PowerUpType.SlowTime:
-                PowerUpManager.Instance?.ActivateSlowTime();
+                PowerUpManager.Instance?.ActivateSlowTime(player.playerNumber);
+                break;
+
+            case PowerUpType.FreezeOpponent:
+                PowerUpManager.Instance?.FreezeOpponent(player.playerNumber);
+                break;
+
+            case PowerUpType.ChangeOpponentOrder:
+                PowerUpManager.Instance?.ChangeOpponentOrder(player.playerNumber);
                 break;
         }
     }
@@ -182,9 +194,7 @@ public class PowerUp : MonoBehaviour
 
         player.heldItem = randomFood;
         player.RefreshHeldItemDisplay();
-        PowerUpManager.Instance?.ShowFreeFoodMessage();
-
-        Debug.Log($"Gave {randomFood.GetDisplayName()} to Player {player.playerNumber}");
+        PowerUpManager.Instance?.ShowFreeFoodMessage(player.playerNumber);
     }
 
     private KitchenItemData GenerateRandomCompleteFood()

@@ -53,7 +53,7 @@ public class VersusUIManager : MonoBehaviour
     public Sprite orangeJuiceSprite;
     public Sprite coffeeSprite;
     public Sprite chiliDogSprite;
-    
+
     [Header("Ice Cream Order Sprites")]
     public Sprite strawberryIceCreamSprite;
     public Sprite bubblegumIceCreamSprite;
@@ -78,7 +78,7 @@ public class VersusUIManager : MonoBehaviour
             retryButton.onClick.AddListener(Retry);
 
         if (quitButton != null)
-            quitButton.onClick.AddListener(Quit);
+            quitButton.onClick.AddListener(Menu);
     }
 
     public void ShowVersusUI()
@@ -107,13 +107,16 @@ public class VersusUIManager : MonoBehaviour
             return;
 
         if (timerText != null)
-            timerText.text = Mathf.CeilToInt(OrderManager.Instance.GetCurrentTime()) + "s";
+        {
+            float warning = OrderUIManager.Instance != null ? OrderUIManager.Instance.timerWarningSeconds : 15f;
+            OrderUIManager.SetRoundTimer(timerText, OrderManager.Instance.GetCurrentTime(), true, warning);
+        }
 
         if (player1MoneyText != null)
-            player1MoneyText.text = "$" + OrderManager.Instance.player1Money.ToString("0.00");
+            player1MoneyText.text = OrderUIManager.Money(OrderManager.Instance.player1Money);
 
         if (player2MoneyText != null)
-            player2MoneyText.text = "$" + OrderManager.Instance.player2Money.ToString("0.00");
+            player2MoneyText.text = OrderUIManager.Money(OrderManager.Instance.player2Money);
 
         UpdatePlayer1Orders(OrderManager.Instance.GetPlayer1OrderQueue());
         UpdatePlayer2Orders(OrderManager.Instance.GetPlayer2OrderQueue());
@@ -208,29 +211,53 @@ public class VersusUIManager : MonoBehaviour
         if (versusEndPanel != null)
             versusEndPanel.SetActive(true);
 
+        StartCoroutine(VersusEndRoutine(result));
+    }
+
+    [Header("End Screen Confetti (winner's color)")]
+    public Color player1Color = new Color(1f, 0.25f, 0.25f);
+    public Color player2Color = new Color(0.3f, 0.55f, 1f);
+
+    private System.Collections.IEnumerator VersusEndRoutine(string result)
+    {
+        float p1 = OrderManager.Instance.player1Money;
+        float p2 = OrderManager.Instance.player2Money;
+        string tally = $"\n<size=50%>All-time wins - P1: {PlayerPrefs.GetInt("VS_P1Wins", 0)}  P2: {PlayerPrefs.GetInt("VS_P2Wins", 0)}  Draws: {PlayerPrefs.GetInt("VS_Draws", 0)}</size>";
+
+        OrderManager om = OrderManager.Instance;
+        string p1Summary = "\n<size=45%>" + OrderUIManager.Summary(om.GetStats(1)) + "</size>";
+        string p2Summary = "\n<size=45%>" + OrderUIManager.Summary(om.GetStats(2)) + "</size>";
+
         if (endResultText != null)
         {
-            endResultText.text =
-                result +
-                "\nP1 Money: $" + OrderManager.Instance.player1Money.ToString("0.00") +
-                "\nP2 Money: $" + OrderManager.Instance.player2Money.ToString("0.00");
+            yield return VisualFx.CountUp(1f, 1.2f, k =>
+                endResultText.text = result +
+                    "\nP1 Money: " + OrderUIManager.Money(k < 1f ? Mathf.Round(p1 * k) : p1) + p1Summary +
+                    "\nP2 Money: " + OrderUIManager.Money(k < 1f ? Mathf.Round(p2 * k) : p2) + p2Summary +
+                    tally);
+
+            StartCoroutine(VisualFx.Pop(endResultText.transform, 1.15f, 0.3f));
+        }
+
+        if (versusEndPanel != null)
+        {
+            Color winnerColor = p1 > p2 ? player1Color : p2 > p1 ? player2Color : Color.yellow;
+            StartCoroutine(VisualFx.Confetti((RectTransform)versusEndPanel.transform, winnerColor));
         }
     }
 
     private void Retry()
     {
         Time.timeScale = 1f;
+        GameModeSelector.retryMode = OrderManager.Instance?.GetCurrentMode();
+        MainMenuManager.skipMainMenuOnLoad = true;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    private void Quit()
+    private void Menu()
     {
         Time.timeScale = 1f;
-
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
+        MainMenuManager.skipMainMenuOnLoad = true;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

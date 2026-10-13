@@ -37,8 +37,7 @@ public class ChiliPotCounter : BaseStation, IInteractable
         if (!isApplyingChili)
             return;
 
-        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
-        chiliTimer -= Time.deltaTime * (1f / cookingSpeedMultiplier);
+        chiliTimer -= Time.deltaTime * CookRate(currentPlayer);
         UpdateChiliAnimation();
 
         if (chiliTimer <= 0f)
@@ -75,7 +74,6 @@ public class ChiliPotCounter : BaseStation, IInteractable
 
         currentPlayer = player;
 
-        // IMPORTANT: requires PlayerControl currentChiliPot variable
         currentPlayer.currentChiliPot = this;
 
         StartApplyingChili();
@@ -87,12 +85,12 @@ public class ChiliPotCounter : BaseStation, IInteractable
 
         currentPlayer.doMove = false;
 
-        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
-        chiliTimer = chiliTime * cookingSpeedMultiplier;
+        chiliTimer = chiliTime;
         animationTimer = 0f;
         animationDurationPerLoop = chiliTime / Mathf.Max(1, animationLoops);
 
         ShowChiliUI(true);
+        SetSteam(true);
         Show(currentPlayer, "Adding chili...");
         AudioManager.Instance?.PlayStartChiliSFX();
     }
@@ -105,6 +103,7 @@ public class ChiliPotCounter : BaseStation, IInteractable
             currentPlayer.RefreshHeldItemDisplay();
 
             Show(currentPlayer, "Chili Dog complete!");
+            Sparkle();
             AudioManager.Instance?.PlayFinishedChiliSFX();
             AudioManager.Instance?.PlayCounterTopInteractSFX();
         }
@@ -117,6 +116,7 @@ public class ChiliPotCounter : BaseStation, IInteractable
         isApplyingChili = false;
 
         ShowChiliUI(false);
+        SetSteam(false);
 
         if (currentPlayer != null)
         {

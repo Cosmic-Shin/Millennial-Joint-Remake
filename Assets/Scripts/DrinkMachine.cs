@@ -11,6 +11,13 @@ public class DrinkMachine : BaseStation, IInteractable
         "Orange Juice"
     };
 
+    private static readonly OrderItemType[] drinkOrders = { OrderItemType.Soda, OrderItemType.IceTea, OrderItemType.OrangeJuice };
+
+    [Header("Smart Suggestion")]
+    public Color suggestionTextColor = new Color(0.05f, 0.5f, 0.1f);
+    private int suggestedDrinkIndex = -1;
+    private Color normalTextColor = Color.black;
+
     [Header("Pouring")]
     public float pouringTime = 3f;
     public GameObject pouringUIPanel;
@@ -33,6 +40,9 @@ public class DrinkMachine : BaseStation, IInteractable
     {
         if (player == null) return false;
 
+        if (currentPlayer != null && currentPlayer != player)
+            return false;
+
         if ((isSelectingDrink || isPouring) && currentPlayer == player)
             return true;
 
@@ -47,8 +57,7 @@ public class DrinkMachine : BaseStation, IInteractable
         if (!isPouring)
             return;
 
-        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
-        pouringTimer -= Time.deltaTime * (1f / cookingSpeedMultiplier);
+        pouringTimer -= Time.deltaTime * CookRate(currentPlayer);
         UpdatePouringAnimation();
 
         if (pouringTimer <= 0f)
@@ -60,6 +69,7 @@ public class DrinkMachine : BaseStation, IInteractable
     public void Interact(PlayerControl player)
     {
         if (player == null) return;
+        if (currentPlayer != null && currentPlayer != player) return;
 
         if (isPouring)
         {
@@ -94,9 +104,18 @@ public class DrinkMachine : BaseStation, IInteractable
     private void StartDrinkSelection()
     {
         isSelectingDrink = true;
-        selectedDrinkIndex = 0;
+
+        QueuedOrder urgent = OrderManager.Instance != null
+            ? OrderManager.Instance.MostUrgentOrder(currentPlayer, dish => System.Array.IndexOf(drinkOrders, dish) >= 0)
+            : null;
+        suggestedDrinkIndex = urgent != null ? System.Array.IndexOf(drinkOrders, urgent.item.type) : -1;
+        selectedDrinkIndex = Mathf.Max(0, suggestedDrinkIndex);
+
+        if (currentPlayer.emoteSelectionText != null)
+            normalTextColor = currentPlayer.emoteSelectionText.color;
 
         currentPlayer.doMove = false;
+        currentPlayer.ResetMenuStep();
 
         if (currentPlayer.emoteSelectionObject != null)
             currentPlayer.emoteSelectionObject.SetActive(true);
@@ -115,8 +134,7 @@ public class DrinkMachine : BaseStation, IInteractable
         if (currentPlayer.emoteSelectionText != null)
             currentPlayer.emoteSelectionText.text = string.Empty;
 
-        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
-        pouringTimer = pouringTime * cookingSpeedMultiplier;
+        pouringTimer = pouringTime;
         animationTimer = 0f;
         animationDurationPerLoop = pouringTime / Mathf.Max(1, animationLoops);
 
@@ -175,7 +193,10 @@ public class DrinkMachine : BaseStation, IInteractable
                 currentPlayer.emoteSelectionObject.SetActive(false);
 
             if (currentPlayer.emoteSelectionText != null)
+            {
                 currentPlayer.emoteSelectionText.text = string.Empty;
+                currentPlayer.emoteSelectionText.color = normalTextColor;
+            }
         }
 
         currentPlayer = null;
@@ -187,6 +208,7 @@ public class DrinkMachine : BaseStation, IInteractable
             return;
 
         currentPlayer.emoteSelectionText.text = drinkSelectionLabels[selectedDrinkIndex];
+        currentPlayer.emoteSelectionText.color = selectedDrinkIndex == suggestedDrinkIndex ? suggestionTextColor : normalTextColor;
     }
 
     public void HandleDrinkSelectionInput()
@@ -194,20 +216,17 @@ public class DrinkMachine : BaseStation, IInteractable
         if (!isSelectingDrink || currentPlayer == null)
             return;
 
-        if (Vector3.Distance(transform.position, currentPlayer.transform.position) > 3f)
+        if (currentPlayer.IsDropItemPressed() ||
+            Vector3.Distance(transform.position, currentPlayer.transform.position) > 3f)
         {
             EndDrinkMachineUse();
             return;
         }
 
-        if (Input.GetKeyDown(currentPlayer.MoveLeft))
+        int step = currentPlayer.GetMenuStep();
+        if (step != 0)
         {
-            selectedDrinkIndex = (selectedDrinkIndex - 1 + drinkSelectionLabels.Length) % drinkSelectionLabels.Length;
-            UpdateDrinkSelectionText();
-        }
-        else if (Input.GetKeyDown(currentPlayer.MoveRight))
-        {
-            selectedDrinkIndex = (selectedDrinkIndex + 1) % drinkSelectionLabels.Length;
+            selectedDrinkIndex = (selectedDrinkIndex + step + drinkSelectionLabels.Length) % drinkSelectionLabels.Length;
             UpdateDrinkSelectionText();
         }
     }

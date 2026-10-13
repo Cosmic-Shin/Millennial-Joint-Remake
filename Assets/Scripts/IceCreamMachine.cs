@@ -11,6 +11,13 @@ public class IceCreamMachine : BaseStation, IInteractable
         "Mango"
     };
 
+    private static readonly OrderItemType[] iceCreamOrders = { OrderItemType.StrawberryIceCream, OrderItemType.BubblegumIceCream, OrderItemType.MangoIceCream };
+
+    [Header("Smart Suggestion")]
+    public Color suggestionTextColor = new Color(0.05f, 0.5f, 0.1f);
+    private int suggestedIceCreamIndex = -1;
+    private Color normalTextColor = Color.black;
+
     [Header("Scooping")]
     public float scoopingTime = 3f;
     public GameObject scoopingUIPanel;
@@ -33,10 +40,12 @@ public class IceCreamMachine : BaseStation, IInteractable
     {
         if (player == null) return false;
 
+        if (currentPlayer != null && currentPlayer != player)
+            return false;
+
         if ((isSelectingIceCream || isScooping) && currentPlayer == player)
             return true;
 
-        // Player just needs empty hands - no cup required
         return player.heldItem.IsEmpty && !isScooping;
     }
 
@@ -45,8 +54,7 @@ public class IceCreamMachine : BaseStation, IInteractable
         if (!isScooping)
             return;
 
-        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
-        scoopingTimer -= Time.deltaTime * (1f / cookingSpeedMultiplier);
+        scoopingTimer -= Time.deltaTime * CookRate(currentPlayer);
         UpdateScoopingAnimation();
 
         if (scoopingTimer <= 0f)
@@ -58,6 +66,7 @@ public class IceCreamMachine : BaseStation, IInteractable
     public void Interact(PlayerControl player)
     {
         if (player == null) return;
+        if (currentPlayer != null && currentPlayer != player) return;
 
         if (isScooping)
         {
@@ -86,9 +95,18 @@ public class IceCreamMachine : BaseStation, IInteractable
     private void StartIceCreamSelection()
     {
         isSelectingIceCream = true;
-        selectedIceCreamIndex = 0;
+
+        QueuedOrder urgent = OrderManager.Instance != null
+            ? OrderManager.Instance.MostUrgentOrder(currentPlayer, dish => System.Array.IndexOf(iceCreamOrders, dish) >= 0)
+            : null;
+        suggestedIceCreamIndex = urgent != null ? System.Array.IndexOf(iceCreamOrders, urgent.item.type) : -1;
+        selectedIceCreamIndex = Mathf.Max(0, suggestedIceCreamIndex);
+
+        if (currentPlayer.emoteSelectionText != null)
+            normalTextColor = currentPlayer.emoteSelectionText.color;
 
         currentPlayer.doMove = false;
+        currentPlayer.ResetMenuStep();
 
         if (currentPlayer.emoteSelectionObject != null)
             currentPlayer.emoteSelectionObject.SetActive(true);
@@ -107,8 +125,7 @@ public class IceCreamMachine : BaseStation, IInteractable
         if (currentPlayer.emoteSelectionText != null)
             currentPlayer.emoteSelectionText.text = string.Empty;
 
-        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
-        scoopingTimer = scoopingTime * cookingSpeedMultiplier;
+        scoopingTimer = scoopingTime;
         animationTimer = 0f;
         animationDurationPerLoop = scoopingTime / Mathf.Max(1, animationLoops);
 
@@ -121,7 +138,6 @@ public class IceCreamMachine : BaseStation, IInteractable
     {
         if (currentPlayer != null)
         {
-            // Create ice cream item directly - no cup needed
             switch (selectedIceCreamIndex)
             {
                 case 0:
@@ -164,7 +180,10 @@ public class IceCreamMachine : BaseStation, IInteractable
                 currentPlayer.emoteSelectionObject.SetActive(false);
 
             if (currentPlayer.emoteSelectionText != null)
+            {
                 currentPlayer.emoteSelectionText.text = string.Empty;
+                currentPlayer.emoteSelectionText.color = normalTextColor;
+            }
         }
 
         currentPlayer = null;
@@ -176,6 +195,7 @@ public class IceCreamMachine : BaseStation, IInteractable
             return;
 
         currentPlayer.emoteSelectionText.text = iceCreamSelectionLabels[selectedIceCreamIndex];
+        currentPlayer.emoteSelectionText.color = selectedIceCreamIndex == suggestedIceCreamIndex ? suggestionTextColor : normalTextColor;
     }
 
     public void HandleIceCreamSelectionInput()
@@ -183,20 +203,17 @@ public class IceCreamMachine : BaseStation, IInteractable
         if (!isSelectingIceCream || currentPlayer == null)
             return;
 
-        if (Vector3.Distance(transform.position, currentPlayer.transform.position) > 3f)
+        if (currentPlayer.IsDropItemPressed() ||
+            Vector3.Distance(transform.position, currentPlayer.transform.position) > 3f)
         {
             EndIceCreamMachineUse();
             return;
         }
 
-        if (Input.GetKeyDown(currentPlayer.MoveLeft))
+        int step = currentPlayer.GetMenuStep();
+        if (step != 0)
         {
-            selectedIceCreamIndex = (selectedIceCreamIndex - 1 + iceCreamSelectionLabels.Length) % iceCreamSelectionLabels.Length;
-            UpdateIceCreamSelectionText();
-        }
-        else if (Input.GetKeyDown(currentPlayer.MoveRight))
-        {
-            selectedIceCreamIndex = (selectedIceCreamIndex + 1) % iceCreamSelectionLabels.Length;
+            selectedIceCreamIndex = (selectedIceCreamIndex + step + iceCreamSelectionLabels.Length) % iceCreamSelectionLabels.Length;
             UpdateIceCreamSelectionText();
         }
     }

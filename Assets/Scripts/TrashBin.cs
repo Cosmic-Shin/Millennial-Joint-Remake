@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public class TrashBin : BaseStation, IInteractable
 {
     public bool CanInteractWith(PlayerControl player)
@@ -16,7 +14,6 @@ public class TrashBin : BaseStation, IInteractable
         player.RefreshHeldItemDisplay();
         Show(player, "Trashed item!");
 
-        // Play interact audio (consistent with other stations)
         AudioManager.Instance?.PlayCounterTopInteractSFX();
     }
 }

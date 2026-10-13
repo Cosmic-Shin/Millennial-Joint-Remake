@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public class CupTable : BaseStation, IInteractable
 {
     public bool CanInteractWith(PlayerControl player)
