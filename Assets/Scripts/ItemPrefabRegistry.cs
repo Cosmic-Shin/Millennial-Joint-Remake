@@ -5,6 +5,10 @@ public class ItemPrefabRegistry : MonoBehaviour
 {
     public static ItemPrefabRegistry Instance { get; private set; }
 
+    [Header("Look")]
+    [Tooltip("Scales every food/plate/cup model (held, on stations, dropped). Above 1 = chunky cartoon food.")]
+    public float foodScale = 1.4f;
+
     [Header("Plate Prefabs")]
     public GameObject platePrefab;
     public GameObject plateWithBunPrefab;
@@ -15,7 +19,6 @@ public class ItemPrefabRegistry : MonoBehaviour
     public GameObject plateWithChickenPrefab;
     public GameObject plateWithFriesPrefab;
 
-    // CHILI DOG PREFABS
     public GameObject plateWithDogBunPrefab;
     public GameObject plateWithDogBunAndHotdogPrefab;
     public GameObject plateCompleteChiliDogPrefab;
@@ -26,7 +29,7 @@ public class ItemPrefabRegistry : MonoBehaviour
     public GameObject cupIceTeaPrefab;
     public GameObject cupOrangeJuicePrefab;
     public GameObject cupCoffeePrefab;
-    
+
     [Header("Ice Cream Prefabs (Direct Items - No Cup)")]
     public GameObject strawberryIceCreamPrefab;
     public GameObject bubblegumIceCreamPrefab;
@@ -44,7 +47,6 @@ public class ItemPrefabRegistry : MonoBehaviour
     public GameObject frozenFriesPrefab;
     public GameObject cookedFriesPrefab;
 
-    // NEW INGREDIENT PREFABS
     public GameObject dogBunPrefab;
     public GameObject hotdogRawPrefab;
     public GameObject hotdogCookedPrefab;
@@ -81,7 +83,6 @@ public class ItemPrefabRegistry : MonoBehaviour
             { ItemType.DogBun, dogBunPrefab },
             { ItemType.HotDogRaw, hotdogRawPrefab },
             { ItemType.HotDogCooked, hotdogCookedPrefab },
-            // Ice cream as direct items (no cup needed)
             { ItemType.StrawberryIceCream, strawberryIceCreamPrefab },
             { ItemType.BubblegumIceCream, bubblegumIceCreamPrefab },
             { ItemType.MangoIceCream, mangoIceCreamPrefab }
@@ -109,24 +110,40 @@ public class ItemPrefabRegistry : MonoBehaviour
         if (itemData == null || itemData.IsEmpty)
             return null;
 
-        // Handle Cup items
         if (itemData.type == ItemType.Cup)
             return GetCupPrefab(itemData);
 
-        // Handle Plate items
         if (itemData.type == ItemType.Plate)
             return GetPlatePrefab(itemData);
 
-        // Handle all other items (including ice cream)
         if (simplePrefabLookup.TryGetValue(itemData.type, out GameObject prefab))
             return prefab;
 
         return null;
     }
 
+    public GameObject GetPrefabForOrder(OrderItemType type)
+    {
+        return type switch
+        {
+            OrderItemType.Burger => plateCompleteBurgerPrefab,
+            OrderItemType.Sandwich => plateWithBreadAndHamPrefab,
+            OrderItemType.FriedChicken => plateWithChickenPrefab,
+            OrderItemType.Fries => plateWithFriesPrefab,
+            OrderItemType.ChiliDog => plateCompleteChiliDogPrefab,
+            OrderItemType.Soda => cupSodaPrefab,
+            OrderItemType.IceTea => cupIceTeaPrefab,
+            OrderItemType.OrangeJuice => cupOrangeJuicePrefab,
+            OrderItemType.Coffee => cupCoffeePrefab,
+            OrderItemType.StrawberryIceCream => strawberryIceCreamPrefab,
+            OrderItemType.BubblegumIceCream => bubblegumIceCreamPrefab,
+            OrderItemType.MangoIceCream => mangoIceCreamPrefab,
+            _ => null
+        };
+    }
+
     private GameObject GetCupPrefab(KitchenItemData itemData)
     {
-        // Remove ice cream from cup since you don't need it
         if (itemData.cupHasCoffee) return cupCoffeePrefab;
         if (itemData.cupHasIceTea) return cupIceTeaPrefab;
         if (itemData.cupHasSoda) return cupSodaPrefab;
@@ -137,7 +154,6 @@ public class ItemPrefabRegistry : MonoBehaviour
 
     private GameObject GetPlatePrefab(KitchenItemData itemData)
     {
-        // CHILI DOG (TOP PRIORITY)
         if (itemData.IsCompleteChiliDog)
             return platePrefabLookup["complete_chilidog"];
 
@@ -147,7 +163,6 @@ public class ItemPrefabRegistry : MonoBehaviour
         if (itemData.plateHasDogBun)
             return platePrefabLookup["dogbun"];
 
-        // EXISTING SYSTEM
         if (itemData.IsCompleteSandwich)
             return platePrefabLookup["complete_sandwich"];
 

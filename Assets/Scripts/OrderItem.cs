@@ -35,13 +35,12 @@ public class OrderItem
         if (type == OrderItemType.FriedChicken) return item.IsPlate && item.IsCompleteFriedChicken;
         if (type == OrderItemType.Fries) return item.IsPlate && item.IsCompleteFries;
         if (type == OrderItemType.ChiliDog) return item.IsPlate && item.IsCompleteChiliDog;
-        
+
         if (type == OrderItemType.Soda) return item.IsCup && item.cupHasSoda;
         if (type == OrderItemType.IceTea) return item.IsCup && item.cupHasIceTea;
         if (type == OrderItemType.OrangeJuice) return item.IsCup && item.cupHasOrangeJuice;
         if (type == OrderItemType.Coffee) return item.IsCup && item.cupHasCoffee;
-        
-        // FIXED: Check for direct ice cream items (not in cup)
+
         if (type == OrderItemType.StrawberryIceCream) return item.type == ItemType.StrawberryIceCream;
         if (type == OrderItemType.BubblegumIceCream) return item.type == ItemType.BubblegumIceCream;
         if (type == OrderItemType.MangoIceCream) return item.type == ItemType.MangoIceCream;

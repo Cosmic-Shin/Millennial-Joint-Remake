@@ -9,12 +9,18 @@ public class FryerCounter : StorageStation
     public GameObject cookingUIPanel;
     public Transform cookingAnchor;
 
+    [Tooltip("Smoke that thickens while cooked food is about to burn")]
+    public ParticleSystem burnSmoke;
+    [Tooltip("Flickering light switched on while cooking")]
+    public GameObject fireGlow;
+
     [Header("Cooking Animation")]
     public Image cookingUIImage;
     public Sprite[] cookingSprites;
     public int animationLoops = 3;
 
     private bool isCooking = false;
+    private PlayerControl cookingPlayer;
     private float cookingTimer = 0f;
     private bool isOvercooked = false;
     private float overcookTimer = 0f;
@@ -59,6 +65,8 @@ public class FryerCounter : StorageStation
 
         if (storedItem.IsEmpty)
         {
+            cookingPlayer = player;
+
             if (player.heldItem.type == ItemType.ChickenRaw)
             {
                 storedItem.Set(ItemType.ChickenRaw);
@@ -90,6 +98,7 @@ public class FryerCounter : StorageStation
             UpdateStoredItemVisual();
             isOvercooked = false;
             overcookTimer = 0f;
+            ShowCookingUI(false);
             Show(player, "Picked up cooked fries");
             AudioManager.Instance?.PlayCounterTopInteractSFX();
             return;
@@ -102,6 +111,7 @@ public class FryerCounter : StorageStation
             UpdateStoredItemVisual();
             isOvercooked = false;
             overcookTimer = 0f;
+            ShowCookingUI(false);
             Show(player, "Picked up cooked chicken");
             AudioManager.Instance?.PlayCounterTopInteractSFX();
             return;
@@ -112,8 +122,8 @@ public class FryerCounter : StorageStation
     {
         if (isCooking)
         {
-            float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
-            cookingTimer -= Time.deltaTime * (1f / cookingSpeedMultiplier);
+            SetBurnSizzle(true, 0f);
+            cookingTimer -= Time.deltaTime * CookRate(cookingPlayer);
             UpdateCookingAnimation();
 
             if (cookingTimer <= 0f)
@@ -126,27 +136,50 @@ public class FryerCounter : StorageStation
         else if (isOvercooked)
         {
             overcookTimer -= Time.deltaTime;
+            FlashBurnWarning();
 
             if (overcookTimer <= 0f)
             {
                 storedItem.Clear();
                 UpdateStoredItemVisual();
                 isOvercooked = false;
-                Debug.Log("FryerCounter: Cooked item overcooked and destroyed!");
+                ShowCookingUI(false);
+
+                if (CameraMovement.Instance != null)
+                    CameraMovement.Instance.Shake(0.2f, 0.3f);
             }
         }
+    }
+
+    private void FlashBurnWarning()
+    {
+        ShowCookingUI(true);
+
+        if (cookingUIImage != null)
+            cookingUIImage.color = Color.Lerp(Color.white, Color.red, Mathf.PingPong(Time.time * 4f, 1f));
+
+        if (burnSmoke != null)
+        {
+            if (!burnSmoke.isPlaying)
+                burnSmoke.Play();
+
+            var emission = burnSmoke.emission;
+            emission.rateOverTimeMultiplier = Mathf.Lerp(4f, 30f, 1f - overcookTimer / overcookTime);
+        }
+
+        SetBurnSizzle(true, 1f - overcookTimer / overcookTime);
     }
 
     private void StartCooking()
     {
         isCooking = true;
-        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
-        cookingTimer = cookingTime * cookingSpeedMultiplier;
+        cookingTimer = cookingTime;
 
         animationTimer = 0f;
         animationDurationPerLoop = cookingTime / Mathf.Max(1, animationLoops);
 
         ShowCookingUI(true);
+        SetSteam(true);
         AudioManager.Instance?.PlayStartFryingSFX();
     }
 
@@ -160,6 +193,8 @@ public class FryerCounter : StorageStation
         UpdateStoredItemVisual();
         ShowCookingUI(false);
         isCooking = false;
+        SetSteam(false);
+        Sparkle();
         AudioManager.Instance?.PlayFinishedFryingSFX();
     }
 
@@ -187,8 +222,17 @@ public class FryerCounter : StorageStation
 
     private void ShowCookingUI(bool show)
     {
+        if (fireGlow != null)
+            fireGlow.SetActive(show);
+
         if (cookingUIPanel != null)
             cookingUIPanel.SetActive(show);
+
+        if (!show && burnSmoke != null)
+            burnSmoke.Stop();
+
+        if (!show)
+            SetBurnSizzle(false);
 
         if (!show && cookingUIImage != null)
             cookingUIImage.color = Color.white;

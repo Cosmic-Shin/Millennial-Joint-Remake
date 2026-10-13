@@ -13,7 +13,6 @@ public class PauseManager : MonoBehaviour
     [Header("Pause Panel Buttons")]
     public Button closeButton;
     public Button howToPlayButton;
-    public Button scoreButton;
     public Button retryButton;
     public Button quitButton;
 
@@ -24,7 +23,13 @@ public class PauseManager : MonoBehaviour
     public Slider bgmSlider;
     public Slider sfxSlider;
 
+    [Header("Display Settings")]
+    public Button fullscreenButton;
+    public Button resolutionButton;
+
     private bool isPaused = false;
+    private Vector2Int[] resolutions;
+    private int resolutionIndex;
 
     private void Awake()
     {
@@ -48,9 +53,6 @@ public class PauseManager : MonoBehaviour
         if (howToPlayButton != null)
             howToPlayButton.onClick.AddListener(OpenHowToPlay);
 
-        if (scoreButton != null)
-            scoreButton.onClick.AddListener(OpenScore);
-
         if (retryButton != null)
             retryButton.onClick.AddListener(Retry);
 
@@ -61,14 +63,108 @@ public class PauseManager : MonoBehaviour
             howToPlayCloseButton.onClick.AddListener(BackToPausePanel);
 
         SetupVolumeSliders();
+        SetupDisplaySettings();
+    }
+
+    private void SetupDisplaySettings()
+    {
+        resolutions = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Distinct(
+            System.Linq.Enumerable.Select(Screen.resolutions, r => new Vector2Int(r.width, r.height))));
+
+        resolutionIndex = System.Array.IndexOf(resolutions, new Vector2Int(Screen.width, Screen.height));
+        if (resolutionIndex < 0)
+            resolutionIndex = resolutions.Length - 1;
+
+        if (fullscreenButton != null)
+            fullscreenButton.onClick.AddListener(() => ApplyDisplay(!Screen.fullScreen, resolutionIndex));
+
+        if (resolutionButton != null)
+            resolutionButton.onClick.AddListener(() => ApplyDisplay(Screen.fullScreen, (resolutionIndex + 1) % Mathf.Max(1, resolutions.Length)));
+
+        UpdateDisplayLabels(Screen.fullScreen);
+    }
+
+    private void ApplyDisplay(bool fullscreen, int index)
+    {
+        resolutionIndex = index;
+
+        if (resolutions.Length > 0)
+        {
+            Vector2Int res = resolutions[index];
+            Screen.SetResolution(res.x, res.y, fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed);
+        }
+        else
+        {
+            Screen.fullScreen = fullscreen;
+        }
+
+        UpdateDisplayLabels(fullscreen);
+    }
+
+    private void UpdateDisplayLabels(bool fullscreen)
+    {
+        TMPro.TMP_Text fullscreenText = fullscreenButton != null ? fullscreenButton.GetComponentInChildren<TMPro.TMP_Text>() : null;
+        TMPro.TMP_Text resolutionText = resolutionButton != null ? resolutionButton.GetComponentInChildren<TMPro.TMP_Text>() : null;
+
+        if (fullscreenText != null)
+            fullscreenText.text = fullscreen ? "Fullscreen: On" : "Fullscreen: Off";
+
+        if (resolutionText != null && resolutions.Length > 0)
+            resolutionText.text = $"{resolutions[resolutionIndex].x} x {resolutions[resolutionIndex].y}";
+    }
+
+    private bool openedFromMainMenu;
+
+    private GameObject[] GameOnlyButtons => new[]
+    {
+        howToPlayButton != null ? howToPlayButton.gameObject : null,
+        retryButton != null ? retryButton.gameObject : null,
+        quitButton != null ? quitButton.gameObject : null
+    };
+
+    public void OpenFromMainMenu(GameObject panel)
+    {
+        if (panel == null)
+            return;
+
+        openedFromMainMenu = true;
+        MainMenuManager.Instance?.mainMenuPanel.SetActive(false);
+
+        foreach (GameObject button in GameOnlyButtons)
+            SetPanel(button, panel != pausePanel);
+
+        SetPanel(panel, true);
+    }
+
+    private void ReturnToMainMenu()
+    {
+        openedFromMainMenu = false;
+
+        SetPanel(pausePanel, false);
+        SetPanel(howToPlayPanel, false);
+
+        foreach (GameObject button in GameOnlyButtons)
+            SetPanel(button, true);
+
+        MainMenuManager.Instance?.mainMenuPanel.SetActive(true);
     }
 
     private void Update()
     {
-        if (OrderManager.Instance != null && OrderManager.Instance.state == OrderManager.GameState.Waiting)
+        if (KeybindManager.Instance != null && KeybindManager.Instance.IsCapturingInput)
             return;
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (openedFromMainMenu)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.JoystickButton1))
+                ReturnToMainMenu();
+            return;
+        }
+
+        if (OrderManager.Instance != null && OrderManager.Instance.state != OrderManager.GameState.Playing)
+            return;
+
+        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.JoystickButton7))
         {
             if (isPaused)
                 Resume();
@@ -84,25 +180,21 @@ public class PauseManager : MonoBehaviour
 
         SetPanel(pausePanel, true);
         SetPanel(howToPlayPanel, false);
-
-        if (ScoreManager.Instance != null && ScoreManager.Instance.scorePanel != null)
-            ScoreManager.Instance.scorePanel.SetActive(false);
-
-        Debug.Log("Game Paused");
     }
 
     public void Resume()
     {
+        if (openedFromMainMenu)
+        {
+            ReturnToMainMenu();
+            return;
+        }
+
         isPaused = false;
         Time.timeScale = 1f;
 
         SetPanel(pausePanel, false);
         SetPanel(howToPlayPanel, false);
-
-        if (ScoreManager.Instance != null && ScoreManager.Instance.scorePanel != null)
-            ScoreManager.Instance.scorePanel.SetActive(false);
-
-        Debug.Log("Game Resumed");
     }
 
     public void ForceResume()
@@ -112,36 +204,24 @@ public class PauseManager : MonoBehaviour
 
         SetPanel(pausePanel, false);
         SetPanel(howToPlayPanel, false);
-
-        if (ScoreManager.Instance != null && ScoreManager.Instance.scorePanel != null)
-            ScoreManager.Instance.scorePanel.SetActive(false);
     }
 
     public void OpenHowToPlay()
     {
         SetPanel(pausePanel, false);
         SetPanel(howToPlayPanel, true);
-
-        if (ScoreManager.Instance != null && ScoreManager.Instance.scorePanel != null)
-            ScoreManager.Instance.scorePanel.SetActive(false);
-    }
-
-    public void OpenScore()
-    {
-        SetPanel(pausePanel, false);
-        SetPanel(howToPlayPanel, false);
-
-        if (ScoreManager.Instance != null)
-            ScoreManager.Instance.OpenScorePanel();
     }
 
     public void BackToPausePanel()
     {
+        if (openedFromMainMenu)
+        {
+            ReturnToMainMenu();
+            return;
+        }
+
         SetPanel(pausePanel, true);
         SetPanel(howToPlayPanel, false);
-
-        if (ScoreManager.Instance != null && ScoreManager.Instance.scorePanel != null)
-            ScoreManager.Instance.scorePanel.SetActive(false);
     }
 
     public void Retry()
@@ -153,89 +233,21 @@ public class PauseManager : MonoBehaviour
 
         isPaused = false;
 
+        GameModeSelector.retryMode = OrderManager.Instance?.GetCurrentMode();
         MainMenuManager.skipMainMenuOnLoad = true;
 
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-
-        Debug.Log("Reloading scene for retry");
     }
 
     public void QuitToMainMenu()
     {
-        // Reset time scale
         Time.timeScale = 1f;
-        
-        // Close all panels
+
         SetPanel(pausePanel, false);
         SetPanel(howToPlayPanel, false);
         isPaused = false;
-        
-        // Reload the scene
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-        
-        // After scene reloads, show main menu
-        StartCoroutine(ShowMainMenuAfterLoad());
-        
-        Debug.Log("Returning to Main Menu");
-    }
-
-    private System.Collections.IEnumerator ShowGameModeSelectorAfterLoad()
-    {
-        // Wait for the scene to fully load (wait 2 frames)
-        yield return null;
-        yield return null;
-        
-        // Find and hide main menu panel
-        if (MainMenuManager.Instance != null)
-        {
-            if (MainMenuManager.Instance.mainMenuPanel != null)
-                MainMenuManager.Instance.mainMenuPanel.SetActive(false);
-            
-            if (MainMenuManager.Instance.startPanel != null)
-                MainMenuManager.Instance.startPanel.SetActive(false);
-        }
-        
-        // Hide any order UI
-        if (OrderUIManager.Instance != null)
-            OrderUIManager.Instance.HideNormalGameplayUI();
-        
-        if (VersusUIManager.Instance != null)
-            VersusUIManager.Instance.HideVersusUI();
-        
-        // Show game mode selector
-        if (GameModeSelector.Instance != null)
-        {
-            GameModeSelector.Instance.ShowModeSelector();
-        }
-        
-        // Make sure time scale is 1
-        Time.timeScale = 1f;
-        
-        Debug.Log("Game Mode Selector shown, Main Menu hidden");
-    }
-
-    private System.Collections.IEnumerator ShowMainMenuAfterLoad()
-    {
-        // Wait for the scene to fully load (wait 2 frames)
-        yield return null;
-        yield return null;
-        
-        // Show main menu
-        if (MainMenuManager.Instance != null)
-        {
-            MainMenuManager.Instance.ShowMainMenu();
-        }
-        
-        // Hide game mode selector if it's visible
-        if (GameModeSelector.Instance != null && GameModeSelector.Instance.modePanel != null)
-        {
-            GameModeSelector.Instance.modePanel.SetActive(false);
-        }
-        
-        // Make sure time scale is 1
-        Time.timeScale = 1f;
-        
-        Debug.Log("Main Menu shown");
     }
 
     private void SetupVolumeSliders()
@@ -272,10 +284,5 @@ public class PauseManager : MonoBehaviour
     {
         if (panel != null)
             panel.SetActive(active);
-    }
-
-    public bool IsPaused()
-    {
-        return isPaused;
     }
 }

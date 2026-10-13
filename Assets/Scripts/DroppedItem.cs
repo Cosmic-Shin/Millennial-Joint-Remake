@@ -5,17 +5,19 @@ public class DroppedItem : MonoBehaviour, IInteractable
 {
     public KitchenItemData item = new KitchenItemData();
     private KitchenItemVisualizer visualizer;
-    private Rigidbody rb;
-    private bool isWaitingForPeak = false;
 
-    private void Start()
-    {
-        rb = GetComponent<Rigidbody>();
-    }
+    private const float fallDestroyY = -15f;
+
+    [HideInInspector] public PlayerControl droppedBy;
+    private const float forgetDropperDistance = 2.5f;
 
     private void Update()
     {
-        // Gravity is now enabled immediately from spawn
+        if (transform.position.y < fallDestroyY)
+            Destroy(gameObject);
+
+        if (droppedBy != null && Vector3.Distance(droppedBy.transform.position, transform.position) > forgetDropperDistance)
+            droppedBy = null;
     }
 
     public void Initialize(KitchenItemData sourceItem, KitchenItemVisualizer sourceVisualizer)
@@ -30,14 +32,8 @@ public class DroppedItem : MonoBehaviour, IInteractable
             visualizer.localPosition = Vector3.zero;
             visualizer.localEulerAngles = Vector3.zero;
             visualizer.localScale = Vector3.one;
-            // No need to copy prefab references - registry handles them
             visualizer.Refresh(item);
         }
-    }
-
-    public void SetWaitForPeak()
-    {
-        // No longer needed - gravity is enabled immediately
     }
 
     public bool CanInteractWith(PlayerControl player)

@@ -12,12 +12,18 @@ public class StoveCounter : BaseStation, IInteractable
     public GameObject cookingUIPanel;
     public Transform cookingAnchor;
 
+    [Tooltip("Smoke that thickens while cooked food is about to burn")]
+    public ParticleSystem burnSmoke;
+    [Tooltip("Flickering light switched on while cooking")]
+    public GameObject fireGlow;
+
     [Header("Cooking Animation")]
     public Image cookingUIImage;
     public Sprite[] cookingSprites;
     public int animationLoops = 3;
 
     private bool isCooking = false;
+    private PlayerControl cookingPlayer;
     private float cookingTimer = 0f;
     private bool isOvercooked = false;
     private float overcookTimer = 0f;
@@ -29,7 +35,6 @@ public class StoveCounter : BaseStation, IInteractable
     {
         if (player == null) return false;
 
-        // 🔥 Accept BOTH Patty and Hotdog
         if (storedItem.IsEmpty)
             return player.heldItem.type == ItemType.PattyRaw ||
                    player.heldItem.type == ItemType.HotDogRaw;
@@ -50,7 +55,6 @@ public class StoveCounter : BaseStation, IInteractable
     {
         if (player == null) return;
 
-        // 🔥 If cooking → check status
         if (isCooking)
         {
             if (cookingTimer <= 0f)
@@ -65,7 +69,6 @@ public class StoveCounter : BaseStation, IInteractable
             return;
         }
 
-        // 🔥 Place item (Patty OR Hotdog)
         if (storedItem.IsEmpty)
         {
             if (player.heldItem.type == ItemType.PattyRaw ||
@@ -75,6 +78,7 @@ public class StoveCounter : BaseStation, IInteractable
                 player.heldItem.Clear();
 
                 UpdateStoredItemVisual();
+                cookingPlayer = player;
                 StartCooking();
 
                 Show(player, "Cooking started");
@@ -85,7 +89,6 @@ public class StoveCounter : BaseStation, IInteractable
             return;
         }
 
-        // 🔥 Pick up cooked item
         if (storedItem.type == ItemType.PattyCooked ||
             storedItem.type == ItemType.HotDogCooked)
         {
@@ -96,6 +99,7 @@ public class StoveCounter : BaseStation, IInteractable
 
             isOvercooked = false;
             overcookTimer = 0f;
+            ShowCookingUI(false);
 
             Show(player, "Picked up cooked item");
             AudioManager.Instance?.PlayCounterTopInteractSFX();
@@ -109,8 +113,8 @@ public class StoveCounter : BaseStation, IInteractable
     {
         if (isCooking)
         {
-            float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
-            cookingTimer -= Time.deltaTime * (1f / cookingSpeedMultiplier);
+            SetBurnSizzle(true, 0f);
+            cookingTimer -= Time.deltaTime * CookRate(cookingPlayer);
             UpdateCookingAnimation();
 
             if (cookingTimer <= 0f)
@@ -123,34 +127,55 @@ public class StoveCounter : BaseStation, IInteractable
         else if (isOvercooked)
         {
             overcookTimer -= Time.deltaTime;
+            FlashBurnWarning();
 
             if (overcookTimer <= 0f)
             {
                 storedItem.Clear();
                 UpdateStoredItemVisual();
                 isOvercooked = false;
+                ShowCookingUI(false);
 
-                Debug.Log("StoveCounter: Item overcooked and destroyed!");
+                if (CameraMovement.Instance != null)
+                    CameraMovement.Instance.Shake(0.2f, 0.3f);
             }
         }
+    }
+
+    private void FlashBurnWarning()
+    {
+        ShowCookingUI(true);
+
+        if (cookingUIImage != null)
+            cookingUIImage.color = Color.Lerp(Color.white, Color.red, Mathf.PingPong(Time.time * 4f, 1f));
+
+        if (burnSmoke != null)
+        {
+            if (!burnSmoke.isPlaying)
+                burnSmoke.Play();
+
+            var emission = burnSmoke.emission;
+            emission.rateOverTimeMultiplier = Mathf.Lerp(4f, 30f, 1f - overcookTimer / overcookTime);
+        }
+
+        SetBurnSizzle(true, 1f - overcookTimer / overcookTime);
     }
 
     private void StartCooking()
     {
         isCooking = true;
-        float cookingSpeedMultiplier = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetCookingTimeMultiplier() : 1f;
-        cookingTimer = cookingTime * cookingSpeedMultiplier;
+        cookingTimer = cookingTime;
 
         animationTimer = 0f;
         animationDurationPerLoop = cookingTime / Mathf.Max(1, animationLoops);
 
         ShowCookingUI(true);
+        SetSteam(true);
         AudioManager.Instance?.PlayStartCookingSFX();
     }
 
     private void FinishCooking()
     {
-        // 🔥 Convert correctly depending on item
         if (storedItem.type == ItemType.PattyRaw)
             storedItem.Set(ItemType.PattyCooked);
         else if (storedItem.type == ItemType.HotDogRaw)
@@ -159,6 +184,8 @@ public class StoveCounter : BaseStation, IInteractable
         UpdateStoredItemVisual();
         ShowCookingUI(false);
         isCooking = false;
+        SetSteam(false);
+        Sparkle();
         AudioManager.Instance?.PlayFinishedCookingSFX();
     }
 
@@ -177,7 +204,6 @@ public class StoveCounter : BaseStation, IInteractable
 
         cookingUIImage.sprite = cookingSprites[frameIndex];
 
-        // heat effect
         cookingUIImage.color = Color.Lerp(
             Color.white,
             new Color(1f, 0.7f, 0.7f),
@@ -187,8 +213,17 @@ public class StoveCounter : BaseStation, IInteractable
 
     private void ShowCookingUI(bool show)
     {
+        if (fireGlow != null)
+            fireGlow.SetActive(show);
+
         if (cookingUIPanel != null)
             cookingUIPanel.SetActive(show);
+
+        if (!show && burnSmoke != null)
+            burnSmoke.Stop();
+
+        if (!show)
+            SetBurnSizzle(false);
 
         if (!show && cookingUIImage != null)
             cookingUIImage.color = Color.white;

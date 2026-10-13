@@ -32,7 +32,6 @@ public class WorldTextFade : MonoBehaviour
     {
         float timer = 0f;
 
-        // 🔥 FADE IN
         while (timer < fadeInTime)
         {
             timer += Time.deltaTime;
@@ -43,10 +42,8 @@ public class WorldTextFade : MonoBehaviour
 
         SetAlpha(1f);
 
-        // 🔥 STAY
         yield return new WaitForSeconds(stayTime);
 
-        // 🔥 FADE OUT
         timer = 0f;
         while (timer < fadeOutTime)
         {
@@ -70,7 +67,6 @@ public class WorldTextFade : MonoBehaviour
     {
         if (mainCam == null) return;
 
-        // 🔥 Make it face the camera
         transform.forward = mainCam.transform.forward;
     }
 

@@ -1,11 +1,29 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
+
+public enum ControllerAxisSource
+    {
+        LSB,
+        RSB,
+        DPad
+    }
+
+public enum ControlScheme
+{
+    Keyboard,
+    Joystick
+}
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerControl : MonoBehaviour
 {
     [Header("Player")]
     public int playerNumber = 1;
+
+    [Header("Control Scheme")]
+    public ControlScheme controlScheme = ControlScheme.Keyboard;
+    public int joystickNumber = 1;
 
     [Header("Movement")]
     public bool doMove = true;
@@ -15,8 +33,9 @@ public class PlayerControl : MonoBehaviour
 
     [Header("Sprint Stamina")]
     public float sprintDuration = 3f;
-    public float sprintCooldown = 2f;
     public float staminaRecoveryRate = 1.5f;
+    [Tooltip("After running out, sprinting unlocks again at this fraction of stamina")]
+    [Range(0f, 1f)] public float staminaResumeFraction = 0.3f;
 
     [Header("Sprint Effects")]
     public ParticleSystem sprintDust;
@@ -27,9 +46,13 @@ public class PlayerControl : MonoBehaviour
     [Range(0f, 1f)] public float sprintVolume = 1f;
 
     private float sprintTimer;
-    private float sprintCooldownTimer;
     private bool sprintOnCooldown;
     private bool isCurrentlySprinting;
+
+    public float StaminaFraction => sprintTimer / Mathf.Max(0.01f, sprintDuration);
+    public bool IsExhausted => sprintOnCooldown;
+    public bool HasUnlimitedStamina => MatchRules.UnlimitedStamina ||
+        (PowerUpManager.Instance != null && PowerUpManager.Instance.HasUnlimitedStamina(playerNumber));
 
     [Header("Animation")]
     public Animator animator;
@@ -81,7 +104,6 @@ public class PlayerControl : MonoBehaviour
     public float maximumThrowHoldTime = 3f;
     public float throwUpwardBoost = 1.5f;
     public float pickupRadius = 1.5f;
-    public float dropTorque = 1.5f;
     public float droppedItemLifetime = 30f;
 
     private Rigidbody rb;
@@ -90,6 +112,7 @@ public class PlayerControl : MonoBehaviour
 
     private bool dropButtonHeld;
     private float dropButtonHoldTime;
+    private float previousPadHorizontal;
     private BaseStation lastOpenStation;
 
     private int isMovingHash;
@@ -110,6 +133,95 @@ public class PlayerControl : MonoBehaviour
     public DrinkMachine currentDrinkMachine;
     public IceCreamMachine currentIceCreamMachine;
 
+    [Header("Joystick Mapping")]
+    [FormerlySerializedAs("p2MovementAxis")] public ControllerAxisSource padMovementAxis = ControllerAxisSource.LSB;
+    [FormerlySerializedAs("p2InteractKey")] public KeyCode padInteractKey = KeyCode.Joystick1Button0;
+    [FormerlySerializedAs("p2RunKey")] public KeyCode padRunKey = KeyCode.Joystick1Button1;
+    [FormerlySerializedAs("p2EmoteKey")] public KeyCode padEmoteKey = KeyCode.Joystick1Button3;
+    [FormerlySerializedAs("p2ThrowKey")] public KeyCode padThrowKey = KeyCode.Joystick1Button2;
+
+    public bool UsesJoystick => controlScheme == ControlScheme.Joystick;
+
+    public KeyCode EmoteKey
+    {
+        get => playerNumber == 1 ? p1SelectKey : p2SelectKey;
+        set { if (playerNumber == 1) p1SelectKey = value; else p2SelectKey = value; }
+    }
+
+    [System.Serializable]
+    public struct InputBindings
+    {
+        public ControlScheme scheme;
+        public int joystickNumber;
+        public KeyCode up, left, down, right, interact, run, drop, emote;
+        public ControllerAxisSource padAxis;
+        public KeyCode padInteract, padRun, padEmote, padThrow;
+    }
+
+    public InputBindings Bindings
+    {
+        get => new InputBindings
+        {
+            scheme = controlScheme, joystickNumber = joystickNumber,
+            up = MoveUp, left = MoveLeft, down = MoveDown, right = MoveRight,
+            interact = PrimaryAction, run = Run, drop = DropItem, emote = EmoteKey,
+            padAxis = padMovementAxis,
+            padInteract = padInteractKey, padRun = padRunKey, padEmote = padEmoteKey, padThrow = padThrowKey
+        };
+        set
+        {
+            controlScheme = value.scheme; joystickNumber = value.joystickNumber;
+            MoveUp = value.up; MoveLeft = value.left; MoveDown = value.down; MoveRight = value.right;
+            PrimaryAction = value.interact; Run = value.run; DropItem = value.drop; EmoteKey = value.emote;
+            padMovementAxis = value.padAxis;
+            padInteractKey = value.padInteract; padRunKey = value.padRun; padEmoteKey = value.padEmote; padThrowKey = value.padThrow;
+        }
+    }
+
+    public void ResetBindingsToDefault()
+    {
+        bool p1 = playerNumber == 1;
+        MoveUp = p1 ? KeyCode.W : KeyCode.UpArrow;
+        MoveLeft = p1 ? KeyCode.A : KeyCode.LeftArrow;
+        MoveDown = p1 ? KeyCode.S : KeyCode.DownArrow;
+        MoveRight = p1 ? KeyCode.D : KeyCode.RightArrow;
+        PrimaryAction = p1 ? KeyCode.F : KeyCode.Return;
+        Run = p1 ? KeyCode.LeftShift : KeyCode.RightShift;
+        DropItem = p1 ? KeyCode.Q : KeyCode.Slash;
+        EmoteKey = p1 ? KeyCode.Z : KeyCode.Backspace;
+
+        padMovementAxis = ControllerAxisSource.LSB;
+        padInteractKey = KeyCode.Joystick1Button0;
+        padRunKey = KeyCode.Joystick1Button1;
+        padEmoteKey = KeyCode.Joystick1Button3;
+        padThrowKey = KeyCode.Joystick1Button2;
+    }
+
+    public static string AxisName(int joystick, ControllerAxisSource source, bool horizontal)
+    {
+        string prefix = source switch
+        {
+            ControllerAxisSource.RSB => "RightStick",
+            ControllerAxisSource.DPad => "DPad",
+            _ => ""
+        };
+        return $"Joy{joystick}{prefix}{(horizontal ? "Horizontal" : "Vertical")}";
+    }
+
+    private float PadAxis(bool horizontal)
+    {
+        return Input.GetAxisRaw(AxisName(joystickNumber, padMovementAxis, horizontal));
+    }
+
+    private KeyCode PadKey(KeyCode key)
+    {
+        int offset = key - KeyCode.JoystickButton0;
+        if (offset < 0)
+            return key;
+
+        return KeyCode.JoystickButton0 + joystickNumber * 20 + offset % 20;
+    }
+
     private void OnValidate()
     {
         if (hitMask.value == 0)
@@ -128,7 +240,6 @@ public class PlayerControl : MonoBehaviour
     private void Start()
     {
         sprintTimer = sprintDuration;
-        sprintCooldownTimer = 0f;
         sprintOnCooldown = false;
         isCurrentlySprinting = false;
 
@@ -142,16 +253,8 @@ public class PlayerControl : MonoBehaviour
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
-        if (playerNumber == 2)
-        {
-            MoveUp = KeyCode.UpArrow;
-            MoveLeft = KeyCode.LeftArrow;
-            MoveDown = KeyCode.DownArrow;
-            MoveRight = KeyCode.RightArrow;
-            PrimaryAction = KeyCode.Return;
-            Run = KeyCode.RightShift;
-            DropItem = KeyCode.RightControl;
-        }
+        if (animator != null)
+            modelBaseScale = animator.transform.localScale;
 
         heldItem.Clear();
         doMove = true;
@@ -189,12 +292,27 @@ public class PlayerControl : MonoBehaviour
         if (rb == null)
             return;
 
+        if (!GameplayActive)
+        {
+            direction = Vector3.zero;
+            UpdateAnimator();
+            SetHighlightTarget(null);
+            return;
+        }
+
+        if (frozenTimer > 0f)
+            frozenTimer -= Time.deltaTime;
+
+        UpdateFrozenVisual();
+
         EnsureMovementState();
 
-        front = Input.GetKey(MoveUp);
-        left = Input.GetKey(MoveLeft);
-        back = Input.GetKey(MoveDown);
-        right = Input.GetKey(MoveRight);
+        bool wasLocked = IsMovementLocked();
+
+        front = IsMoveUpHeld();
+        left = IsMoveLeftHeld();
+        back = IsMoveDownHeld();
+        right = IsMoveRightHeld();
 
         if (!IsMovementLocked())
         {
@@ -215,7 +333,7 @@ public class PlayerControl : MonoBehaviour
         if (currentIngredientBox != null)
             currentIngredientBox.HandleIngredientSelectionInput();
 
-        if (Input.GetKeyDown(PrimaryAction))
+        if (IsPrimaryActionPressed())
             HandleInteraction();
 
         if (currentDrinkMachine != null)
@@ -224,17 +342,29 @@ public class PlayerControl : MonoBehaviour
         if (currentIceCreamMachine != null)
             currentIceCreamMachine.HandleIceCreamSelectionInput();
 
-        HandleDropInput();
+        HandleDropInput(wasLocked);
+
+        IInteractable target = FindInteractTarget();
+        SetHighlightTarget(target is MonoBehaviour mb ? mb.gameObject : null);
+        VisualFx.PulseHighlight(highlightTarget);
 
         UpdateAnimator();
         FaceEmoteTextToCamera();
+
+        if (UsesJoystick)
+            previousPadHorizontal = PadAxis(true);
     }
 
     private void FixedUpdate()
     {
-        if (!doMove || rb == null)
+        if (rb != null && !GameplayActive)
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+
+        if (!doMove || rb == null || !GameplayActive)
         {
             StopSprintAudio();
+            if (GameplayActive)
+                RecoverStamina();
             return;
         }
 
@@ -244,17 +374,18 @@ public class PlayerControl : MonoBehaviour
             rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
             StopSprintAudio();
             StopSprintDust();
+            RecoverStamina();
             return;
         }
 
         bool hasMovementInput = direction.sqrMagnitude > 0.01f;
-        bool wantsToSprint = Input.GetKey(Run);
-        bool hasUnlimitedStamina = PowerUpManager.Instance != null && PowerUpManager.Instance.HasUnlimitedStamina;
+        bool wantsToSprint = IsRunHeld();
+        bool hasUnlimitedStamina = HasUnlimitedStamina;
         bool canSprint = wantsToSprint && hasMovementInput && (hasUnlimitedStamina || (!sprintOnCooldown && sprintTimer > 0f));
 
         HandleSprintEffects(canSprint);
 
-        float currentMoveSpeed = canSprint ? sprintSpeed : walkSpeed;
+        float currentMoveSpeed = (canSprint ? sprintSpeed : walkSpeed) * MatchRules.MoveSpeedMultiplier;
 
         if (!heldItem.IsEmpty)
             currentMoveSpeed *= carryingSpeedMultiplier;
@@ -267,30 +398,13 @@ public class PlayerControl : MonoBehaviour
             {
                 sprintTimer = 0f;
                 sprintOnCooldown = true;
-                sprintCooldownTimer = sprintCooldown;
                 StopSprintAudio();
                 StopSprintDust();
             }
         }
-
-            else if (!sprintOnCooldown)
+        else
         {
-            sprintTimer += staminaRecoveryRate * Time.fixedDeltaTime;
-
-            if (sprintTimer > sprintDuration)
-                sprintTimer = sprintDuration;
-        }
-
-        if (sprintOnCooldown)
-        {
-            sprintCooldownTimer -= Time.fixedDeltaTime;
-
-            if (sprintCooldownTimer <= 0f)
-            {
-                sprintCooldownTimer = 0f;
-                sprintTimer = sprintDuration;
-                sprintOnCooldown = false;
-            }
+            RecoverStamina();
         }
 
         Vector3 moveVelocity = direction.normalized * currentMoveSpeed;
@@ -307,9 +421,158 @@ public class PlayerControl : MonoBehaviour
         }
     }
 
+    private void RecoverStamina()
+    {
+        sprintTimer = Mathf.Min(sprintTimer + staminaRecoveryRate * Time.fixedDeltaTime, sprintDuration);
+
+        if (sprintOnCooldown && sprintTimer >= sprintDuration * staminaResumeFraction)
+            sprintOnCooldown = false;
+    }
+
+    public static bool GameplayActive =>
+        OrderManager.Instance != null && OrderManager.Instance.IsRunning && Time.timeScale > 0f;
+
+    public bool CanMove => GameplayActive && !IsMovementLocked();
+
+    [Header("Visual Feedback")]
+    public Sprite freezeIcon;
+    public Color frozenTint = new Color(0.45f, 0.75f, 1f);
+    public Color infoTextColor = new Color(0.1f, 0.1f, 0.1f);
+    public Color errorTextColor = new Color(0.85f, 0.1f, 0.1f);
+
+    private GameObject freezeIconObject;
+    private bool frozenVisualOn;
+    private GameObject highlightTarget;
+    private GameObject floatingText;
+    private Coroutine squashRoutine;
+    private Vector3 modelBaseScale = Vector3.one;
+
+    private float frozenTimer;
+    public bool IsFrozen => frozenTimer > 0f;
+
+    public void Freeze(float seconds)
+    {
+        frozenTimer = Mathf.Max(frozenTimer, seconds);
+    }
+
+    private void UpdateFrozenVisual()
+    {
+        if (IsFrozen != frozenVisualOn)
+        {
+            frozenVisualOn = IsFrozen;
+
+            if (frozenVisualOn)
+                VisualFx.Tint(gameObject, frozenTint, 0.65f);
+            else
+                VisualFx.ClearTint(gameObject);
+
+            if (frozenVisualOn && freezeIconObject == null && freezeIcon != null)
+            {
+                freezeIconObject = new GameObject("FreezeIcon");
+                freezeIconObject.transform.SetParent(transform, false);
+                freezeIconObject.transform.localPosition = Vector3.up * 2.4f;
+                freezeIconObject.transform.localScale = Vector3.one * 0.3f;
+                var sr = freezeIconObject.AddComponent<SpriteRenderer>();
+                sr.sprite = freezeIcon;
+                sr.color = new Color(0.75f, 0.95f, 1f);
+            }
+
+            if (freezeIconObject != null)
+                freezeIconObject.SetActive(frozenVisualOn);
+        }
+
+        if (frozenVisualOn && freezeIconObject != null && Camera.main != null)
+            freezeIconObject.transform.rotation = Camera.main.transform.rotation * Quaternion.Euler(0f, 0f, Time.time * 90f);
+    }
+
+    private void SetHighlightTarget(GameObject target)
+    {
+        if (target == highlightTarget)
+            return;
+
+        VisualFx.Highlight(highlightTarget, false);
+        highlightTarget = target;
+        VisualFx.Highlight(highlightTarget, true);
+    }
+
+    private void PlaySquash()
+    {
+        if (animator == null)
+            return;
+
+        if (squashRoutine != null)
+            StopCoroutine(squashRoutine);
+
+        squashRoutine = StartCoroutine(SquashRoutine(animator.transform));
+    }
+
+    private System.Collections.IEnumerator SquashRoutine(Transform model)
+    {
+        const float duration = 0.3f;
+
+        for (float t = 0f; t < duration; t += Time.deltaTime)
+        {
+            float k = t / duration;
+            float s = Mathf.Sin(k * Mathf.PI * 2f) * (1f - k) * 0.2f;
+            model.localScale = Vector3.Scale(modelBaseScale, new Vector3(1f + s * 0.5f, 1f - s, 1f + s * 0.5f));
+            yield return null;
+        }
+
+        model.localScale = modelBaseScale;
+        squashRoutine = null;
+    }
+
+    public void ShowFloatingText(string message, Color color)
+    {
+        if (emoteSelectionObject == null || string.IsNullOrEmpty(message))
+            return;
+
+        if (floatingText != null)
+            Destroy(floatingText);
+
+        floatingText = Instantiate(emoteSelectionObject, emoteSelectionObject.transform.parent);
+        floatingText.name = "FloatingText";
+        floatingText.transform.localPosition = emoteSelectionObject.transform.localPosition + Vector3.up * 0.45f;
+        floatingText.transform.localScale = emoteSelectionObject.transform.localScale * 0.6f;
+        floatingText.SetActive(true);
+
+        TextMesh text = floatingText.GetComponent<TextMesh>();
+        if (text == null)
+        {
+            Destroy(floatingText);
+            return;
+        }
+
+        text.text = message;
+        text.color = color;
+        StartCoroutine(FloatAway(floatingText, text));
+    }
+
+    private System.Collections.IEnumerator FloatAway(GameObject go, TextMesh text)
+    {
+        const float duration = 1.3f;
+        Color color = text.color;
+
+        for (float t = 0f; t < duration && go != null; t += Time.deltaTime)
+        {
+            go.transform.localPosition += Vector3.up * 0.5f * Time.deltaTime;
+
+            if (Camera.main != null)
+                go.transform.rotation = Quaternion.LookRotation(go.transform.position - Camera.main.transform.position);
+
+            color.a = t < duration * 0.5f ? 1f : 1f - (t - duration * 0.5f) / (duration * 0.5f);
+            text.color = color;
+            yield return null;
+        }
+
+        if (go != null)
+            Destroy(go);
+    }
+
     private bool IsMovementLocked()
     {
-        return isSelectingEmote ||  
+        return IsFrozen ||
+               isSelectingEmote ||
                isEmoting ||
                currentIngredientBox != null ||
                currentDrinkMachine != null ||
@@ -367,14 +630,12 @@ public class PlayerControl : MonoBehaviour
             sprintDust.Stop();
     }
 
-    private void HandleInteraction()
+    private IInteractable FindInteractTarget()
     {
-        Debug.Log("PLAYER INSTANCE ID: " + GetInstanceID());
-
         IInteractable interactable = null;
 
         if (heldItem.IsEmpty)
-            interactable = GetNearestValidDroppedItem(pickupRadius);
+            interactable = GetNearestValidDroppedItem(pickupRadius, skipOwnFreshDrops: true);
 
         if (interactable == null)
         {
@@ -384,14 +645,25 @@ public class PlayerControl : MonoBehaviour
                 interactable = GetNearestValidInteractable(pickupRadius);
         }
 
+        if (interactable == null && heldItem.IsEmpty)
+            interactable = GetNearestValidDroppedItem(pickupRadius);
+
+        return interactable;
+    }
+
+    private void HandleInteraction()
+    {
+        IInteractable interactable = FindInteractTarget();
+        ItemType heldBefore = heldItem.type;
+
+        if (interactable == null)
+        {
+            if (GetNearestValidInteractable(castRadius, requireValid: false) != null)
+                ShowFloatingText(heldItem.IsEmpty ? "Can't use that right now" : "Can't use " + heldItem.GetDisplayName() + " here", errorTextColor);
+        }
+
         if (interactable != null)
         {
-            MonoBehaviour mb = interactable as MonoBehaviour;
-
-            Debug.Log("Interacting with: " + mb.name
-                      + " | component: " + interactable.GetType().Name
-                      + " | station instanceID: " + mb.gameObject.GetInstanceID());
-
             BaseStation station = interactable as BaseStation;
             IngredientBox ingredientBox = interactable as IngredientBox;
 
@@ -412,8 +684,8 @@ public class PlayerControl : MonoBehaviour
             UpdateHeldItemHUD();
             RefreshHeldItemVisual();
 
-            Debug.Log("AFTER INTERACT — " + GetHeldItemDebug()
-                      + " | player instanceID: " + GetInstanceID());
+            if (heldItem.type != heldBefore)
+                PlaySquash();
 
             if (station != null && ingredientBox == null)
                 StartCoroutine(CloseAfterDelay(station, 0.5f));
@@ -425,25 +697,23 @@ public class PlayerControl : MonoBehaviour
                 lastOpenStation.OpenPanel(false);
                 lastOpenStation = null;
             }
-
-            Debug.Log("No valid interactable nearby — " + GetHeldItemDebug());
         }
     }
 
-    private void HandleDropInput()
+    private void HandleDropInput(bool movementLocked)
     {
-        if (Input.GetKeyDown(DropItem) && !heldItem.IsEmpty)
+        if (!movementLocked && IsDropItemPressed() && !heldItem.IsEmpty)
         {
             dropButtonHeld = true;
             dropButtonHoldTime = 0f;
         }
 
-        if (Input.GetKey(DropItem) && dropButtonHeld)
+        if (IsDropItemHeld() && dropButtonHeld)
         {
             dropButtonHoldTime += Time.deltaTime;
         }
 
-        if (Input.GetKeyUp(DropItem) && dropButtonHeld)
+        if (IsDropItemReleased() && dropButtonHeld)
         {
             if (!heldItem.IsEmpty)
             {
@@ -460,22 +730,18 @@ public class PlayerControl : MonoBehaviour
 
                     float strength = Mathf.Lerp(throwForceMin, throwForceMax, charge);
                     velocity = transform.forward * strength + Vector3.up * throwUpwardBoost;
-
-                    Debug.Log($"Thrown with charge {charge:F2}: {heldItem.GetDisplayName()}");
                     AudioManager.Instance?.PlayThrowSFX();
                 }
                 else
                 {
                     velocity = Vector3.up * dropUpwardVelocity;
-                    Debug.Log("Dropped: " + heldItem.GetDisplayName());
                 }
 
                 SpawnDroppedItem(heldItem, dropPosition, velocity);
                 heldItem.Clear();
                 UpdateHeldItemHUD();
                 RefreshHeldItemVisual();
-
-                Debug.Log(GetHeldItemDebug());
+                PlaySquash();
             }
 
             dropButtonHeld = false;
@@ -516,12 +782,13 @@ public class PlayerControl : MonoBehaviour
 
     private void HandleEmoteSelectionInput()
     {
-        KeyCode selectKey = playerNumber == 1 ? p1SelectKey : p2SelectKey;
-
-        if (Input.GetKeyDown(selectKey))
+        if (IsEmoteSelectPressed())
         {
             if (!isSelectingEmote)
             {
+                if (IsMovementLocked())
+                    return;
+
                 StartEmoteSelection();
                 return;
             }
@@ -533,12 +800,112 @@ public class PlayerControl : MonoBehaviour
         if (!isSelectingEmote)
             return;
 
-        if (Input.GetKeyDown(MoveLeft))
+        if (IsMoveLeftPressed())
             SelectPreviousEmote();
-        else if (Input.GetKeyDown(MoveRight))
+        else if (IsMoveRightPressed())
             SelectNextEmote();
 
         direction = Vector3.zero;
+    }
+
+    public bool IsMoveUpHeld()
+    {
+        return UsesJoystick ? PadAxis(false) > 0.2f : Input.GetKey(MoveUp);
+    }
+
+    public bool IsMoveDownHeld()
+    {
+        return UsesJoystick ? PadAxis(false) < -0.2f : Input.GetKey(MoveDown);
+    }
+
+    public bool IsMoveLeftHeld()
+    {
+        return UsesJoystick ? PadAxis(true) < -0.2f : Input.GetKey(MoveLeft);
+    }
+
+    public bool IsMoveRightHeld()
+    {
+        return UsesJoystick ? PadAxis(true) > 0.2f : Input.GetKey(MoveRight);
+    }
+
+    public bool IsMoveLeftPressed()
+    {
+        return UsesJoystick
+            ? PadAxis(true) < -0.5f && previousPadHorizontal >= -0.5f
+            : Input.GetKeyDown(MoveLeft);
+    }
+
+    public bool IsMoveRightPressed()
+    {
+        return UsesJoystick
+            ? PadAxis(true) > 0.5f && previousPadHorizontal <= 0.5f
+            : Input.GetKeyDown(MoveRight);
+    }
+
+    private const float MenuRepeatDelay = 0.35f;
+    private const float MenuRepeatRate = 0.12f;
+    private int menuHeldDir;
+    private float menuRepeatTimer;
+
+    public int GetMenuStep()
+    {
+        int dir = IsMoveLeftHeld() ? -1 : IsMoveRightHeld() ? 1 : 0;
+
+        if (dir == 0)
+        {
+            menuHeldDir = 0;
+            return 0;
+        }
+
+        if (dir != menuHeldDir)
+        {
+            menuHeldDir = dir;
+            menuRepeatTimer = MenuRepeatDelay;
+            return dir;
+        }
+
+        menuRepeatTimer -= Time.deltaTime;
+        if (menuRepeatTimer > 0f)
+            return 0;
+
+        menuRepeatTimer = MenuRepeatRate;
+        return dir;
+    }
+
+    public void ResetMenuStep()
+    {
+        menuHeldDir = IsMoveLeftHeld() ? -1 : IsMoveRightHeld() ? 1 : 0;
+        menuRepeatTimer = float.MaxValue;
+    }
+
+    public bool IsPrimaryActionPressed()
+    {
+        return Input.GetKeyDown(UsesJoystick ? PadKey(padInteractKey) : PrimaryAction);
+    }
+
+    public bool IsRunHeld()
+    {
+        return Input.GetKey(UsesJoystick ? PadKey(padRunKey) : Run);
+    }
+
+    public bool IsDropItemPressed()
+    {
+        return Input.GetKeyDown(UsesJoystick ? PadKey(padThrowKey) : DropItem);
+    }
+
+    public bool IsDropItemHeld()
+    {
+        return Input.GetKey(UsesJoystick ? PadKey(padThrowKey) : DropItem);
+    }
+
+    public bool IsDropItemReleased()
+    {
+        return Input.GetKeyUp(UsesJoystick ? PadKey(padThrowKey) : DropItem);
+    }
+
+    public bool IsEmoteSelectPressed()
+    {
+        return Input.GetKeyDown(UsesJoystick ? PadKey(padEmoteKey) : EmoteKey);
     }
 
     private void StartEmoteSelection()
@@ -692,6 +1059,7 @@ public class PlayerControl : MonoBehaviour
         collider.center = Vector3.zero;
         collider.isTrigger = false;
         collider.material = null;
+        collider.excludeLayers = LayerMask.GetMask("Walls");
 
         Rigidbody droppedRigidbody = droppedObject.AddComponent<Rigidbody>();
         droppedRigidbody.mass = 5f;
@@ -704,6 +1072,7 @@ public class PlayerControl : MonoBehaviour
 
         DroppedItem droppedItem = droppedObject.AddComponent<DroppedItem>();
         droppedItem.Initialize(itemData, heldItemVisualizer);
+        droppedItem.droppedBy = this;
 
         Destroy(droppedObject, droppedItemLifetime);
     }
@@ -714,7 +1083,7 @@ public class PlayerControl : MonoBehaviour
         station.OpenPanel(false);
     }
 
-    private IInteractable GetNearestValidInteractable(float radius)
+    private IInteractable GetNearestValidInteractable(float radius, bool requireValid = true)
     {
         int maskValue = hitMask.value == 0 ? ~0 : hitMask.value;
         Collider[] hits = Physics.OverlapSphere(transform.position, radius, maskValue);
@@ -729,7 +1098,7 @@ public class PlayerControl : MonoBehaviour
             if (interactable == null)
                 continue;
 
-            if (!interactable.CanInteractWith(this))
+            if (requireValid && !interactable.CanInteractWith(this))
                 continue;
 
             float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
@@ -744,7 +1113,7 @@ public class PlayerControl : MonoBehaviour
         return nearest;
     }
 
-    private IInteractable GetNearestValidDroppedItem(float radius)
+    private IInteractable GetNearestValidDroppedItem(float radius, bool skipOwnFreshDrops = false)
     {
         int maskValue = hitMask.value == 0 ? ~0 : hitMask.value;
         Collider[] hits = Physics.OverlapSphere(transform.position, radius, maskValue, QueryTriggerInteraction.Collide);
@@ -763,6 +1132,9 @@ public class PlayerControl : MonoBehaviour
                 continue;
 
             if (!dropped.CanInteractWith(this))
+                continue;
+
+            if (skipOwnFreshDrops && dropped.droppedBy == this)
                 continue;
 
             float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
@@ -792,6 +1164,9 @@ public class PlayerControl : MonoBehaviour
                     continue;
 
                 if (!dropped.CanInteractWith(this))
+                    continue;
+
+                if (skipOwnFreshDrops && dropped.droppedBy == this)
                     continue;
 
                 float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
@@ -860,6 +1235,8 @@ public class PlayerControl : MonoBehaviour
 
     private void OnDisable()
     {
+        SetHighlightTarget(null);
+
         StopSprintAudio();
         StopSprintDust();
     }

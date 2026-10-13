@@ -6,7 +6,6 @@ public class MainMenuManager : MonoBehaviour
 {
     public static MainMenuManager Instance;
 
-    // ADD THIS
     public static bool skipMainMenuOnLoad = false;
 
     [Header("Panels")]
@@ -18,6 +17,8 @@ public class MainMenuManager : MonoBehaviour
     public Button playButton;
     public Button quitButton;
     public Button backButton;
+    public Button howToPlayButton;
+    public Button settingsButton;
 
     [Header("Fade")]
     public Image blackFadeImage;
@@ -31,17 +32,11 @@ public class MainMenuManager : MonoBehaviour
 
     private void Start()
     {
-        // =========================
-        // NORMAL START
-        // =========================
         if (!skipMainMenuOnLoad)
         {
             if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
             if (startPanel != null) startPanel.SetActive(false);
         }
-        // =========================
-        // RETRY START
-        // =========================
         else
         {
             skipMainMenuOnLoad = false;
@@ -55,6 +50,8 @@ public class MainMenuManager : MonoBehaviour
         if (pausePanel != null)
             pausePanel.SetActive(false);
 
+        AudioManager.Instance?.PlayMenuBGM();
+
         SetFade(0f);
 
         if (playButton != null)
@@ -65,6 +62,12 @@ public class MainMenuManager : MonoBehaviour
 
         if (backButton != null)
             backButton.onClick.AddListener(OnBack);
+
+        if (howToPlayButton != null)
+            howToPlayButton.onClick.AddListener(() => PauseManager.Instance?.OpenFromMainMenu(PauseManager.Instance.howToPlayPanel));
+
+        if (settingsButton != null)
+            settingsButton.onClick.AddListener(() => PauseManager.Instance?.OpenFromMainMenu(PauseManager.Instance.pausePanel));
     }
 
     private IEnumerator ShowModeSelectorNextFrame()
@@ -77,9 +80,6 @@ public class MainMenuManager : MonoBehaviour
         }
     }
 
-    // =========================
-    // PLAY
-    // =========================
     public void OnPlay()
     {
         StartCoroutine(FadeToStartPanel());
@@ -95,9 +95,6 @@ public class MainMenuManager : MonoBehaviour
         yield return StartCoroutine(Fade(0f, fadeOutSpeed));
     }
 
-    // =========================
-    // BACK
-    // =========================
     public void OnBack()
     {
         StartCoroutine(FadeToMainMenu());
@@ -113,51 +110,6 @@ public class MainMenuManager : MonoBehaviour
         yield return StartCoroutine(Fade(0f, fadeOutSpeed));
     }
 
-    // =========================
-    // SHOW MAIN MENU
-    // =========================
-    public void ShowMainMenu()
-    {
-        StartCoroutine(FadeAndShowMainMenu());
-    }
-
-    private IEnumerator FadeAndShowMainMenu()
-    {
-        yield return StartCoroutine(Fade(1f, fadeInSpeed));
-
-        if (GameModeSelector.Instance != null && GameModeSelector.Instance.modePanel != null)
-            GameModeSelector.Instance.modePanel.SetActive(false);
-
-        if (OrderUIManager.Instance != null)
-            OrderUIManager.Instance.HideNormalGameplayUI();
-
-        if (VersusUIManager.Instance != null)
-            VersusUIManager.Instance.HideVersusUI();
-
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
-        if (startPanel != null) startPanel.SetActive(false);
-        if (pausePanel != null) pausePanel.SetActive(false);
-
-        AudioManager.Instance?.PlayMenuBGM();
-
-        yield return StartCoroutine(Fade(0f, fadeOutSpeed));
-    }
-
-    // =========================
-    // HIDE MAIN MENU
-    // =========================
-    public void HideMainMenu()
-    {
-        if (mainMenuPanel != null)
-            mainMenuPanel.SetActive(false);
-
-        if (startPanel != null)
-            startPanel.SetActive(false);
-    }
-
-    // =========================
-    // FADE SYSTEM
-    // =========================
     private IEnumerator Fade(float targetAlpha, float speed)
     {
         float start = blackFadeImage.color.a;
@@ -185,13 +137,8 @@ public class MainMenuManager : MonoBehaviour
         blackFadeImage.color = c;
     }
 
-    // =========================
-    // QUIT
-    // =========================
     public void Quit()
     {
-        Debug.Log("Quit Game");
-
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else

@@ -9,7 +9,7 @@ public class ButtonTMPHoverScale : MonoBehaviour, IPointerEnterHandler, IPointer
     public Image targetImage;
     public float hoverScale = 1.15f;
     public float scaleSpeed = 12f;
-    public bool scaleImageInstead = false; // Toggle between scaling text or image
+    public bool scaleImageInstead = false;
 
     private Vector3 normalScale;
     private Vector3 targetScale;
@@ -17,7 +17,6 @@ public class ButtonTMPHoverScale : MonoBehaviour, IPointerEnterHandler, IPointer
 
     private void Awake()
     {
-        // Determine what to scale based on the toggle
         if (scaleImageInstead)
         {
             if (targetImage == null)

@@ -6,6 +6,7 @@ public class QueuedOrder
 {
     public OrderItem item;
     public float timer;
+    public float duration;
     public const float TIMER_DURATION = 45f;
     public const float VERSUS_TIMER_DURATION = 60f;
     private bool served = false;
@@ -14,10 +15,11 @@ public class QueuedOrder
     {
         item = new OrderItem(GetRandomItemType());
         timer = duration;
+        this.duration = duration;
         served = false;
     }
 
-    private OrderItemType GetRandomItemType()
+    public static OrderItemType GetRandomItemType()
     {
         var types = new[]
         {
