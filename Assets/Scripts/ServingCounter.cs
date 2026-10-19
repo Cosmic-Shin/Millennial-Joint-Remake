@@ -45,6 +45,7 @@ public class ServingCounter : BaseStation, IInteractable
         if (earned <= 0f)
         {
             Show(player, player.heldItem.GetDisplayName() + " is not part of the current order");
+            player.PlayNope();
             return;
         }
 
@@ -67,13 +68,16 @@ public class ServingCounter : BaseStation, IInteractable
 
         SpawnPricePopup(earned);
 
+        bool versus = OrderManager.Instance != null && OrderManager.Instance.GetCurrentMode() == OrderManager.GameMode.VERSUS;
+        OrderUIManager.Instance?.FlyCoins(transform.position + Vector3.up * popupYOffset, versus ? player.playerNumber : 0, Mathf.Clamp(Mathf.RoundToInt(earned / 4f), 3, 8));
+
         if (serveBurst != null)
             serveBurst.Play();
 
         if (CameraMovement.Instance != null)
         {
             bool bigServe = OrderManager.Instance != null && OrderManager.Instance.LastServeMultiplier >= 1.5f;
-            CameraMovement.Instance.Shake(bigServe ? 0.3f : 0.12f, bigServe ? 0.35f : 0.2f);
+            CameraMovement.Instance.Shake(bigServe ? 0.45f : 0.18f, bigServe ? 0.45f : 0.25f);
             if (bigServe)
                 CameraMovement.Instance.HitStop(0.08f);
         }

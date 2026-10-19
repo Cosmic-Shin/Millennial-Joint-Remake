@@ -199,6 +199,38 @@ public class AudioManager : MonoBehaviour
             sfxSource.PlayOneShot(clip, sfxVolume);
     }
 
+    [Header("Pitch Variation")]
+    [Range(0f, 0.3f)] [SerializeField] private float pitchVariation = 0.08f;
+
+    private AudioSource[] variedSources;
+    private int nextVariedSource;
+
+    private void PlayVariedSFX(AudioClip clip, float basePitch = 1f, float volumeScale = 1f)
+    {
+        if (clip == null || sfxSource == null)
+            return;
+
+        if (variedSources == null)
+        {
+            variedSources = new AudioSource[6];
+            for (int i = 0; i < variedSources.Length; i++)
+            {
+                AudioSource source = new GameObject("Varied_SFX_Source").AddComponent<AudioSource>();
+                source.transform.SetParent(transform);
+                source.playOnAwake = false;
+                source.outputAudioMixerGroup = sfxSource.outputAudioMixerGroup;
+                variedSources[i] = source;
+            }
+        }
+
+        AudioSource next = variedSources[nextVariedSource];
+        nextVariedSource = (nextVariedSource + 1) % variedSources.Length;
+
+        next.volume = sfxSource.volume;
+        next.pitch = basePitch * Random.Range(1f - pitchVariation, 1f + pitchVariation);
+        next.PlayOneShot(clip, sfxVolume * volumeScale);
+    }
+
     public void PlayButtonClickSFX()
     {
         PlaySFX(buttonClickSFX);
@@ -208,7 +240,7 @@ public class AudioManager : MonoBehaviour
 
     public void PlayCountdownBeep() => PlaySFX(countdownBeepSFX);
     public void PlayGoHorn() => PlaySFX(goHornSFX);
-    public void PlayTipSFX() => PlaySFX(tipSFX);
+    public void PlayTipSFX() => PlayVariedSFX(tipSFX);
     public void PlayPenaltySFX() => PlaySFX(penaltySFX);
     public void PlayFreezeSFX() => PlaySFX(freezeSFX);
     public void PlayComboLostSFX() => PlaySFX(comboLostSFX);
@@ -234,23 +266,26 @@ public class AudioManager : MonoBehaviour
 
     private AudioSource pitchedSource;
 
-    public void PlayIngredientOnPlateSFX() => PlaySFX(ingredientOnPlateSFX);
-    public void PlayIngredientInTableSFX() => PlaySFX(ingredientInTableSFX);
-    public void PlayGetIngredientFromBoxSFX() => PlaySFX(getIngredientFromBoxSFX);
-    public void PlayServeFoodSFX() => PlaySFX(serveFoodSFX);
-    public void PlayThrowSFX() => PlaySFX(throwSFX);
-    public void PlayDoneInteractingSFX() => PlaySFX(doneInteractingSFX);
-    public void PlayGetPlateAndCupSFX() => PlaySFX(getPlateAndCupSFX);
-    public void PlayCounterTopInteractSFX() => PlaySFX(counterTopInteractSFX);
+    public void PlayIngredientOnPlateSFX() => PlayVariedSFX(ingredientOnPlateSFX);
+    public void PlayIngredientInTableSFX() => PlayVariedSFX(ingredientInTableSFX);
+    public void PlayGetIngredientFromBoxSFX() => PlayVariedSFX(getIngredientFromBoxSFX);
+    public void PlayServeFoodSFX() => PlayVariedSFX(serveFoodSFX);
+    public void PlayThrowSFX() => PlayVariedSFX(throwSFX);
+    public void PlayDoneInteractingSFX() => PlayVariedSFX(doneInteractingSFX);
+    public void PlayGetPlateAndCupSFX() => PlayVariedSFX(getPlateAndCupSFX);
+    public void PlayCounterTopInteractSFX() => PlayVariedSFX(counterTopInteractSFX);
+    public void PlayLandSFX(float strength) => PlayVariedSFX(counterTopInteractSFX, 0.7f, Mathf.Clamp01(strength) * 0.7f);
+    public void PlayNopeSFX() => PlayVariedSFX(penaltySFX, 1.35f, 0.45f);
+    public void PlayCoinTick() => PlayVariedSFX(tipSFX, 1.5f, 0.2f);
 
-    public void PlayStartCookingSFX() => PlaySFX(startCookingSFX);
-    public void PlayFinishedCookingSFX() => PlaySFX(finishedCookingSFX);
-    public void PlayStartFryingSFX() => PlaySFX(startFryingSFX);
-    public void PlayFinishedFryingSFX() => PlaySFX(finishedFryingSFX);
-    public void PlayStartDrinkCoffeeSFX() => PlaySFX(startDrinkCoffeeSFX);
-    public void PlayFinishedDrinkCoffeeSFX() => PlaySFX(finishedDrinkCoffeeSFX);
-    public void PlayStartChiliSFX() => PlaySFX(startChiliSFX);
-    public void PlayFinishedChiliSFX() => PlaySFX(finishedChiliSFX);
+    public void PlayStartCookingSFX() => PlayVariedSFX(startCookingSFX);
+    public void PlayFinishedCookingSFX() => PlayVariedSFX(finishedCookingSFX);
+    public void PlayStartFryingSFX() => PlayVariedSFX(startFryingSFX);
+    public void PlayFinishedFryingSFX() => PlayVariedSFX(finishedFryingSFX);
+    public void PlayStartDrinkCoffeeSFX() => PlayVariedSFX(startDrinkCoffeeSFX);
+    public void PlayFinishedDrinkCoffeeSFX() => PlayVariedSFX(finishedDrinkCoffeeSFX);
+    public void PlayStartChiliSFX() => PlayVariedSFX(startChiliSFX);
+    public void PlayFinishedChiliSFX() => PlayVariedSFX(finishedChiliSFX);
 
     public void SetSFXVolume(float volume)
     {

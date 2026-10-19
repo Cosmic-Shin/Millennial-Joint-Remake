@@ -14,6 +14,10 @@ public class StaminaRing : MonoBehaviour
     [Tooltip("Below this much stamina the ring pulses")]
     public float lowStamina = 0.25f;
 
+    [Header("Throw Charge")]
+    public Color chargeStartColor = new Color(2.4f, 1.4f, 0.3f, 1f);
+    public Color chargeFullColor = new Color(2.8f, 0.4f, 0.25f, 1f);
+
     private Mesh mesh;
     private Vector3[] vertices;
     private int[] triangles;
@@ -51,14 +55,18 @@ public class StaminaRing : MonoBehaviour
         if (player == null)
             return;
 
+        bool charging = player.IsChargingThrow;
+        float charge = player.ThrowCharge;
         bool unlimited = player.HasUnlimitedStamina;
-        float fill = unlimited ? 1f : Mathf.Clamp01(player.StaminaFraction);
+        float fill = charging ? Mathf.Max(0.04f, charge) : unlimited ? 1f : Mathf.Clamp01(player.StaminaFraction);
 
         if (Mathf.Abs(fill - shownFill) > 0.002f)
             BuildArc(fill);
 
         Color color = baseColor;
-        if (unlimited)
+        if (charging)
+            color = Color.Lerp(chargeStartColor, chargeFullColor, charge) * (charge >= 1f ? 0.8f + 0.2f * Mathf.Sin(Time.time * 20f) : 1f);
+        else if (unlimited)
             color = unlimitedColor * (0.85f + 0.15f * Mathf.Sin(Time.time * 6f));
         else if (player.IsExhausted)
             color = exhaustedColor;

@@ -3,9 +3,19 @@ using UnityEngine;
 public class PlayerOutline : MonoBehaviour
 {
     public Material outlineMaterial;
+    [ColorUsage(false, true)] public Color highlightColor = new Color(1.6f, 1.25f, 0.45f);
+    public float highlightWidth = 0.045f;
 
     private void Start()
     {
+        if (VisualFx.HighlightOutlineMaterial == null && outlineMaterial != null)
+        {
+            var highlight = new Material(outlineMaterial) { name = "StationHighlightOutline" };
+            highlight.SetColor("_Color", highlightColor);
+            highlight.SetFloat("_Width", highlightWidth);
+            VisualFx.HighlightOutlineMaterial = highlight;
+        }
+
         var source = GetComponentInChildren<SkinnedMeshRenderer>();
         if (source == null || outlineMaterial == null)
             return;

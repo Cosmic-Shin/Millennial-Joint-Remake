@@ -10,6 +10,9 @@ public class KitchenItemVisualizer : MonoBehaviour
     private GameObject currentVisual;
     private GameObject currentPrefab;
 
+    public Transform CurrentVisual => currentVisual != null ? currentVisual.transform : null;
+    public Vector3 VisualScale => localScale * (ItemPrefabRegistry.Instance != null ? ItemPrefabRegistry.Instance.foodScale : 1f);
+
     public void Refresh(KitchenItemData itemData)
     {
         if (itemData == null || itemData.IsEmpty)
@@ -58,7 +61,10 @@ public class KitchenItemVisualizer : MonoBehaviour
         currentVisual = Instantiate(prefab, parent);
         currentVisual.transform.localPosition = localPosition;
         currentVisual.transform.localEulerAngles = localEulerAngles;
-        currentVisual.transform.localScale = localScale * ItemPrefabRegistry.Instance.foodScale;
+        currentVisual.transform.localScale = VisualScale;
+
+        if (isActiveAndEnabled)
+            StartCoroutine(VisualFx.Pop(currentVisual.transform, 0.55f, 0.22f, VisualScale));
 
         currentPrefab = prefab;
     }

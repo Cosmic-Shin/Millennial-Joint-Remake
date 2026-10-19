@@ -138,6 +138,8 @@ public class KeybindManager : MonoBehaviour
             PlayerControl.InputBindings saved = JsonUtility.FromJson<PlayerControl.InputBindings>(json);
             saved.scheme = player.controlScheme;
             saved.joystickNumber = player.joystickNumber;
+            if (!json.Contains("\"arrows\""))
+                saved.arrows = player.arrowsLayout;
             player.Bindings = saved;
         }
     }
@@ -438,7 +440,7 @@ public class KeybindManager : MonoBehaviour
         if (title == null || player == null)
             return;
 
-        title.text = $"Player {playerNumber} - {(player.UsesJoystick ? "Joystick" : "Keyboard")}";
+        title.text = $"Player {playerNumber} - {(player.UsesJoystick ? "Joystick" : player.arrowsLayout ? "Arrows" : "WASD")}";
     }
 
     private void ResetKeybindsToDefault()

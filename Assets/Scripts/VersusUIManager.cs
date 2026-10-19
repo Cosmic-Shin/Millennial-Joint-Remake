@@ -18,6 +18,8 @@ public class VersusUIManager : MonoBehaviour
 
     [Header("End Panel TMP")]
     public TextMeshProUGUI endResultText;
+    public TextMeshProUGUI p1ResultText;
+    public TextMeshProUGUI p2ResultText;
 
     [Header("End Panel Buttons")]
     public Button retryButton;
@@ -222,28 +224,39 @@ public class VersusUIManager : MonoBehaviour
     {
         float p1 = OrderManager.Instance.player1Money;
         float p2 = OrderManager.Instance.player2Money;
-        string tally = $"\n<size=50%>All-time wins - P1: {PlayerPrefs.GetInt("VS_P1Wins", 0)}  P2: {PlayerPrefs.GetInt("VS_P2Wins", 0)}  Draws: {PlayerPrefs.GetInt("VS_Draws", 0)}</size>";
-
-        OrderManager om = OrderManager.Instance;
-        string p1Summary = "\n<size=45%>" + OrderUIManager.Summary(om.GetStats(1)) + "</size>";
-        string p2Summary = "\n<size=45%>" + OrderUIManager.Summary(om.GetStats(2)) + "</size>";
 
         if (endResultText != null)
         {
-            yield return VisualFx.CountUp(1f, 1.2f, k =>
-                endResultText.text = result +
-                    "\nP1 Money: " + OrderUIManager.Money(k < 1f ? Mathf.Round(p1 * k) : p1) + p1Summary +
-                    "\nP2 Money: " + OrderUIManager.Money(k < 1f ? Mathf.Round(p2 * k) : p2) + p2Summary +
-                    tally);
-
+            endResultText.text = result +
+                $"\n<size=30%>All-time wins - P1: {PlayerPrefs.GetInt("VS_P1Wins", 0)}  P2: {PlayerPrefs.GetInt("VS_P2Wins", 0)}  Draws: {PlayerPrefs.GetInt("VS_Draws", 0)}</size>";
             StartCoroutine(VisualFx.Pop(endResultText.transform, 1.15f, 0.3f));
         }
+
+        yield return VisualFx.CountUp(1f, 1.2f, k =>
+        {
+            SetPlayerResult(p1ResultText, 1, k < 1f ? Mathf.Round(p1 * k) : p1, p1 > p2);
+            SetPlayerResult(p2ResultText, 2, k < 1f ? Mathf.Round(p2 * k) : p2, p2 > p1);
+        });
 
         if (versusEndPanel != null)
         {
             Color winnerColor = p1 > p2 ? player1Color : p2 > p1 ? player2Color : Color.yellow;
             StartCoroutine(VisualFx.Confetti((RectTransform)versusEndPanel.transform, winnerColor));
         }
+    }
+
+    private void SetPlayerResult(TextMeshProUGUI text, int player, float money, bool winner)
+    {
+        if (text == null)
+            return;
+
+        OrderManager.RoundStats st = OrderManager.Instance.GetStats(player);
+        string combo = st.bestCombo > 1f ? "x" + st.bestCombo.ToString("0.##") : "none";
+        string color = ColorUtility.ToHtmlStringRGB(player == 1 ? player1Color : player2Color);
+
+        text.text = $"<color=#{color}>Player {player}{(winner ? " - Winner!" : "")}</color>\n" +
+            $"<size=140%>{OrderUIManager.Money(money)}</size>\n" +
+            $"{st.served} served\n{st.missed} missed\nBest combo {combo}\n{OrderUIManager.Money(Mathf.Round(st.tips * 100f) / 100f)} in tips";
     }
 
     private void Retry()

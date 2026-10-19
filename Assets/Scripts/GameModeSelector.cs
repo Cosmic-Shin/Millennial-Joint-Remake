@@ -39,7 +39,8 @@ public class GameModeSelector : MonoBehaviour
     public Sprite keyboardIcon;
     public Sprite joystickIcon;
 
-    private static ControlScheme[] chosenSchemes;
+    private static readonly string[] DeviceNames = { "Keyboard (WASD)", "Keyboard (Arrows)", "Joystick 1", "Joystick 2" };
+    private static int[] chosenDevices;
 
     public static OrderManager.GameMode? retryMode;
 
@@ -75,10 +76,10 @@ public class GameModeSelector : MonoBehaviour
         ShowBestStars(timeBestStars, ScoreManager.GetBestStars(OrderManager.GameMode.TIME));
         ShowBestStars(speedBestStars, ScoreManager.GetBestStars(OrderManager.GameMode.SPEED));
 
-        if (p1PrevBut != null) p1PrevBut.onClick.AddListener(() => ToggleScheme(0));
-        if (p1NextBut != null) p1NextBut.onClick.AddListener(() => ToggleScheme(0));
-        if (p2PrevBut != null) p2PrevBut.onClick.AddListener(() => ToggleScheme(1));
-        if (p2NextBut != null) p2NextBut.onClick.AddListener(() => ToggleScheme(1));
+        if (p1PrevBut != null) p1PrevBut.onClick.AddListener(() => CycleDevice(0, -1));
+        if (p1NextBut != null) p1NextBut.onClick.AddListener(() => CycleDevice(0, 1));
+        if (p2PrevBut != null) p2PrevBut.onClick.AddListener(() => CycleDevice(1, -1));
+        if (p2NextBut != null) p2NextBut.onClick.AddListener(() => CycleDevice(1, 1));
 
         if (startBut != null)
             startBut.onClick.AddListener(StartWithChosenControls);
@@ -152,14 +153,16 @@ public class GameModeSelector : MonoBehaviour
 
         ScanJoysticks();
 
-        if (chosenSchemes == null)
+        if (chosenDevices == null)
         {
-            ControlScheme p2Default = connectedJoysticks.Count > 0 ? ControlScheme.Joystick : ControlScheme.Keyboard;
-            chosenSchemes = new[]
+            chosenDevices = new[]
             {
-                (ControlScheme)PlayerPrefs.GetInt("Scheme_P1", (int)ControlScheme.Keyboard),
-                (ControlScheme)PlayerPrefs.GetInt("Scheme_P2", (int)p2Default)
+                Mathf.Clamp(PlayerPrefs.GetInt("Device_P1", 0), 0, 3),
+                Mathf.Clamp(PlayerPrefs.GetInt("Device_P2", connectedJoysticks.Count > 0 ? 2 : 1), 0, 3)
             };
+
+            if (chosenDevices[0] == chosenDevices[1])
+                chosenDevices[1] = (chosenDevices[0] + 1) % DeviceNames.Length;
         }
 
         controlPanel.SetActive(true);
@@ -178,23 +181,17 @@ public class GameModeSelector : MonoBehaviour
         }
     }
 
-    private int JoysticksNeeded()
-    {
-        int needed = 0;
-        foreach (ControlScheme scheme in chosenSchemes)
-        {
-            if (scheme == ControlScheme.Joystick)
-                needed++;
-        }
-        return needed;
-    }
+    private int JoysticksNeeded() => Mathf.Max(chosenDevices[0], chosenDevices[1]) - 1;
 
-    private void ToggleScheme(int playerIndex)
+    private void CycleDevice(int playerIndex, int step)
     {
-        chosenSchemes[playerIndex] = chosenSchemes[playerIndex] == ControlScheme.Keyboard
-            ? ControlScheme.Joystick
-            : ControlScheme.Keyboard;
+        int other = chosenDevices[1 - playerIndex];
+        int device = chosenDevices[playerIndex];
 
+        do device = (device + step + DeviceNames.Length) % DeviceNames.Length;
+        while (device == other);
+
+        chosenDevices[playerIndex] = device;
         RefreshControlPanel();
     }
 
@@ -203,10 +200,10 @@ public class GameModeSelector : MonoBehaviour
         ScanJoysticks();
 
         if (p1DeviceText != null)
-            p1DeviceText.text = chosenSchemes[0] == ControlScheme.Keyboard ? "Keyboard (WASD)" : "Joystick";
+            p1DeviceText.text = DeviceNames[chosenDevices[0]];
 
         if (p2DeviceText != null)
-            p2DeviceText.text = chosenSchemes[1] == ControlScheme.Keyboard ? "Keyboard (Arrows)" : "Joystick";
+            p2DeviceText.text = DeviceNames[chosenDevices[1]];
 
         int needed = JoysticksNeeded();
         int found = connectedJoysticks.Count;
@@ -229,14 +226,14 @@ public class GameModeSelector : MonoBehaviour
             startBut.transform.localScale = startBaseScale.Value * (enough ? 1f + 0.06f * Mathf.Sin(Time.unscaledTime * 6f) : 1f);
         }
 
-        SetDeviceIcon(p1DeviceIcon, chosenSchemes[0]);
-        SetDeviceIcon(p2DeviceIcon, chosenSchemes[1]);
+        SetDeviceIcon(p1DeviceIcon, chosenDevices[0]);
+        SetDeviceIcon(p2DeviceIcon, chosenDevices[1]);
     }
 
-    private void SetDeviceIcon(Image icon, ControlScheme scheme)
+    private void SetDeviceIcon(Image icon, int device)
     {
         if (icon != null)
-            icon.sprite = scheme == ControlScheme.Keyboard ? keyboardIcon : joystickIcon;
+            icon.sprite = device < 2 ? keyboardIcon : joystickIcon;
     }
 
     private void StartWithChosenControls()
@@ -251,17 +248,19 @@ public class GameModeSelector : MonoBehaviour
         PlayerControl[] players = FindObjectsByType<PlayerControl>(FindObjectsSortMode.None);
         System.Array.Sort(players, (a, b) => a.playerNumber.CompareTo(b.playerNumber));
 
-        int nextJoystick = 0;
         foreach (PlayerControl player in players)
         {
-            player.controlScheme = chosenSchemes[Mathf.Clamp(player.playerNumber - 1, 0, 1)];
+            int device = chosenDevices[Mathf.Clamp(player.playerNumber - 1, 0, 1)];
+            player.controlScheme = device < 2 ? ControlScheme.Keyboard : ControlScheme.Joystick;
 
             if (player.UsesJoystick)
-                player.joystickNumber = connectedJoysticks[nextJoystick++];
+                player.joystickNumber = connectedJoysticks[device - 2];
+            else if (player.arrowsLayout != (device == 1) && players.Length == 2)
+                PlayerControl.SwapKeyboardKeys(players[0], players[1]);
         }
 
-        PlayerPrefs.SetInt("Scheme_P1", (int)chosenSchemes[0]);
-        PlayerPrefs.SetInt("Scheme_P2", (int)chosenSchemes[1]);
+        PlayerPrefs.SetInt("Device_P1", chosenDevices[0]);
+        PlayerPrefs.SetInt("Device_P2", chosenDevices[1]);
         PlayerPrefs.Save();
 
         KeybindManager.Instance?.RefreshAllKeybindDisplay();

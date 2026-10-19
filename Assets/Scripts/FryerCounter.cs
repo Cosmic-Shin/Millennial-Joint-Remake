@@ -146,7 +146,7 @@ public class FryerCounter : StorageStation
                 ShowCookingUI(false);
 
                 if (CameraMovement.Instance != null)
-                    CameraMovement.Instance.Shake(0.2f, 0.3f);
+                    CameraMovement.Instance.Shake(0.3f, 0.35f);
             }
         }
     }

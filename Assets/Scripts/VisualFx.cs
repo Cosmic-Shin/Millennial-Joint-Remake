@@ -218,6 +218,9 @@ public static class VisualFx
     }
 
     private static readonly Dictionary<GameObject, int> highlightCounts = new Dictionary<GameObject, int>();
+    private static readonly Dictionary<GameObject, List<GameObject>> highlightOutlines = new Dictionary<GameObject, List<GameObject>>();
+
+    public static Material HighlightOutlineMaterial;
 
     public static void Highlight(GameObject target, bool on)
     {
@@ -230,16 +233,124 @@ public static class VisualFx
         {
             highlightCounts.Remove(target);
             ClearTint(target);
+            SetOutline(target, false);
         }
         else
         {
             highlightCounts[target] = count;
+            SetOutline(target, true);
         }
+    }
+
+    private static void SetOutline(GameObject target, bool on)
+    {
+        if (highlightOutlines.TryGetValue(target, out List<GameObject> existing))
+        {
+            foreach (GameObject outline in existing)
+                if (outline != null) outline.SetActive(on);
+            return;
+        }
+
+        if (!on || HighlightOutlineMaterial == null)
+            return;
+
+        var outlines = new List<GameObject>();
+        foreach (MeshRenderer r in target.GetComponentsInChildren<MeshRenderer>())
+        {
+            MeshFilter filter = r.GetComponent<MeshFilter>();
+            if (filter == null || filter.sharedMesh == null || !r.enabled || r.name == "HighlightOutline") continue;
+
+            var go = new GameObject("HighlightOutline");
+            go.transform.SetParent(r.transform, false);
+            go.AddComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
+            var outline = go.AddComponent<MeshRenderer>();
+            outline.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            outline.receiveShadows = false;
+
+            var mats = new Material[filter.sharedMesh.subMeshCount];
+            for (int i = 0; i < mats.Length; i++)
+                mats[i] = HighlightOutlineMaterial;
+            outline.sharedMaterials = mats;
+            outlines.Add(go);
+        }
+
+        highlightOutlines[target] = outlines;
     }
 
     public static void PulseHighlight(GameObject target)
     {
         if (target != null && highlightCounts.ContainsKey(target))
             Tint(target, Color.white, 0.25f + 0.15f * Mathf.Sin(Time.time * 6f));
+    }
+
+    public static IEnumerator Squash(Transform t, Vector3 baseScale, float amount, float time)
+    {
+        for (float e = 0f; e < time && t != null; e += Time.deltaTime)
+        {
+            float k = e / time;
+            float s = Mathf.Sin(k * Mathf.PI * 2f) * (1f - k) * amount;
+            t.localScale = Vector3.Scale(baseScale, new Vector3(1f + s * 0.5f, 1f - s, 1f + s * 0.5f));
+            yield return null;
+        }
+
+        if (t != null)
+            t.localScale = baseScale;
+    }
+
+    public static Material FxMaterial;
+    private static ParticleSystem puffSystem;
+
+    public static void Puff(Vector3 position, Color color, int count = 8, float size = 0.35f, float speed = 1.2f)
+    {
+        if (FxMaterial == null)
+            return;
+
+        if (puffSystem == null)
+        {
+            var go = new GameObject("PuffFx");
+            puffSystem = go.AddComponent<ParticleSystem>();
+            puffSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = puffSystem.main;
+            main.playOnAwake = false;
+            main.loop = false;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.35f, 0.6f);
+            main.gravityModifier = -0.05f;
+            main.maxParticles = 300;
+
+            var emission = puffSystem.emission;
+            emission.rateOverTime = 0f;
+            var shape = puffSystem.shape;
+            shape.enabled = false;
+
+            var sizeOverLifetime = puffSystem.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 0.6f, 1f, 1.4f));
+
+            var colorOverLifetime = puffSystem.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var fade = new Gradient();
+            fade.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
+            colorOverLifetime.color = fade;
+
+            var drag = puffSystem.limitVelocityOverLifetime;
+            drag.enabled = true;
+            drag.drag = 4f;
+
+            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = FxMaterial;
+        }
+
+        var emit = new ParticleSystem.EmitParams { startColor = color };
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 ring = Random.insideUnitCircle.normalized;
+            emit.position = position + new Vector3(ring.x, 0f, ring.y) * 0.15f;
+            emit.velocity = new Vector3(ring.x, Random.Range(0.2f, 0.6f), ring.y) * speed * Random.Range(0.6f, 1.2f);
+            emit.startSize = size * Random.Range(0.7f, 1.3f);
+            puffSystem.Emit(emit, 1);
+        }
     }
 }

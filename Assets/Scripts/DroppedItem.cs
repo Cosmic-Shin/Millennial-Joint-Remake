@@ -20,6 +20,33 @@ public class DroppedItem : MonoBehaviour, IInteractable
             droppedBy = null;
     }
 
+    private const float landImpactSpeed = 2.5f;
+    private static readonly Color landDustColor = new Color(0.85f, 0.8f, 0.72f, 0.8f);
+    private float lastLandTime = -1f;
+    private Coroutine landSquash;
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        float impact = collision.relativeVelocity.magnitude;
+        if (impact < landImpactSpeed || Time.time - lastLandTime < 0.15f)
+            return;
+
+        lastLandTime = Time.time;
+        float strength = Mathf.Clamp01(impact / 10f);
+
+        VisualFx.Puff(collision.GetContact(0).point, landDustColor, Mathf.RoundToInt(Mathf.Lerp(4f, 12f, strength)), Mathf.Lerp(0.25f, 0.45f, strength));
+        AudioManager.Instance?.PlayLandSFX(strength + 0.3f);
+
+        Transform visual = visualizer != null ? visualizer.CurrentVisual : null;
+        if (visual != null)
+        {
+            if (landSquash != null)
+                StopCoroutine(landSquash);
+            visual.localScale = visualizer.VisualScale;
+            landSquash = StartCoroutine(VisualFx.Squash(visual, visualizer.VisualScale, Mathf.Lerp(0.15f, 0.35f, strength), 0.3f));
+        }
+    }
+
     public void Initialize(KitchenItemData sourceItem, KitchenItemVisualizer sourceVisualizer)
     {
         if (sourceItem != null)

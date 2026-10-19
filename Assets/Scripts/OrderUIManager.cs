@@ -277,12 +277,79 @@ public class OrderUIManager : MonoBehaviour
             "CHANGED!", moneyText != null ? moneyText.font : null, Color.yellow, 50f));
     }
 
+    private TMP_Text MoneyTextFor(int playerNumber) => playerNumber == 0 ? moneyText
+        : VersusUIManager.Instance == null ? null
+        : playerNumber == 1 ? VersusUIManager.Instance.player1MoneyText
+        : VersusUIManager.Instance.player2MoneyText;
+
+    [Header("Coin Fly")]
+    public Color coinColor = new Color(1f, 0.85f, 0.25f);
+    public float coinFlyTime = 0.55f;
+
+    private readonly System.Collections.Generic.Dictionary<TMP_Text, Vector3> moneyTextScales =
+        new System.Collections.Generic.Dictionary<TMP_Text, Vector3>();
+
+    public void FlyCoins(Vector3 worldPosition, int playerNumber, int count)
+    {
+        TMP_Text target = MoneyTextFor(playerNumber);
+        Camera cam = Camera.main;
+        if (target == null || !target.isActiveAndEnabled || cam == null)
+            return;
+
+        Vector3 screen = cam.WorldToScreenPoint(worldPosition);
+        if (screen.z < 0f)
+            return;
+
+        for (int i = 0; i < count; i++)
+            StartCoroutine(FlyCoinRoutine(screen, target, i * 0.05f));
+    }
+
+    private IEnumerator FlyCoinRoutine(Vector3 from, TMP_Text target, float delay)
+    {
+        for (float d = 0f; d < delay; d += Time.unscaledDeltaTime)
+            yield return null;
+
+        Transform root = target.canvas.rootCanvas.transform;
+        var go = new GameObject("Coin", typeof(RectTransform));
+        go.transform.SetParent(root, false);
+        var coin = go.AddComponent<TextMeshProUGUI>();
+        coin.text = "$";
+        coin.font = target.font;
+        coin.fontSize = 70f;
+        coin.color = coinColor;
+        coin.alignment = TextAlignmentOptions.Center;
+        coin.raycastTarget = false;
+        ((RectTransform)go.transform).sizeDelta = new Vector2(100f, 100f);
+
+        Vector3 start = from + (Vector3)(Random.insideUnitCircle * 40f);
+        Vector3 control = start + new Vector3(Random.Range(-160f, 160f), Random.Range(120f, 260f), 0f);
+
+        for (float e = 0f; e < coinFlyTime && target != null; e += Time.unscaledDeltaTime)
+        {
+            float k = e / coinFlyTime;
+            float eased = k * k;
+            Vector3 end = target.transform.position;
+            go.transform.position = Vector3.Lerp(Vector3.Lerp(start, control, eased), Vector3.Lerp(control, end, eased), eased);
+            go.transform.localScale = Vector3.one * Mathf.Lerp(1.2f, 0.6f, k);
+            go.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(k * Mathf.PI * 3f) * 25f);
+            yield return null;
+        }
+
+        Destroy(go);
+
+        if (target == null)
+            yield break;
+
+        if (!moneyTextScales.TryGetValue(target, out Vector3 baseScale))
+            moneyTextScales[target] = baseScale = target.transform.localScale;
+
+        StartCoroutine(VisualFx.Pop(target.transform, 1.18f, 0.18f, baseScale));
+        AudioManager.Instance?.PlayCoinTick();
+    }
+
     public void FlashMoney(int playerNumber, bool gained)
     {
-        TMP_Text text = playerNumber == 0 ? moneyText
-            : VersusUIManager.Instance == null ? null
-            : playerNumber == 1 ? VersusUIManager.Instance.player1MoneyText
-            : VersusUIManager.Instance.player2MoneyText;
+        TMP_Text text = MoneyTextFor(playerNumber);
 
         if (text != null && text.isActiveAndEnabled)
             StartCoroutine(FlashMoneyRoutine(text, gained ? Color.green : Color.red));

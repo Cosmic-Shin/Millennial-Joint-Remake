@@ -24,12 +24,25 @@ public class PlayerControl : MonoBehaviour
     [Header("Control Scheme")]
     public ControlScheme controlScheme = ControlScheme.Keyboard;
     public int joystickNumber = 1;
+    public bool arrowsLayout;
 
     [Header("Movement")]
     public bool doMove = true;
     public float walkSpeed = 5f;
     public float sprintSpeed = 8f;
     public float rotationSmooth = 14f;
+    public float acceleration = 70f;
+    public float deceleration = 90f;
+
+    [Header("Input Forgiveness")]
+    public float interactBufferTime = 0.15f;
+
+    [Header("Model Feel")]
+    public float leanAngle = 9f;
+    public float turnRollAngle = 7f;
+    public float leanSmooth = 12f;
+    public float turnDustAngle = 120f;
+    public Color dustColor = new Color(0.85f, 0.8f, 0.72f, 0.8f);
 
     [Header("Sprint Stamina")]
     public float sprintDuration = 3f;
@@ -153,6 +166,7 @@ public class PlayerControl : MonoBehaviour
     {
         public ControlScheme scheme;
         public int joystickNumber;
+        public bool arrows;
         public KeyCode up, left, down, right, interact, run, drop, emote;
         public ControllerAxisSource padAxis;
         public KeyCode padInteract, padRun, padEmote, padThrow;
@@ -162,7 +176,7 @@ public class PlayerControl : MonoBehaviour
     {
         get => new InputBindings
         {
-            scheme = controlScheme, joystickNumber = joystickNumber,
+            scheme = controlScheme, joystickNumber = joystickNumber, arrows = arrowsLayout,
             up = MoveUp, left = MoveLeft, down = MoveDown, right = MoveRight,
             interact = PrimaryAction, run = Run, drop = DropItem, emote = EmoteKey,
             padAxis = padMovementAxis,
@@ -170,7 +184,7 @@ public class PlayerControl : MonoBehaviour
         };
         set
         {
-            controlScheme = value.scheme; joystickNumber = value.joystickNumber;
+            controlScheme = value.scheme; joystickNumber = value.joystickNumber; arrowsLayout = value.arrows;
             MoveUp = value.up; MoveLeft = value.left; MoveDown = value.down; MoveRight = value.right;
             PrimaryAction = value.interact; Run = value.run; DropItem = value.drop; EmoteKey = value.emote;
             padMovementAxis = value.padAxis;
@@ -180,21 +194,35 @@ public class PlayerControl : MonoBehaviour
 
     public void ResetBindingsToDefault()
     {
-        bool p1 = playerNumber == 1;
-        MoveUp = p1 ? KeyCode.W : KeyCode.UpArrow;
-        MoveLeft = p1 ? KeyCode.A : KeyCode.LeftArrow;
-        MoveDown = p1 ? KeyCode.S : KeyCode.DownArrow;
-        MoveRight = p1 ? KeyCode.D : KeyCode.RightArrow;
-        PrimaryAction = p1 ? KeyCode.F : KeyCode.Return;
-        Run = p1 ? KeyCode.LeftShift : KeyCode.RightShift;
-        DropItem = p1 ? KeyCode.Q : KeyCode.Slash;
-        EmoteKey = p1 ? KeyCode.Z : KeyCode.Backspace;
+        bool wasd = !arrowsLayout;
+        MoveUp = wasd ? KeyCode.W : KeyCode.UpArrow;
+        MoveLeft = wasd ? KeyCode.A : KeyCode.LeftArrow;
+        MoveDown = wasd ? KeyCode.S : KeyCode.DownArrow;
+        MoveRight = wasd ? KeyCode.D : KeyCode.RightArrow;
+        PrimaryAction = wasd ? KeyCode.F : KeyCode.Return;
+        Run = wasd ? KeyCode.LeftShift : KeyCode.RightShift;
+        DropItem = wasd ? KeyCode.Q : KeyCode.Slash;
+        EmoteKey = wasd ? KeyCode.Z : KeyCode.Backspace;
 
         padMovementAxis = ControllerAxisSource.LSB;
         padInteractKey = KeyCode.Joystick1Button0;
         padRunKey = KeyCode.Joystick1Button1;
         padEmoteKey = KeyCode.Joystick1Button3;
         padThrowKey = KeyCode.Joystick1Button2;
+    }
+
+    public static void SwapKeyboardKeys(PlayerControl a, PlayerControl b)
+    {
+        InputBindings ka = a.Bindings, kb = b.Bindings;
+        a.SetKeyboardKeys(kb);
+        b.SetKeyboardKeys(ka);
+    }
+
+    private void SetKeyboardKeys(InputBindings k)
+    {
+        arrowsLayout = k.arrows;
+        MoveUp = k.up; MoveLeft = k.left; MoveDown = k.down; MoveRight = k.right;
+        PrimaryAction = k.interact; Run = k.run; DropItem = k.drop; EmoteKey = k.emote;
     }
 
     public static string AxisName(int joystick, ControllerAxisSource source, bool horizontal)
@@ -230,6 +258,7 @@ public class PlayerControl : MonoBehaviour
 
     private void Awake()
     {
+        arrowsLayout = playerNumber == 2;
         isMovingHash = Animator.StringToHash(isMovingParameter);
         emote1Hash = Animator.StringToHash(emote1Trigger);
         emote2Hash = Animator.StringToHash(emote2Trigger);
@@ -244,7 +273,10 @@ public class PlayerControl : MonoBehaviour
         isCurrentlySprinting = false;
 
         if (sprintDust != null)
+        {
             sprintDust.Stop();
+            VisualFx.FxMaterial = sprintDust.GetComponent<ParticleSystemRenderer>().sharedMaterial;
+        }
 
         SetupSprintAudio();
 
@@ -254,7 +286,12 @@ public class PlayerControl : MonoBehaviour
             animator = GetComponentInChildren<Animator>();
 
         if (animator != null)
+        {
             modelBaseScale = animator.transform.localScale;
+            modelBaseRotation = animator.transform.localRotation;
+        }
+
+        lastYaw = transform.eulerAngles.y;
 
         heldItem.Clear();
         doMove = true;
@@ -333,8 +370,16 @@ public class PlayerControl : MonoBehaviour
         if (currentIngredientBox != null)
             currentIngredientBox.HandleIngredientSelectionInput();
 
-        if (IsPrimaryActionPressed())
+        bool interactPressed = IsPrimaryActionPressed();
+        interactBufferTimer = interactPressed ? interactBufferTime : interactBufferTimer - Time.deltaTime;
+
+        if (interactPressed || (interactBufferTimer > 0f && !IsMovementLocked() && FindInteractTarget() != null))
+        {
+            if (FindInteractTarget() != null)
+                interactBufferTimer = 0f;
+
             HandleInteraction();
+        }
 
         if (currentDrinkMachine != null)
             currentDrinkMachine.HandleDrinkSelectionInput();
@@ -358,7 +403,10 @@ public class PlayerControl : MonoBehaviour
     private void FixedUpdate()
     {
         if (rb != null && !GameplayActive)
+        {
             rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            moveVelocity = Vector3.zero;
+        }
 
         if (!doMove || rb == null || !GameplayActive)
         {
@@ -372,6 +420,7 @@ public class PlayerControl : MonoBehaviour
         {
             direction = Vector3.zero;
             rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            moveVelocity = Vector3.zero;
             StopSprintAudio();
             StopSprintDust();
             RecoverStamina();
@@ -407,7 +456,9 @@ public class PlayerControl : MonoBehaviour
             RecoverStamina();
         }
 
-        Vector3 moveVelocity = direction.normalized * currentMoveSpeed;
+        Vector3 targetVelocity = direction.normalized * currentMoveSpeed;
+        float rate = (hasMovementInput ? acceleration : deceleration) * (heldItem.IsEmpty ? 1f : carryingSpeedMultiplier);
+        moveVelocity = Vector3.MoveTowards(moveVelocity, targetVelocity, rate * Time.fixedDeltaTime);
         rb.linearVelocity = new Vector3(moveVelocity.x, rb.linearVelocity.y, moveVelocity.z);
 
         if (hasMovementInput)
@@ -495,7 +546,7 @@ public class PlayerControl : MonoBehaviour
         VisualFx.Highlight(highlightTarget, true);
     }
 
-    private void PlaySquash()
+    private void PlaySquash(float amount = 0.2f)
     {
         if (animator == null)
             return;
@@ -503,24 +554,97 @@ public class PlayerControl : MonoBehaviour
         if (squashRoutine != null)
             StopCoroutine(squashRoutine);
 
-        squashRoutine = StartCoroutine(SquashRoutine(animator.transform));
+        squashRoutine = StartCoroutine(SquashRoutine(animator.transform, amount));
     }
 
-    private System.Collections.IEnumerator SquashRoutine(Transform model)
+    private System.Collections.IEnumerator SquashRoutine(Transform model, float amount)
     {
-        const float duration = 0.3f;
-
-        for (float t = 0f; t < duration; t += Time.deltaTime)
-        {
-            float k = t / duration;
-            float s = Mathf.Sin(k * Mathf.PI * 2f) * (1f - k) * 0.2f;
-            model.localScale = Vector3.Scale(modelBaseScale, new Vector3(1f + s * 0.5f, 1f - s, 1f + s * 0.5f));
-            yield return null;
-        }
-
-        model.localScale = modelBaseScale;
+        yield return VisualFx.Squash(model, modelBaseScale, amount, 0.3f);
         squashRoutine = null;
     }
+
+    public bool IsChargingThrow => dropButtonHeld && !heldItem.IsEmpty && dropButtonHoldTime >= minimumThrowHoldTime;
+
+    public float ThrowCharge => IsChargingThrow
+        ? Mathf.Clamp01((dropButtonHoldTime - minimumThrowHoldTime) / Mathf.Max(0.0001f, maximumThrowHoldTime - minimumThrowHoldTime))
+        : 0f;
+
+    private const float NopeDuration = 0.35f;
+    private float nopeTimer;
+
+    public void PlayNope()
+    {
+        nopeTimer = NopeDuration;
+        AudioManager.Instance?.PlayNopeSFX();
+    }
+
+    private void LateUpdate()
+    {
+        if (animator == null || rb == null)
+            return;
+
+        Transform model = animator.transform;
+        float dt = Time.deltaTime;
+
+        float speedFraction = Mathf.Clamp01(moveVelocity.magnitude / Mathf.Max(0.01f, sprintSpeed));
+
+        float yaw = transform.eulerAngles.y;
+        float turnRate = dt > 0f ? Mathf.DeltaAngle(lastYaw, yaw) / dt : 0f;
+        lastYaw = yaw;
+
+        float smoothing = 1f - Mathf.Exp(-leanSmooth * dt);
+        currentLean = Mathf.Lerp(currentLean, leanAngle * speedFraction, smoothing);
+        currentRoll = Mathf.Lerp(currentRoll, -Mathf.Clamp(turnRate / 600f, -1f, 1f) * turnRollAngle * speedFraction, smoothing);
+
+        float nopeYaw = 0f;
+        if (nopeTimer > 0f)
+        {
+            nopeTimer = Mathf.Max(0f, nopeTimer - dt);
+            float k = nopeTimer / NopeDuration;
+            nopeYaw = Mathf.Sin(nopeTimer * 45f) * 16f * k;
+
+            if (!IsFrozen)
+            {
+                if (nopeTimer > 0f)
+                    VisualFx.Tint(gameObject, errorTextColor, 0.45f * k);
+                else
+                    VisualFx.ClearTint(gameObject);
+            }
+        }
+
+        model.localRotation = modelBaseRotation * Quaternion.Euler(currentLean, nopeYaw, currentRoll);
+
+        if (squashRoutine == null)
+        {
+            float charge = IsChargingThrow ? 0.25f + 0.75f * ThrowCharge : 0f;
+            model.localScale = Vector3.Scale(modelBaseScale, new Vector3(1f + 0.1f * charge, 1f - 0.16f * charge, 1f + 0.1f * charge));
+        }
+
+        bool moving = direction.sqrMagnitude > 0.01f;
+        if (moving != wasMovingInput)
+        {
+            wasMovingInput = moving;
+            if (GameplayActive && !IsChargingThrow)
+                PlaySquash(moving ? -0.1f : 0.12f);
+        }
+
+        if (moving)
+        {
+            if (lastMoveDirection != Vector3.zero && speedFraction > 0.3f && Vector3.Angle(lastMoveDirection, direction) >= turnDustAngle)
+                VisualFx.Puff(transform.position + Vector3.up * 0.1f, dustColor, 7, 0.35f);
+
+            lastMoveDirection = direction;
+        }
+    }
+
+    private Quaternion modelBaseRotation = Quaternion.identity;
+    private float lastYaw;
+    private float currentLean;
+    private float currentRoll;
+    private bool wasMovingInput;
+    private Vector3 lastMoveDirection;
+    private float interactBufferTimer;
+    private Vector3 moveVelocity;
 
     public void ShowFloatingText(string message, Color color)
     {
@@ -659,7 +783,10 @@ public class PlayerControl : MonoBehaviour
         if (interactable == null)
         {
             if (GetNearestValidInteractable(castRadius, requireValid: false) != null)
+            {
                 ShowFloatingText(heldItem.IsEmpty ? "Can't use that right now" : "Can't use " + heldItem.GetDisplayName() + " here", errorTextColor);
+                PlayNope();
+            }
         }
 
         if (interactable != null)
@@ -741,7 +868,7 @@ public class PlayerControl : MonoBehaviour
                 heldItem.Clear();
                 UpdateHeldItemHUD();
                 RefreshHeldItemVisual();
-                PlaySquash();
+                PlaySquash(isThrow ? -0.28f : 0.2f);
             }
 
             dropButtonHeld = false;
