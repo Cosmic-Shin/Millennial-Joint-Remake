@@ -1,10 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(Image))]
+// Hides the map behind open menu panels: shows the space backdrop camera (and/or a flat image) while any panel is open.
 public class MenuBackdrop : MonoBehaviour
 {
     public float holdAfterClose = 0.1f;
+    [Tooltip("Camera that renders the animated space backdrop over the map while menus are open")]
+    public Camera backdropCamera;
 
     private static int openPanels;
     private static float lastClosedTime = float.NegativeInfinity;
@@ -26,6 +28,10 @@ public class MenuBackdrop : MonoBehaviour
 
     private void Update()
     {
-        image.enabled = openPanels > 0 || Time.unscaledTime - lastClosedTime < holdAfterClose;
+        bool show = openPanels > 0 || Time.unscaledTime - lastClosedTime < holdAfterClose;
+        if (image != null)
+            image.enabled = show;
+        if (backdropCamera != null)
+            backdropCamera.enabled = show;
     }
 }
