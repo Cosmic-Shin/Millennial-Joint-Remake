@@ -305,7 +305,7 @@ public class KeybindManager : MonoBehaviour
         PlayerControl player = GetPlayer(playerNumber);
         bool joystick = player != null && player.UsesJoystick;
 
-        button.GetComponent<Image>().color = new Color(0.4f, 0.6f, 1f, 1f);
+        button.GetComponent<Image>().color = new Color32(0xFF, 0xE0, 0x66, 0xFF); // highlighter while listening
         if (currentButtonText != null)
             currentButtonText.text = joystick ? "Press a button/stick..." : "Press any key...";
     }
@@ -374,7 +374,7 @@ public class KeybindManager : MonoBehaviour
     private void FinishListening()
     {
         if (currentReBindingButton != null)
-            currentReBindingButton.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.2f, 1f);
+            currentReBindingButton.GetComponent<Image>().color = Color.clear;
 
         isListeningForKey = false;
         SaveBindings();
@@ -410,7 +410,7 @@ public class KeybindManager : MonoBehaviour
     {
         if (currentReBindingButton != null)
         {
-            currentReBindingButton.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.2f, 1f);
+            currentReBindingButton.GetComponent<Image>().color = Color.clear;
         }
 
         isListeningForKey = false;

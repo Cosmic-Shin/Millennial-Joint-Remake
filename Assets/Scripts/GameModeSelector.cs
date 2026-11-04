@@ -213,7 +213,7 @@ public class GameModeSelector : MonoBehaviour
         {
             string detected = found == 0 ? "No joystick detected" : $"Joysticks detected: {found}";
             joystickStatusText.text = enough ? detected : $"{detected} - connect {needed - found} more to start";
-            joystickStatusText.color = enough ? Color.white : new Color(1f, 0.4f, 0.4f);
+            joystickStatusText.color = enough ? new Color32(0x2A, 0x2A, 0x35, 255) : new Color32(0xD6, 0x33, 0x6C, 255);
         }
 
         if (startBut != null)

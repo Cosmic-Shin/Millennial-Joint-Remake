@@ -351,7 +351,7 @@ public class SelectFlow : MonoBehaviour
         {
             int i = p.playerNumber - 1;
             string status = ready[i]
-                ? $"<color=#{Hex(highlightColor)}>READY!</color>  ({KeyName(p, false)} to cancel)"
+                ? $"<color=#2F9E44>READY!</color>  ({KeyName(p, false)} to cancel)"
                 : $"{KeyName(p, true)} = Ready   {KeyName(p, false)} = Back";
 
             if (step == Step.Character)
@@ -399,7 +399,7 @@ public class SelectFlow : MonoBehaviour
             }
             else
             {
-                line = r == RandomizeRow ? "Randomize" : r == ResetRow ? "Reset" : "Ready";
+                line = r == RandomizeRow ? "Randomize" : r == ResetRow ? "<color=#D6336C>Reset</color>" : "<color=#2F9E44>Ready</color>";
             }
 
             sb.AppendLine(r == row[i] && !ready[i] ? $"<mark=#{Hex(highlightColor)}99>> {line}</mark>" : line);

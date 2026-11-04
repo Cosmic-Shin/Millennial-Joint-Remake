@@ -137,7 +137,7 @@ public class MatchRules : MonoBehaviour
         BuildRules(forMode);
 
         if (title != null)
-            title.color = Color.white;
+            title.color = new Color32(0x2A, 0x2A, 0x35, 255);
         if (title != null)
             title.text = "Match Rules - " + (forMode == OrderManager.GameMode.TIME ? "Time" : forMode == OrderManager.GameMode.SPEED ? "Speed" : "Versus") + " Mode";
 
@@ -176,7 +176,7 @@ public class MatchRules : MonoBehaviour
     private void Refresh(Rule rule)
     {
         rule.valueText.text = rule.names[rule.index];
-        rule.valueText.color = rule.IsDefault ? Color.white : new Color(1f, 0.85f, 0.3f);
+        rule.valueText.color = rule.IsDefault ? new Color32(0x2A, 0x2A, 0x35, 255) : new Color32(0x3B, 0x5B, 0xDB, 255);
     }
 
     private void ResetToDefaults()
