@@ -3,7 +3,72 @@ guid: 6976bc5752671b94ab7e68ec694b5810
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_angry_red
+    second: {fileID: 2100000, guid: 4fbd5bbc63e68e141b86a4619c446aef, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_bubble_white
+    second: {fileID: 2100000, guid: 04506b4fbaf10f8478b5974d7c93e9d8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_clock_yellow
+    second: {fileID: 2100000, guid: 94c56adf624261447b8a3ef2596a8fd7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_heart
+    second: {fileID: 2100000, guid: aee42ec5f5be88d498644497a95940fd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_steam
+    second: {fileID: 2100000, guid: 499cf7f5fd103584981e99e73c7e15ba, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: face_ink
+    second: {fileID: 2100000, guid: 7ba275ea5076d41498f85a1b490214b8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: robot_dark
+    second: {fileID: 2100000, guid: 7d9d1e65349960c468486a5f01da68a8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: robot_face_angry
+    second: {fileID: 2100000, guid: ce26b3e19303fad489f9b4aaaace9ae2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: robot_face_happy
+    second: {fileID: 2100000, guid: 16bb81f960d4cb645b8d14b362394790, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: robot_face_impatient
+    second: {fileID: 2100000, guid: fd93336bacbe75e4abc2621b3d127823, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: robot_red
+    second: {fileID: 2100000, guid: 3e1432f34f125af42abfaa5d3fc24885, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: robot_screen
+    second: {fileID: 2100000, guid: 2ae5acc11d23fac428d08409e45fd1f5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: robot_teal
+    second: {fileID: 2100000, guid: 2c8d7a47b9b96f245830c8c8fa6d5867, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

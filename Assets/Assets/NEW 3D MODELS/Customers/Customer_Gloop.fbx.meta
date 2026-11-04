@@ -3,7 +3,62 @@ guid: 3fee802a7c137cb42b69c9084ded7f33
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: alien_eye_white
+    second: {fileID: 2100000, guid: 640b3960df3d938488ecad766f79e6b9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: alien_pupil
+    second: {fileID: 2100000, guid: fe81ddbb1e879ce418fb70882da10886, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_angry_red
+    second: {fileID: 2100000, guid: 4fbd5bbc63e68e141b86a4619c446aef, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_bubble_white
+    second: {fileID: 2100000, guid: 04506b4fbaf10f8478b5974d7c93e9d8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_clock_yellow
+    second: {fileID: 2100000, guid: 94c56adf624261447b8a3ef2596a8fd7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_heart
+    second: {fileID: 2100000, guid: aee42ec5f5be88d498644497a95940fd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_steam
+    second: {fileID: 2100000, guid: 499cf7f5fd103584981e99e73c7e15ba, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: face_ink
+    second: {fileID: 2100000, guid: 7ba275ea5076d41498f85a1b490214b8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: face_tongue
+    second: {fileID: 2100000, guid: 0eca6c4a191783149b1e81c7ed929491, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: gloop_green
+    second: {fileID: 2100000, guid: 61541e5683bb7404c93b524a0e67ab93, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: gloop_green_dark
+    second: {fileID: 2100000, guid: 8e16274c4f0814248ae7f6e1cd514730, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

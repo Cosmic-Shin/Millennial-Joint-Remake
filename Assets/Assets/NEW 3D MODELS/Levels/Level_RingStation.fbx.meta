@@ -3,7 +3,122 @@ guid: d3393f572d9330d42a91ef0211dfde71
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cust_neon_rope
+    second: {fileID: 2100000, guid: 7a60004cdf429cf439033f81839de1e4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cust_queue_base
+    second: {fileID: 2100000, guid: 35cc2f2772d0c4349ac3d3db9ec8d75b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cust_queue_glow
+    second: {fileID: 2100000, guid: cb82c75146ec3b246acd48d57900128c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cust_tile_cream
+    second: {fileID: 2100000, guid: be490e301914bec4f9eb56a8fac804bf, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cust_tile_red
+    second: {fileID: 2100000, guid: ca36ad2109fd0ba45862483ae3bd2184, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: platform_engine_glow
+    second: {fileID: 2100000, guid: 9e37f8e0d56e8f74db7458e0811c06b7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: platform_hull
+    second: {fileID: 2100000, guid: 680959c652ff351488b129fc9e5e9a0e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: platform_hull_dark
+    second: {fileID: 2100000, guid: 4a6b4f537c211f84786f5747565fb16a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: platform_neon_violet
+    second: {fileID: 2100000, guid: c2ea194838c76514096e5393a7b696b9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: platform_seam_base
+    second: {fileID: 2100000, guid: c8f3187ffbdff3848a02e1c0832f479e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: platform_trim_orange
+    second: {fileID: 2100000, guid: 5219a1ffdf03e134d9c2458b5dbdb663, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_accretion_hot
+    second: {fileID: 2100000, guid: d2f0a56e4baa580498cd607ed9969845, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_accretion_violet
+    second: {fileID: 2100000, guid: 164046aa375092a439d33cca5a7fd976, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_chrome
+    second: {fileID: 2100000, guid: 9c0e97536db69b04f979863860b1ada7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_dark_metal
+    second: {fileID: 2100000, guid: 55f3c6984c3dd754d800b75db3e49155, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_event_horizon
+    second: {fileID: 2100000, guid: 72c718677c4f32c42aad8fc2dd79782c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_hazard_black
+    second: {fileID: 2100000, guid: 731499bd34856da43b931949d32d9e22, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_hazard_yellow
+    second: {fileID: 2100000, guid: d48c05a8c749ff24b9903018b9f007c4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_neon_cyan
+    second: {fileID: 2100000, guid: 50297403fcef6144db8171619772d2e1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: tile_rivet
+    second: {fileID: 2100000, guid: d6f8472cd19bf264b9ce100956a9ca7d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: tile_slate_a
+    second: {fileID: 2100000, guid: f5e65e726b61b1e489a8b49f9c2ed39b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: tile_slate_b
+    second: {fileID: 2100000, guid: bb42a9ae3f48154409c868b75616a2df, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: tile_slate_c
+    second: {fileID: 2100000, guid: 3a24210b875db154ea0be57f323a37f0, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

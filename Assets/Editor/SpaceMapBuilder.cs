@@ -382,8 +382,19 @@ public static class SpaceMapBuilder
 
         GameObject sign = Spawn("Kitchen/Sign_BigBangBurgers", decor);
         sign.transform.localPosition = new Vector3(0f, 0f, -14f);
-        Spawn("Kitchen/Props_Space", decor);
-        Spawn("Environment/Environment_Space", decor);
+        PlayScene(Spawn("Kitchen/Props_Space", decor), "Props_Space");          // solar-system mobile
+        PlayScene(Spawn("Environment/Environment_Space", decor), "Env_Space"); // asteroids + shooting stars
+    }
+
+    // Plays the FBX's own looping "Scene" animation.
+    private static void PlayScene(GameObject go, string controller)
+    {
+        Animator animator = go.GetComponent<Animator>();
+        if (animator == null)
+            animator = go.AddComponent<Animator>();
+        animator.runtimeAnimatorController =
+            AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>($"Assets/Data/Animators/{controller}.controller");
+        animator.applyRootMotion = false;
     }
 
     // ---------- Stations ----------

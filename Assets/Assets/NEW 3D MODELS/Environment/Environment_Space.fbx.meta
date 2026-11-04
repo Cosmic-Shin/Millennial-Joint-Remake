@@ -3,7 +3,52 @@ guid: 140bbf473f4d5c34190bd01060b4d5ea
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: asteroid_crystal
+    second: {fileID: 2100000, guid: a7ff1e289c27c5149bd344d9d31e0e71, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: asteroid_rock
+    second: {fileID: 2100000, guid: 38a0e5272b9c5864587eac7de7b7712d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: asteroid_rock_dark
+    second: {fileID: 2100000, guid: d1dd9924b5b7c2b4aa79b7a3f4a987c7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: gravtile_base
+    second: {fileID: 2100000, guid: 44c917c3f92a4f9418e66c6283dbe925, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: gravtile_glow
+    second: {fileID: 2100000, guid: c12350487d77bd647b82e299f35e53e0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: shootingstar_head
+    second: {fileID: 2100000, guid: 8c7da63231181b2428976cdfb9b0c233, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: shootingstar_tail
+    second: {fileID: 2100000, guid: 1efb34269d565fc4293004f6f3debb40, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_hazard_black
+    second: {fileID: 2100000, guid: 731499bd34856da43b931949d32d9e22, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_hazard_yellow
+    second: {fileID: 2100000, guid: d48c05a8c749ff24b9903018b9f007c4, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -29,7 +74,36 @@ ModelImporter:
     animationWrapMode: 0
     extraExposedTransformPaths: []
     extraUserProperties: []
-    clipAnimations: []
+    clipAnimations:
+    - serializedVersion: 16
+      name: Scene
+      takeName: Scene
+      internalID: -623603649343465320
+      firstFrame: 1
+      lastFrame: 720
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
     isReadable: 0
   meshes:
     lODScreenPercentages: []

@@ -3,7 +3,117 @@ guid: 214e7137325b74d49b4129abab8baedb
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_saturn_ring
+    second: {fileID: 2100000, guid: d2bc85e6a89a8c24bbbb6bc0f16406d9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lava_ketchup
+    second: {fileID: 2100000, guid: 37ba00f473e65a049b6862149624d8af, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lava_ketchup_liquid
+    second: {fileID: 2100000, guid: 824ed0e5ce7d778478880ce234a628fc, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lava_mustard
+    second: {fileID: 2100000, guid: 265b387516d9fd24caf849c7627189fa, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lava_mustard_liquid
+    second: {fileID: 2100000, guid: 9c1e411e722510d44a22e38f3112763e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: marker_black
+    second: {fileID: 2100000, guid: 91482ef101b314e4baf5880ad5fc9655, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: marker_blue
+    second: {fileID: 2100000, guid: 2496b994a55868044bf97c755ddb77db, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: marker_green
+    second: {fileID: 2100000, guid: fc854464b74c57a49add45e1c6ed4c60, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: marker_red
+    second: {fileID: 2100000, guid: 7889a479f141aad4eb0493ab5fc79096, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mobile_planet_0
+    second: {fileID: 2100000, guid: c1b4a8e419bdbb541a9c1ed830c0a33f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mobile_planet_1
+    second: {fileID: 2100000, guid: b38baef91a65bcc4cb5eb8f658446fcd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mobile_planet_2
+    second: {fileID: 2100000, guid: d083172ed1d8e3545b26ff83fef0cda0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mobile_planet_3
+    second: {fileID: 2100000, guid: 683c11831300f3d4fbe0728211b2ec1c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mobile_planet_4
+    second: {fileID: 2100000, guid: c769a49a8ceae4f44af631023122d5ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mobile_planet_5
+    second: {fileID: 2100000, guid: c2b56d47192c1e945926512efd214b99, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mobile_planet_6
+    second: {fileID: 2100000, guid: 1f07f324aa1e1e640a307cda1cfea1a0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mobile_planet_7
+    second: {fileID: 2100000, guid: 29db2a8acd6d7ad4d98a3413e9487492, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mobile_sun
+    second: {fileID: 2100000, guid: 0fb348a2592cd7042a43b9e651283b94, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_bubble_glass
+    second: {fileID: 2100000, guid: 0ac1a6d99fb0c284babf1f025d88500e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_chrome
+    second: {fileID: 2100000, guid: 9c0e97536db69b04f979863860b1ada7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_thruster_glow
+    second: {fileID: 2100000, guid: 8a9bca7c1b9e0884fb1eb9c24e0aec96, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: whiteboard_white
+    second: {fileID: 2100000, guid: 77debe0c31da78345bf25749f859272e, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -29,7 +139,36 @@ ModelImporter:
     animationWrapMode: 0
     extraExposedTransformPaths: []
     extraUserProperties: []
-    clipAnimations: []
+    clipAnimations:
+    - serializedVersion: 16
+      name: Scene
+      takeName: Scene
+      internalID: -623603649343465320
+      firstFrame: 1
+      lastFrame: 720
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
     isReadable: 0
   meshes:
     lODScreenPercentages: []

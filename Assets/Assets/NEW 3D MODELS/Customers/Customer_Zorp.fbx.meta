@@ -3,7 +3,67 @@ guid: 328ca11bfa66e6140914744a3b15056e
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_fishbowl_glass
+    second: {fileID: 2100000, guid: c1666205a3dc4044aa9ec4d3bc276024, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_angry_red
+    second: {fileID: 2100000, guid: 4fbd5bbc63e68e141b86a4619c446aef, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_bubble_white
+    second: {fileID: 2100000, guid: 04506b4fbaf10f8478b5974d7c93e9d8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_clock_yellow
+    second: {fileID: 2100000, guid: 94c56adf624261447b8a3ef2596a8fd7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_heart
+    second: {fileID: 2100000, guid: aee42ec5f5be88d498644497a95940fd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emote_steam
+    second: {fileID: 2100000, guid: 499cf7f5fd103584981e99e73c7e15ba, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: face_ink
+    second: {fileID: 2100000, guid: 7ba275ea5076d41498f85a1b490214b8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_thruster_glow
+    second: {fileID: 2100000, guid: 8a9bca7c1b9e0884fb1eb9c24e0aec96, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ufo_hull
+    second: {fileID: 2100000, guid: 70623e7462a003946b5e73a68a6027a8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ufo_lights
+    second: {fileID: 2100000, guid: c2bf2faf6b327d4469cca443fa388685, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: zorp_eye_black
+    second: {fileID: 2100000, guid: 10877d49bbf03694e89d27addf89f2db, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: zorp_green
+    second: {fileID: 2100000, guid: 099e82e026079a74e95ae03e770191ae, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

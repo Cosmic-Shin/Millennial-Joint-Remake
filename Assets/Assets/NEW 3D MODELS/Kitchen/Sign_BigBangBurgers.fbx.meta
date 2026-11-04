@@ -3,7 +3,57 @@ guid: ab9bd3bddb8d34e4cad252fdbe891b3a
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: neon_cyan_sign
+    second: {fileID: 2100000, guid: c6f01bf36ce64e24d842352d226283a5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: neon_green
+    second: {fileID: 2100000, guid: 540a6dea13bc0f34286326bdca35bb2f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: neon_hot_pink
+    second: {fileID: 2100000, guid: 7ffa659df3164b54d9e8d05e93ec8af5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: neon_orange
+    second: {fileID: 2100000, guid: bdf1231ae706f4742bbb2fa4871c4e9b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: neon_violet
+    second: {fileID: 2100000, guid: 59612e89679a15947837027c5f858e4e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: neon_yellow
+    second: {fileID: 2100000, guid: 422bb37af8531e04c9231d25672ef64a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: sign_board
+    second: {fileID: 2100000, guid: 9509a19385f5b0e4e848d945c6f25220, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_chrome
+    second: {fileID: 2100000, guid: 9c0e97536db69b04f979863860b1ada7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_dark_metal
+    second: {fileID: 2100000, guid: 55f3c6984c3dd754d800b75db3e49155, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_thruster_glow
+    second: {fileID: 2100000, guid: 8a9bca7c1b9e0884fb1eb9c24e0aec96, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

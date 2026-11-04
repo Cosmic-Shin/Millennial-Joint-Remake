@@ -3,7 +3,522 @@ guid: 35ec96e249313e74a9bfe509e2400f6d
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Apron
+    second: {fileID: 2100000, guid: 6bdc32ff8be0bd141a9da7a13541d181, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Belt
+    second: {fileID: 2100000, guid: a6131652e1c922f4f8c7885b7837f85e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Buckle
+    second: {fileID: 2100000, guid: 5ea7c30aaef431d4a94ae508c012a040, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Gloves
+    second: {fileID: 2100000, guid: 73696c47056d3eb4a9d3494e202f77db, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Hair
+    second: {fileID: 2100000, guid: 482232f032191c4459dec41c06187a5e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Hat
+    second: {fileID: 2100000, guid: 01c0dd6023cdca4489c76ec937806cd1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Pants
+    second: {fileID: 2100000, guid: a5c9c4493892b7146901e66c0f3827cd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Shirt
+    second: {fileID: 2100000, guid: 808df1673a36ce34da7fc2bd3eae5d2d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_ShirtAccent
+    second: {fileID: 2100000, guid: 8bba86c6f3d4b294588f4ee5d12da6af, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Shoes
+    second: {fileID: 2100000, guid: 232d14d6195cef849a45da33afd08781, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Skin
+    second: {fileID: 2100000, guid: 4f768d5a013d5ac4f969588a5937ab78, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Jake_New_Sole
+    second: {fileID: 2100000, guid: 990a88aad228e434bb11b8798a524f5e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: acc_backpack_orange
+    second: {fileID: 2100000, guid: dfe84d75931b7dc4f97092ddf63b5cf8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: acc_cape_red
+    second: {fileID: 2100000, guid: d0457ab08c821004b843bd839e55a794, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: acc_clown_red
+    second: {fileID: 2100000, guid: c3909b7389caa004c90caf339258876e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: acc_duck_beak
+    second: {fileID: 2100000, guid: cf3363237f67cdc43aa1ac806d5012d5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: acc_duck_yellow
+    second: {fileID: 2100000, guid: bc36deb454afda246b46bfef1090b24c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: acc_foam_orange
+    second: {fileID: 2100000, guid: ed21713171a64c54fb81c97bfd8cf887, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: acc_strap_grey
+    second: {fileID: 2100000, guid: 1b98be0deae69a84bbb82058e6bde071, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: apron_denim
+    second: {fileID: 2100000, guid: cb7826a568570dd418d596b533b45121, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: apron_navy
+    second: {fileID: 2100000, guid: 15d074fbad1f5074789059c50bf37498, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: apron_tan
+    second: {fileID: 2100000, guid: c1b0e41e658524f48b006bc8c94fa7df, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bowtie_planet_orange
+    second: {fileID: 2100000, guid: d18264522d67f5d4cad6d5e766652a63, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bowtie_planet_pink
+    second: {fileID: 2100000, guid: 07af9bb4c6e9b1e4c8d2675df19849d4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bowtie_space_blue
+    second: {fileID: 2100000, guid: 3572751ac0d75b14c84e5497106a6112, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_alien_glow
+    second: {fileID: 2100000, guid: 431a0609fdf10eb4f849c7b9ce58a890, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_alien_green
+    second: {fileID: 2100000, guid: 7c556c07ede874f4baceebc87d303b25, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_bandana_red
+    second: {fileID: 2100000, guid: a9cc2179c97e2b544b7c0624d753c030, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_black
+    second: {fileID: 2100000, guid: e1cf3a7418bda0b4c9087e6a6a6b3d46, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_cap_teal
+    second: {fileID: 2100000, guid: d6a384f2444f1844385a2272059fcf37, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_chrome
+    second: {fileID: 2100000, guid: 70a8538c7f7b7cb4aa59f4024cc0f49b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_fishbowl_glass
+    second: {fileID: 2100000, guid: c1666205a3dc4044aa9ec4d3bc276024, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_gold
+    second: {fileID: 2100000, guid: 5eb72787b5cada94290474747dce7d71, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_hairnet
+    second: {fileID: 2100000, guid: 056636f3fbcc56749a60e010123708bb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_leather_brown
+    second: {fileID: 2100000, guid: 63cfef65994708b45b21058e203a7c8c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_lens_clear
+    second: {fileID: 2100000, guid: c8ba150e54868994ea2a20090a7b69b1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_lens_dark
+    second: {fileID: 2100000, guid: d7ac873b407f6c74891c6012c006e491, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_millennial_pink
+    second: {fileID: 2100000, guid: 67de7e8f7fbd73541a3ec8049bfeb117, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_mustard
+    second: {fileID: 2100000, guid: e584c63b45bbc4f43a01b7b7c2393e5f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_mustard_dark
+    second: {fileID: 2100000, guid: 1231014edf70f2e4997e99e69b78fc90, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_nerd_frame
+    second: {fileID: 2100000, guid: bcef245c1a392454fabf11e61785a03e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_pail_metal
+    second: {fileID: 2100000, guid: 4aef4231cce38bf4e909e2c721d80b79, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_pail_metal_dark
+    second: {fileID: 2100000, guid: 90683f812964703449eab3e9b2c56098, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_party_blue
+    second: {fileID: 2100000, guid: e74ecd8b146297e4f80dab2cb6aecc97, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_party_green
+    second: {fileID: 2100000, guid: b97b766766c4c9e468d8e135f4052eab, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_party_pink
+    second: {fileID: 2100000, guid: 1e6796394500fb84e8bab87412553323, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_party_red
+    second: {fileID: 2100000, guid: e9102430cd4b2ef41a306ce0c5ad93e8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_party_yellow
+    second: {fileID: 2100000, guid: 886d76ee471f4c24cb531bb50ab53f9e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_red
+    second: {fileID: 2100000, guid: f0c8f00707ce54f4abc36ca65e0002fe, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_saturn_cream
+    second: {fileID: 2100000, guid: c2195e3eb8ebfc749b601ec399754a0a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_saturn_orange
+    second: {fileID: 2100000, guid: 7b89276093c6f624c901ebdd367f2445, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_saturn_ring
+    second: {fileID: 2100000, guid: d2bc85e6a89a8c24bbbb6bc0f16406d9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_screen_teal
+    second: {fileID: 2100000, guid: f55a4bc8d8eab6646ba6dc5096b8f050, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_star_frame_pink
+    second: {fileID: 2100000, guid: 56e366c525c8667488c82174f89f35ad, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_tape_white
+    second: {fileID: 2100000, guid: 78b9f27a783051c4b90ca0d9bc48fe2a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_tinfoil
+    second: {fileID: 2100000, guid: d64417763cc95bd41a09ba7fbee57666, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_tortoise
+    second: {fileID: 2100000, guid: 2c4a58c590768cd47a990edf3b413f09, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_white
+    second: {fileID: 2100000, guid: 9dba52e038af81b4898fb793e5a7ca8f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cos_yellow
+    second: {fileID: 2100000, guid: 254a0afd9a65e7348a632b63c90bb5e6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: food_bun
+    second: {fileID: 2100000, guid: 574c4193f13932a46b82a6191d718999, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: food_cheese
+    second: {fileID: 2100000, guid: ff050555bf3c4d04caa39fd847cb9c56, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: food_lettuce
+    second: {fileID: 2100000, guid: 7ea1620df2236094a9b01ae30f69ad29, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: food_patty
+    second: {fileID: 2100000, guid: 77e2b22d549701444a34af9d8ccb4b77, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: food_sesame
+    second: {fileID: 2100000, guid: cac0c8aa1f3be964bbc2c4d2baeec36f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: food_tomato
+    second: {fileID: 2100000, guid: 89ee0bd1ffdbc6a418a1d8b3e433e3a9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: jetpack_flame
+    second: {fileID: 2100000, guid: 347ac4b951d23f74e8a7efc26dac679e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: jetpack_red
+    second: {fileID: 2100000, guid: 9355c4952554d06498c23c54b19616d8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: jetpack_silver
+    second: {fileID: 2100000, guid: 5f78d830966163a4bb9f5d961db43e6d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: labcoat_shadow
+    second: {fileID: 2100000, guid: e028ba8cc73150740a7cc4e22e54b94c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: labcoat_white
+    second: {fileID: 2100000, guid: 858c9af04f1adb04db6e5e6ed7ef3d54, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: moonboot_puff
+    second: {fileID: 2100000, guid: 7b529d4477a54904287c4ec65d6d6f61, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: moonboot_silver
+    second: {fileID: 2100000, guid: e686e588bea74d5448321f921cea32b3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: moonboot_sole
+    second: {fileID: 2100000, guid: 2814616f6a2a6354f807b18f84a63fa0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: pen_black
+    second: {fileID: 2100000, guid: 55bb9a538e4f44549b714e3f52c968ab, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: pen_blue
+    second: {fileID: 2100000, guid: 5652e8250fe2af5489c37f9e3cbe1d39, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: pen_red
+    second: {fileID: 2100000, guid: 4fa0c7e3d1a626f4286301e7e4f098cb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: pen_silver
+    second: {fileID: 2100000, guid: 0b2ee1452314e2845b162a0878734824, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: print_ink
+    second: {fileID: 2100000, guid: be6e9cc4ae5ffc445beecfebffd2908f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: space_dark_metal
+    second: {fileID: 2100000, guid: 55f3c6984c3dd754d800b75db3e49155, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: tile_orange
+    second: {fileID: 2100000, guid: bea1a100a587ff548b0e330d44f0233f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: tile_yellow
+    second: {fileID: 2100000, guid: c87d63af8c903c54cb3facf036982f35, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_black
+    second: {fileID: 2100000, guid: 30bb5d642373ebf4daec92e491619a64, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_bolt_outline
+    second: {fileID: 2100000, guid: 0eff174e566be1b48b04f9ed1668ccc8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_bolt_red
+    second: {fileID: 2100000, guid: ca4b1d7ffc6747b4ba5caafb06c73334, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_bolt_red_dark
+    second: {fileID: 2100000, guid: 2359b629ec56a10418997330451c3594, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_bolt_white
+    second: {fileID: 2100000, guid: 58a87a941a18e094eb7305d58a7df53d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_forest
+    second: {fileID: 2100000, guid: 1005609a9f984324fa91c1a6d25ca676, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_hawaii_blue
+    second: {fileID: 2100000, guid: 22d2aaa6d7ccef74399875f05b83b9f8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_hawaii_leaf
+    second: {fileID: 2100000, guid: 1b24477364af0ac46a5471e31616d886, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_hawaii_pink
+    second: {fileID: 2100000, guid: 94b8f65c466e56e40907d67e02c454eb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_hawaii_yellow
+    second: {fileID: 2100000, guid: 230a82fb15dcec04eab51cf958028b83, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_layer_teal
+    second: {fileID: 2100000, guid: a745d497abbb14d4aa796dceccf15dfa, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_maroon
+    second: {fileID: 2100000, guid: 335ab4feeb3f52c4a8eb32c946d054ff, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_mustard
+    second: {fileID: 2100000, guid: b3ddc1ad79e525941a6638f382461b13, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_navy
+    second: {fileID: 2100000, guid: f35953534ac29534d8dec6943fb17dc0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_polo_teal
+    second: {fileID: 2100000, guid: 7d5b1136d19f86c459115f48a61c9a79, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_print_cream
+    second: {fileID: 2100000, guid: ad27882c98ad1f248b795b791fb058e6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_print_cyan
+    second: {fileID: 2100000, guid: f4d238c5f2871cd4d9e8e658bcf8f7b9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_print_orange
+    second: {fileID: 2100000, guid: d29fa1afe49c3084d8f990d7261e3518, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_print_yellow
+    second: {fileID: 2100000, guid: 62d663591b2c3574a916a7a6e9028c75, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_purple
+    second: {fileID: 2100000, guid: 99a765526bb25754785d76856503f7a1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_stripe_grey
+    second: {fileID: 2100000, guid: 33c4c90cbc1802c4688aef7cfdb882e3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top_stripe_maroon
+    second: {fileID: 2100000, guid: c0f9d6099e6a3d640a157f997ceb2867, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
