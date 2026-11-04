@@ -266,8 +266,14 @@ public class GameModeSelector : MonoBehaviour
         KeybindManager.Instance?.RefreshAllKeybindDisplay();
 
         controlPanel.SetActive(false);
-        StartMode(pendingMode);
+
+        if (SelectFlow.Instance != null && !retrying)
+            SelectFlow.Instance.Open(() => StartMode(pendingMode), () => controlPanel.SetActive(true));
+        else
+            StartMode(pendingMode);
     }
+
+    private bool retrying;
 
     private void BackToModeSelect()
     {
@@ -305,7 +311,11 @@ public class GameModeSelector : MonoBehaviour
 
             SelectMode(mode);
             if (controlPanel != null)
+            {
+                retrying = true;
                 StartWithChosenControls();
+                retrying = false;
+            }
             return;
         }
 

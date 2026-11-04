@@ -15,17 +15,32 @@ public class MapSelector : MonoBehaviour
 
     public Layout[] layouts;
 
+    public static MapSelector Instance { get; private set; }
+
     private static int lastIndex = -1;
 
+    public Layout Current => lastIndex >= 0 && lastIndex < layouts.Length ? layouts[lastIndex] : null;
+
     private void Awake()
+    {
+        Instance = this;
+        Choose(GameSession.Map);
+    }
+
+    // null (or an unknown layout name) = random, as before.
+    public void Choose(MapDefinition map)
     {
         if (layouts == null || layouts.Length == 0)
             return;
 
         int count = layouts.Length;
-        int index = Random.Range(0, count);
-        if (count > 1 && index == lastIndex)
-            index = (index + Random.Range(1, count)) % count;
+        int index = map != null ? System.Array.FindIndex(layouts, l => l.name == map.layoutName) : -1;
+        if (index < 0)
+        {
+            index = Random.Range(0, count);
+            if (count > 1 && index == lastIndex)
+                index = (index + Random.Range(1, count)) % count;
+        }
         lastIndex = index;
 
         for (int i = 0; i < count; i++)
