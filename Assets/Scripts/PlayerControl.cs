@@ -1157,6 +1157,22 @@ public class PlayerControl : MonoBehaviour
             return;
 
         animator.SetBool(isMovingHash, IsMoving());
+
+        if (hasCarryParam)
+            animator.SetBool(isCarryingHash, !heldItem.IsEmpty);
+    }
+
+    private static readonly int isCarryingHash = Animator.StringToHash("IsCarrying");
+    private bool hasCarryParam;
+
+    // Used by ChefVisual to swap in a new chef model at runtime.
+    public void SetModel(Animator model)
+    {
+        animator = model;
+        modelBaseScale = model.transform.localScale;
+        modelBaseRotation = model.transform.localRotation;
+        hasCarryParam = System.Array.Exists(model.parameters, p => p.nameHash == isCarryingHash);
+        UpdateAnimator();
     }
 
     public void DropItemAtPosition(Vector3 position)

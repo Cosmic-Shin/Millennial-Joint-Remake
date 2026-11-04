@@ -16,4 +16,4 @@ MonoBehaviour:
   prefab: {fileID: 919132149155446097, guid: 26730ecddcf5ec543964a0cdb5c57ef6, type: 3}
   portrait: {fileID: 0}
   partPrefix: Nova_New_
-  animator: {fileID: 0}
+  animator: {fileID: 22100000, guid: 84559fec83f0be94dbcdabfaab2a1447, type: 2}

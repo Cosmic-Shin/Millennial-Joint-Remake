@@ -29,7 +29,94 @@ ModelImporter:
     animationWrapMode: 0
     extraExposedTransformPaths: []
     extraUserProperties: []
-    clipAnimations: []
+    clipAnimations:
+    - serializedVersion: 16
+      name: Zed_Idle
+      takeName: Zed_Idle
+      internalID: -1673156716322568013
+      firstFrame: 0
+      lastFrame: 250
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Zed_Run
+      takeName: Zed_Run
+      internalID: 5636564982529027783
+      firstFrame: 0
+      lastFrame: 23
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Zed_Carry
+      takeName: Zed_Carry
+      internalID: -7759392951905555710
+      firstFrame: 0
+      lastFrame: 21
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
     isReadable: 0
   meshes:
     lODScreenPercentages: []
@@ -82,8 +169,641 @@ ModelImporter:
   importAnimation: 1
   humanDescription:
     serializedVersion: 3
-    human: []
-    skeleton: []
+    human:
+    - boneName: mixamorig:Hips
+      humanName: Hips
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:LeftUpLeg
+      humanName: LeftUpperLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:RightUpLeg
+      humanName: RightUpperLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:LeftLeg
+      humanName: LeftLowerLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:RightLeg
+      humanName: RightLowerLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:LeftFoot
+      humanName: LeftFoot
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:RightFoot
+      humanName: RightFoot
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:Spine
+      humanName: Spine
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:Spine1
+      humanName: Chest
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:Neck
+      humanName: Neck
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:Head
+      humanName: Head
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:LeftShoulder
+      humanName: LeftShoulder
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:RightShoulder
+      humanName: RightShoulder
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:LeftArm
+      humanName: LeftUpperArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:RightArm
+      humanName: RightUpperArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:LeftForeArm
+      humanName: LeftLowerArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:RightForeArm
+      humanName: RightLowerArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:LeftHand
+      humanName: LeftHand
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:RightHand
+      humanName: RightHand
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: Zed_New_Hat_Propeller_Blades
+      humanName: RightEye
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: mixamorig:Spine2
+      humanName: UpperChest
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    skeleton:
+    - name: Chef_Zed(Clone)
+      parentName: 
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Chef_Zed
+      parentName: Chef_Zed(Clone)
+      position: {x: 4.6, y: 0, z: 1.5}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Rig
+      parentName: Chef_Zed
+      position: {x: -4.6, y: 1.5, z: 0}
+      rotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071067}
+      scale: {x: 0.01, y: 0.01, z: 0.01}
+    - name: mixamorig:Hips
+      parentName: Zed_New_Rig
+      position: {x: -0.118603684, y: 77.097244, z: 2.5062926}
+      rotation: {x: -0.00000005960465, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 0.99999994, z: 0.99999994}
+    - name: mixamorig:Spine
+      parentName: mixamorig:Hips
+      position: {x: 0.00000014156103, y: 10.962371, z: -0.62120634}
+      rotation: {x: -0.028299512, y: -0, z: -0, w: 0.9995995}
+      scale: {x: 0.9999999, y: 0.9999947, z: 0.9999948}
+    - name: mixamorig:Spine1
+      parentName: mixamorig:Spine
+      position: {x: 0.00000012852252, y: 12.809953, z: -0.00000025331974}
+      rotation: {x: -0.000000087544315, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 0.9999948, z: 0.9999942}
+    - name: mixamorig:Spine2
+      parentName: mixamorig:Spine1
+      position: {x: -0.00000042002648, y: 14.63995, z: 0.000000603497}
+      rotation: {x: -0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 0.9999958, z: 0.9999968}
+    - name: mixamorig:Neck
+      parentName: mixamorig:Spine2
+      position: {x: 0.00000012665987, y: 16.469929, z: 0.00000004749745}
+      rotation: {x: 0.0282996, y: -0, z: -0, w: 0.9995995}
+      scale: {x: 1, y: 1.0000014, z: 1.0000005}
+    - name: mixamorig:Head
+      parentName: mixamorig:Neck
+      position: {x: 0.00000036135316, y: 12.076605, z: -0.114301495}
+      rotation: {x: -0, y: -0, z: -0, w: 1}
+      scale: {x: 0.9999998, y: 1.000001, z: 1.0000013}
+    - name: Zed_New_Hat_Propeller_Blades
+      parentName: mixamorig:Head
+      position: {x: -0.00000047683716, y: 55.00726, z: 2.1238708}
+      rotation: {x: -0.7071068, y: 0.0000000015805065, z: 0.0000000031972338, w: 0.7071067}
+      scale: {x: 100.00001, y: 100.00001, z: 100}
+    - name: mixamorig:HeadTop_End
+      parentName: mixamorig:Head
+      position: {x: 0.00000045681372, y: 73.0765, z: -0.6916282}
+      rotation: {x: -0, y: -0, z: -0, w: 1}
+      scale: {x: 0.9999999, y: 0.9999997, z: 0.9999995}
+    - name: mixamorig:LeftShoulder
+      parentName: mixamorig:Spine2
+      position: {x: -10.686177, y: 13.01467, z: -0.15078023}
+      rotation: {x: 0.5680929, y: -0.41845566, z: 0.57618225, w: 0.41252804}
+      scale: {x: 1.0000088, y: 1.0000117, z: 1.0000132}
+    - name: mixamorig:LeftArm
+      parentName: mixamorig:LeftShoulder
+      position: {x: 0.000002503395, y: 22.344261, z: -0.000009179115}
+      rotation: {x: -0.14155997, y: 0.00025658307, z: -0.0017940102, w: 0.98992807}
+      scale: {x: 1.0000163, y: 0.99994385, z: 1.0000619}
+    - name: mixamorig:LeftForeArm
+      parentName: mixamorig:LeftArm
+      position: {x: -0, y: 32.421177, z: -0.000002861023}
+      rotation: {x: -0.020587368, y: 0.00013992867, z: -0.006798305, w: 0.9997649}
+      scale: {x: 1.0000069, y: 1.0000108, z: 1.0000196}
+    - name: mixamorig:LeftHand
+      parentName: mixamorig:LeftForeArm
+      position: {x: -0.00000059604645, y: 21.590528, z: 0.000015735626}
+      rotation: {x: -0.00045392476, y: -0.0000009120704, z: 0.0021724976, w: 0.9999976}
+      scale: {x: 1.0000361, y: 1.0000238, z: 1.0000169}
+    - name: mixamorig:LeftHandIndex1
+      parentName: mixamorig:LeftHand
+      position: {x: -0.00000047683716, y: 14.825882, z: 0.000002861023}
+      rotation: {x: 0.02777648, y: 0.0036448224, z: 0.13005735, w: 0.9911106}
+      scale: {x: 0.999991, y: 1.0000185, z: 0.99999934}
+    - name: mixamorig:LeftHandIndex2
+      parentName: mixamorig:LeftHandIndex1
+      position: {x: -0.0000009536743, y: 5.0640507, z: -0.0000044107437}
+      rotation: {x: -0.0000002607703, y: 0.0000001771841, z: 0.000000024032484, w: 1}
+      scale: {x: 1.000017, y: 1.000009, z: 1.0000057}
+    - name: mixamorig:LeftHandIndex3
+      parentName: mixamorig:LeftHandIndex2
+      position: {x: -1.5552609, y: 3.8306205, z: -0.35648227}
+      rotation: {x: 0.0000010281799, y: 0.000000083353264, z: 0.00000009838569, w: 1}
+      scale: {x: 1.000004, y: 1.0000116, z: 1.0000048}
+    - name: mixamorig:LeftHandIndex4
+      parentName: mixamorig:LeftHandIndex3
+      position: {x: 0.7312269, y: 1.1097672, z: 0.29161334}
+      rotation: {x: -0, y: -0, z: -4.370418e-16, w: 1}
+      scale: {x: 0.999998, y: 1.0000055, z: 1.000002}
+    - name: mixamorig:RightShoulder
+      parentName: mixamorig:Spine2
+      position: {x: 10.686177, y: 13.019772, z: -0.24053025}
+      rotation: {x: -0.5655659, y: -0.42034006, z: 0.5784654, w: -0.4108859}
+      scale: {x: 1.0000044, y: 1.0000031, z: 1.0000064}
+    - name: mixamorig:RightArm
+      parentName: mixamorig:RightShoulder
+      position: {x: -0.0000022053719, y: 22.34426, z: 0.0000089854}
+      rotation: {x: 0.14093268, y: 0.0017522722, z: -0.012307644, w: -0.98994124}
+      scale: {x: 1.0000172, y: 0.9999541, z: 1.0000851}
+    - name: mixamorig:RightForeArm
+      parentName: mixamorig:RightArm
+      position: {x: -0.000004529953, y: 32.42003, z: -0.000000834465}
+      rotation: {x: -0.021068377, y: 0.000025595771, z: -0.0012195345, w: 0.9997774}
+      scale: {x: 1.0000254, y: 1.0000181, z: 1.0000216}
+    - name: mixamorig:RightHand
+      parentName: mixamorig:RightForeArm
+      position: {x: 0.00000166893, y: 21.59053, z: -0.00000047683716}
+      rotation: {x: -0.0027565912, y: -0.00000030479706, z: 0.00010825262, w: 0.99999624}
+      scale: {x: 1.0000086, y: 1.000009, z: 1.0000172}
+    - name: mixamorig:RightHandIndex1
+      parentName: mixamorig:RightHand
+      position: {x: 0.00000023841858, y: 13.902847, z: -0.0000009415671}
+      rotation: {x: -0.05287378, y: -0.0028948644, z: 0.054590866, w: 0.9971037}
+      scale: {x: 1.0000049, y: 0.9999809, z: 1.0000318}
+    - name: mixamorig:RightHandIndex2
+      parentName: mixamorig:RightHandIndex1
+      position: {x: -0.00000011920929, y: 4.747026, z: -0.0000021457672}
+      rotation: {x: 0.00000005960463, y: -0.000000061467276, z: -0.00000001948501, w: 1}
+      scale: {x: 1.0000017, y: 0.99999475, z: 1}
+    - name: mixamorig:RightHandIndex3
+      parentName: mixamorig:RightHandIndex2
+      position: {x: -0.003923297, y: 4.1427827, z: -0.7946409}
+      rotation: {x: -0.0000007711349, y: 0.0000001599546, z: 0.00000006228222, w: 1}
+      scale: {x: 0.9999976, y: 1.0000012, z: 0.9999948}
+    - name: mixamorig:RightHandIndex4
+      parentName: mixamorig:RightHandIndex3
+      position: {x: -0.12133181, y: 1.7285444, z: -0.013662577}
+      rotation: {x: 0.000000014901158, y: -0.000000028871021, z: 0.000000058280385, w: 1}
+      scale: {x: 0.99999976, y: 0.99999696, z: 1.0000004}
+    - name: mixamorig:LeftUpLeg
+      parentName: mixamorig:Hips
+      position: {x: -9.565011, y: -6.0750403, z: -2.7029922}
+      rotation: {x: 0.000022140895, y: -0.006209642, z: 0.9999743, w: 0.0035807623}
+      scale: {x: 1.0000002, y: 1.0000004, z: 1.0000002}
+    - name: mixamorig:LeftLeg
+      parentName: mixamorig:LeftUpLeg
+      position: {x: -0.00000035762787, y: 32.316017, z: 0.00000071525574}
+      rotation: {x: 0.004773269, y: -0.00005627521, z: -0.011779505, w: 0.9999193}
+      scale: {x: 1.000039, y: 1.0000144, z: 0.99999833}
+    - name: mixamorig:LeftFoot
+      parentName: mixamorig:LeftLeg
+      position: {x: -0.000000834465, y: 28.549149, z: -0.000000059604645}
+      rotation: {x: 0.5338615, y: -0.009932294, z: 0.006271438, w: 0.84549034}
+      scale: {x: 1.0000004, y: 1.0000187, z: 0.9999993}
+    - name: mixamorig:LeftToeBase
+      parentName: mixamorig:LeftFoot
+      position: {x: -0.000000099651515, y: 23.986944, z: 0.00000086426735}
+      rotation: {x: 0.21926606, y: 0.07748459, z: -0.017471524, w: 0.9724265}
+      scale: {x: 0.99999243, y: 1.0001463, z: 0.99985886}
+    - name: mixamorig:LeftToe_End
+      parentName: mixamorig:LeftToeBase
+      position: {x: 0.000000014901161, y: 11.17953, z: 0}
+      rotation: {x: 0.0000000745058, y: 0.000000014901159, z: 0.0000000074505797, w: 1}
+      scale: {x: 1.0000082, y: 1.0000075, z: 1.0000081}
+    - name: mixamorig:RightUpLeg
+      parentName: mixamorig:Hips
+      position: {x: 9.565011, y: -6.075037, z: -2.7483578}
+      rotation: {x: -0.000022321221, y: -0.006225854, z: 0.99997425, w: -0.0035807583}
+      scale: {x: 1.0000182, y: 1.0000203, z: 1.0000001}
+    - name: mixamorig:RightLeg
+      parentName: mixamorig:RightUpLeg
+      position: {x: 0.0000009536743, y: 32.316036, z: -0.000000029802322}
+      rotation: {x: -0.0039013573, y: -0.00004615713, z: 0.011776233, w: 0.9999231}
+      scale: {x: 1.0000182, y: 1.0000217, z: 0.9999996}
+    - name: mixamorig:RightFoot
+      parentName: mixamorig:RightLeg
+      position: {x: -0.0000007748604, y: 28.554895, z: 0.00000071525574}
+      rotation: {x: 0.5510373, y: 0.009137487, z: -0.006034364, w: 0.8344087}
+      scale: {x: 0.999989, y: 0.9999934, z: 0.99998873}
+    - name: mixamorig:RightToeBase
+      parentName: mixamorig:RightFoot
+      position: {x: 0.0000011222437, y: 25.230183, z: 0.0000011026859}
+      rotation: {x: 0.20771712, y: -0.083243206, z: 0.017743884, w: 0.9744791}
+      scale: {x: 1.000027, y: 1.0003474, z: 0.9996946}
+    - name: mixamorig:RightToe_End
+      parentName: mixamorig:RightToeBase
+      position: {x: -0.0000009685755, y: 10.51288, z: 0.00000023841858}
+      rotation: {x: -0, y: -0.000000014901159, z: -0.0000000037252899, w: 1}
+      scale: {x: 1.0000212, y: 1.0000116, z: 1.0000204}
+    - name: Zed_New_Acc_Backpack
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Acc_Cape
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Acc_ClownNose
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Acc_DuckFloatie
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Acc_FoamFinger
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Acc_GooglyEyes
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Acc_Jetpack
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Apron
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Apron_Striped
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Apron_Waist
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Arms
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Belt
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_BowTie
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_BowTie_Planets
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_FacialHair
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Glasses_Aviators
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Glasses_NerdTaped
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Glasses_Round
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Glasses_Star
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Gloves
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hair
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_AlienAntenna
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_Bandana
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_Beanie
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_Bucket
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_BurgerHelmet
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_Chef
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_Fishbowl
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_Hairnet
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_PaperCap
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 0.043719105, z: -0.0000000033007008}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_PartyHat
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_Propeller
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_SaturnRing
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_Snapback
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Hat_Tinfoil
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Head
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Headphones_Neck
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_NameTag_Pin
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Pants
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Shirt
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Shoes
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Shoes_MoonBoots
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_AtomTee
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_BoltTee
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_BurgerCostume
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_EMCheese
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_GraphicTee
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_Hawaiian
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_LabCoat
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_Layered
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_PeriodicTee
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_Polo
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_ShortSleeve
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Top_TuxedoTee
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Watch_Gold
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Zed_New_Watch_Smart
+      parentName: Chef_Zed(Clone)
+      position: {x: -0.00000061035155, y: 9.094947e-15, z: -6.8664937e-22}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+      scale: {x: 1, y: 1, z: 1}
     armTwist: 0.5
     foreArmTwist: 0.5
     upperLegTwist: 0.5
@@ -98,9 +818,9 @@ ModelImporter:
     skeletonHasParents: 1
   lastHumanDescriptionAvatarSource: {instanceID: 0}
   autoGenerateAvatarMappingIfUnspecified: 1
-  animationType: 2
+  animationType: 3
   humanoidOversampling: 1
-  avatarSetup: 0
+  avatarSetup: 1
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
   importBlendShapeDeformPercent: 1
   remapMaterialsIfMaterialImportModeIsNone: 0

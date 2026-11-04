@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Chef_Zed
+  m_Controller: {fileID: 9100000, guid: 59aa46681279e8649a5c511cf1b1e893, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 8420129518430093752, guid: 6f7fa4b11fbff244c9e6e9264ae81c15, type: 3}
+    m_OverrideClip: {fileID: -1673156716322568013, guid: 5da83bce6e6a54741bc5c6ae43629e6b, type: 3}
+  - m_OriginalClip: {fileID: -291705578633884088, guid: 6f7fa4b11fbff244c9e6e9264ae81c15, type: 3}
+    m_OverrideClip: {fileID: 5636564982529027783, guid: 5da83bce6e6a54741bc5c6ae43629e6b, type: 3}
+  - m_OriginalClip: {fileID: 3751076988478119637, guid: 6f7fa4b11fbff244c9e6e9264ae81c15, type: 3}
+    m_OverrideClip: {fileID: -7759392951905555710, guid: 5da83bce6e6a54741bc5c6ae43629e6b, type: 3}

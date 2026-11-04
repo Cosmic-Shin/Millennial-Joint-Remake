@@ -56673,6 +56673,7 @@ GameObject:
   - component: {fileID: 265309391}
   - component: {fileID: 265309392}
   - component: {fileID: 265309393}
+  - component: {fileID: 265309394}
   m_Layer: 0
   m_Name: borat
   m_TagString: Untagged
@@ -56887,6 +56888,19 @@ MonoBehaviour:
   outlineMaterial: {fileID: 2100000, guid: 4f3236d136186c943ad8ff6f420b53af, type: 2}
   highlightColor: {r: 1.6, g: 1.25, b: 0.45, a: 1}
   highlightWidth: 0.035
+--- !u!114 &265309394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 265309385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58e9e4df10836a14daf3b4e2bc9030c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChefVisual
+  defaultModel: {fileID: 1705669873}
 --- !u!1 &265781791
 GameObject:
   m_ObjectHideFlags: 0
@@ -254756,6 +254770,7 @@ GameObject:
   - component: {fileID: 1183302477}
   - component: {fileID: 1183302476}
   - component: {fileID: 1183302480}
+  - component: {fileID: 1183302481}
   m_Layer: 0
   m_Name: jose
   m_TagString: Untagged
@@ -254970,6 +254985,19 @@ MonoBehaviour:
   outlineMaterial: {fileID: 2100000, guid: 4f3236d136186c943ad8ff6f420b53af, type: 2}
   highlightColor: {r: 1.6, g: 1.25, b: 0.45, a: 1}
   highlightWidth: 0.035
+--- !u!114 &1183302481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1183302474}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58e9e4df10836a14daf3b4e2bc9030c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChefVisual
+  defaultModel: {fileID: 1750528301}
 --- !u!1 &1185350775
 GameObject:
   m_ObjectHideFlags: 0

@@ -16,4 +16,4 @@ MonoBehaviour:
   prefab: {fileID: 919132149155446097, guid: 35ec96e249313e74a9bfe509e2400f6d, type: 3}
   portrait: {fileID: 0}
   partPrefix: Jake_New_
-  animator: {fileID: 0}
+  animator: {fileID: 22100000, guid: f7d99985e5a480e47b4ad21b75e89795, type: 2}
