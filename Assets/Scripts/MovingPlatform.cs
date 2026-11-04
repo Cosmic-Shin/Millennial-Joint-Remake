@@ -2,12 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Ping-pongs between its start and start + localOffset (in parent space), pausing at each dock.
-// Rigidbodies standing on it (players, dropped food) are carried along.
+// Rigidbodies standing in its rider zones (players, dropped food, power-ups) are carried along.
 public class MovingPlatform : MonoBehaviour
 {
     public Vector3 localOffset = new Vector3(-3.6f, 0f, 0f);
     public float travelTime = 2.5f;
     public float waitTime = 1.5f;
+    [Tooltip("Trigger boxes over the deck; whatever is inside them rides along")]
+    public BoxCollider[] riderZones;
 
     private Vector3 start;
     private float time;
@@ -26,7 +28,6 @@ public class MovingPlatform : MonoBehaviour
 
     private void OnDisable()
     {
-        riders.Clear();
         time = 0f;
         transform.localPosition = start;
     }
@@ -44,27 +45,29 @@ public class MovingPlatform : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // Re-check who is aboard every step: robust to pads, hops and launched items coming and going.
+        riders.Clear();
+        if (riderZones != null)
+            foreach (BoxCollider zone in riderZones)
+            {
+                if (zone == null)
+                    continue;
+                Vector3 halfExtents = Vector3.Scale(zone.size, zone.transform.lossyScale) * 0.5f;
+                foreach (Collider c in Physics.OverlapBox(zone.transform.TransformPoint(zone.center), halfExtents, zone.transform.rotation, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    Rigidbody r = c.attachedRigidbody;
+                    if (r != null && r != body && !r.isKinematic)
+                        riders.Add(r);
+                }
+            }
+
         time += Time.fixedDeltaTime;
         Vector3 local = start + localOffset * Progress(time, travelTime, waitTime);
         Vector3 target = transform.parent != null ? transform.parent.TransformPoint(local) : local;
         Vector3 delta = target - body.position;
         body.MovePosition(target);
 
-        riders.RemoveWhere(r => r == null);
         foreach (Rigidbody rider in riders)
             rider.position += delta;
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        Rigidbody r = other.attachedRigidbody;
-        if (r != null && !r.isKinematic && r != body)
-            riders.Add(r);
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.attachedRigidbody != null)
-            riders.Remove(other.attachedRigidbody);
     }
 }

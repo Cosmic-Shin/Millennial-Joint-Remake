@@ -329,7 +329,7 @@ public class PlayerControl : MonoBehaviour
         if (rb == null)
             return;
 
-        if (!GameplayActive)
+        if (!GameplayActive || inputLocked)
         {
             direction = Vector3.zero;
             UpdateAnimator();
@@ -1164,6 +1164,9 @@ public class PlayerControl : MonoBehaviour
 
     private static readonly int isCarryingHash = Animator.StringToHash("IsCarrying");
     private bool hasCarryParam;
+
+    // Set by GravityPad during a zero-G hop: ignores all input until cleared.
+    [System.NonSerialized] public bool inputLocked;
 
     // Used by ChefVisual to swap in a new chef model at runtime.
     public void SetModel(Animator model)

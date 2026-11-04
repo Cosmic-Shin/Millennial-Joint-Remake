@@ -52,11 +52,23 @@ public static class SpaceMapBuilder
         public List<Place> places = new List<Place>();
         public Vector2 p1, p2;
         public Rect[] powerUpAreas;
-        public Vector2[] gravityTiles;     // the purple tiles from Environment_Space
+        public PadSpec[] pads;             // gravity-flip pads (purple tiles)
         public Vector3 sign;               // x, bottom y, z
         public Vector3 whiteboard;         // x, z, yaw
         public Vector3 mobile;             // x, bottom y, z
     }
+
+    private struct PadSpec
+    {
+        public float x, z;
+        public bool hasTarget; public float tx, tz; // ZeroGHop: optional fixed landing
+        public int pair; public bool sender;        // ItemLauncher: pair number (-1 = hop pad)
+    }
+
+    private static PadSpec Hop(float x, float z) => new PadSpec { x = x, z = z, pair = -1 };
+    private static PadSpec HopTo(float x, float z, float tx, float tz) => new PadSpec { x = x, z = z, hasTarget = true, tx = tx, tz = tz, pair = -1 };
+    private static PadSpec Send(int pair, float x, float z) => new PadSpec { x = x, z = z, pair = pair, sender = true };
+    private static PadSpec Receive(int pair, float x, float z) => new PadSpec { x = x, z = z, pair = pair };
 
     private static Place P(S kind, float x, float z, float yaw) => new Place(kind, x, z, yaw);
     private static Rect R(float x, float z, float w, float h) => new Rect(x - w / 2f, z - h / 2f, w, h);
@@ -107,7 +119,8 @@ public static class SpaceMapBuilder
             name = "Main", scale = 1.3f,
             p1 = new Vector2(5.8f, -2f), p2 = new Vector2(-3.2f, -2f),
             powerUpAreas = new[] { R(6.8f, -1.5f, 3f, 3f), R(-4.2f, -1.5f, 3f, 3f) },
-            gravityTiles = new[] { new Vector2(5.8f, -9.8f), new Vector2(-3.2f, -9.8f) },
+            // Shortcuts over the centre island, one each way.
+            pads = new[] { HopTo(4.6f, -7.8f, -2.0f, -7.8f), HopTo(-2.0f, -4.6f, 4.6f, -4.6f) },
             sign = new Vector3(1.3f, 2.2f, -14.8f), whiteboard = new Vector3(-5.2f, -14.6f, 0f), mobile = new Vector3(7.5f, 3.4f, -12.5f),
         };
         Kitchen(main, 1.3f, -12.85f, 9.6f, new[] { -11.0f, -9.3f, -7.6f, -5.9f, -4.2f }, new[] { -8.2f, -6.5f }, 2.3f, 5.5f);
@@ -117,7 +130,7 @@ public static class SpaceMapBuilder
             name = "AsteroidDiner", scale = 2f, meshFloor = true,
             p1 = new Vector2(4.5f, -6f), p2 = new Vector2(-4.5f, -6f),
             powerUpAreas = new[] { R(5f, -4f, 3f, 3f), R(-5f, -4f, 3f, 3f) },
-            gravityTiles = new[] { new Vector2(5f, -10.5f), new Vector2(-5f, -10.5f) },
+            pads = new[] { HopTo(4.0f, -9.2f, -4.0f, -9.2f), HopTo(-4.0f, -4.2f, 4.0f, -4.2f) },
             sign = new Vector3(0f, 2.2f, -16.4f), whiteboard = new Vector3(-6.5f, -16.2f, 0f), mobile = new Vector3(5.5f, 3.4f, -13.5f),
         };
         Kitchen(asteroid, 0f, -14.2f, 9.2f, new[] { -11.6f, -9.9f, -8.2f, -6.5f, -4.8f }, new[] { -10f, -8.3f }, -1.8f, 5.5f);
@@ -127,7 +140,8 @@ public static class SpaceMapBuilder
             name = "SplitIslands", scale = 1.35f, movingIslands = true,
             p1 = new Vector2(7.4f, -5f), p2 = new Vector2(-7.4f, -5f),
             powerUpAreas = new[] { R(7.4f, -8f, 3f, 3f), R(-7.4f, -8f, 3f, 3f) },
-            gravityTiles = new[] { new Vector2(7.4f, -1f), new Vector2(-6.4f, -1.2f) },
+            // Item launchers: pair 0 sends +X island -> -X island, pair 1 the other way.
+            pads = new[] { Send(0, 5f, -2.5f), Receive(0, -5f, -2.5f), Send(1, -5f, -7f), Receive(1, 5f, -7f) },
             sign = new Vector3(0f, 2.2f, -14.6f), whiteboard = new Vector3(5f, -13.5f, 0f), mobile = new Vector3(-8f, 3.4f, -10.5f),
         };
         IslandKitchen(split, 11.35f, -12f);
@@ -137,7 +151,7 @@ public static class SpaceMapBuilder
             name = "BridgeIslands", scale = 1.35f,
             p1 = new Vector2(8.8f, -2.5f), p2 = new Vector2(-8.8f, -2.5f),
             powerUpAreas = new[] { R(8.8f, -9f, 3f, 3f), R(-8.8f, -9f, 3f, 3f) },
-            gravityTiles = new[] { new Vector2(7.5f, -0.8f), new Vector2(-6.5f, -1f) },
+            pads = new[] { Hop(7.5f, -0.8f), Hop(-6.5f, -1f) },
             sign = new Vector3(0f, 2.2f, -14.6f), whiteboard = new Vector3(6f, -13.5f, 0f), mobile = new Vector3(-9f, 3.4f, -10.5f),
         };
         IslandKitchen(bridge, 12.7f, -12f);
@@ -147,7 +161,7 @@ public static class SpaceMapBuilder
             name = "ShuttleHop", scale = 1.35f,
             p1 = new Vector2(8.8f, -5f), p2 = new Vector2(-8.8f, -5f),
             powerUpAreas = new[] { R(9f, -8f, 3f, 3f), R(-9f, -8f, 3f, 3f) },
-            gravityTiles = new[] { new Vector2(8f, -2f), new Vector2(-7f, -2.2f) },
+            pads = new[] { Hop(8f, -2f), Hop(-7f, -2.2f) },
             sign = new Vector3(0f, 2.2f, -14.6f), whiteboard = new Vector3(7f, -13.5f, 0f), mobile = new Vector3(-9f, 3.4f, -11f),
         };
         IslandKitchen(shuttle, 12.7f, -12f);
@@ -157,7 +171,7 @@ public static class SpaceMapBuilder
             name = "RingStation", scale = 1.3f, meshFloor = true,
             p1 = new Vector2(7f, -5.2f), p2 = new Vector2(-7f, -5.2f),
             powerUpAreas = new[] { R(5f, -10.2f, 2f, 2f), R(-5f, -10.2f, 2f, 2f) },
-            gravityTiles = new[] { new Vector2(5.1f, -0.1f), new Vector2(-5.1f, -0.1f) },
+            pads = new[] { Hop(5.1f, -0.1f), Hop(-5.1f, -0.1f) },
             sign = new Vector3(0f, 2.2f, -17.6f), mobile = new Vector3(0f, 4f, -5.2f),
         };
         void Around(S kind, float degrees)
@@ -499,6 +513,7 @@ public static class SpaceMapBuilder
             float dir = b.center.x > 0f ? -1f : 1f;
             var mover = shuttle.gameObject.AddComponent<MovingPlatform>();
             mover.localOffset = shuttle.parent.InverseTransformVector(root.TransformVector(new Vector3(3.6f * scale * dir, 0f, 0f)));
+            mover.riderZones = new[] { riders };
         }
     }
 
@@ -523,7 +538,7 @@ public static class SpaceMapBuilder
             mover.SetParent(root, false);
 
             // Everything standing on this island moves with it.
-            string[] onIsland = { "Spawn", "PowerUp", "GravityFlipTile", "Whiteboard" };
+            string[] onIsland = { "Spawn", "PowerUp", "GravityPad", "Whiteboard" };
             foreach (Transform t in root.Cast<Transform>().ToList())
                 if (t.name == slab.name + " Floor" || (onIsland.Any(t.name.StartsWith) && SideOf(t) == side))
                     t.SetParent(mover, true);
@@ -536,6 +551,7 @@ public static class SpaceMapBuilder
             riders.gameObject.layer = 2;
 
             var platform = mover.gameObject.AddComponent<MovingPlatform>();
+            platform.riderZones = new[] { riders };
             float innerEdge = side > 0 ? b.min.x : -b.max.x;
             platform.localOffset = new Vector3(-side * (innerEdge + 0.05f), 0f, 0f); // slight overlap: no seam to trip on
             platform.travelTime = 2.5f;
@@ -641,17 +657,83 @@ public static class SpaceMapBuilder
             }
         }
 
-        // Asteroids + shooting stars: spread out to suit the bigger map; gravity tiles go on open floor.
+        // Asteroids + shooting stars: spread out to suit the bigger map.
         GameObject env = Spawn("Environment/Environment_Space", decor);
         env.transform.localScale = Vector3.one * level.scale * 1.15f;
         PlayScene(env, "Env_Space");
-        for (int i = 0; i < level.gravityTiles.Length; i++)
+
+        AddGravityPads(root, level, env.transform);
+    }
+
+    // Gravity-flip pads: the purple tile + a trigger + GravityPad, with a ZERO-G caution decal in front of each.
+    private static readonly Color HopGlow = new Color(0.65f, 0.3f, 1f);
+    private static readonly Color SenderGlow = new Color(1f, 0.5f, 0.1f);
+    private static readonly Color ReceiverGlow = new Color(0.65f, 0.3f, 1f);
+
+    private static void AddGravityPads(Transform root, Level level, Transform env)
+    {
+        Transform tileSource = env.Find("GravityFlipTile_01");
+        GameObject mainModel = Spawn("Levels/Level_Main", root);
+        Transform decalSource = mainModel.GetComponentsInChildren<Transform>().First(t => t.name == "Decal_CautionZeroG_1");
+        Transform decalTextSource = mainModel.GetComponentsInChildren<Transform>().First(t => t.name == "Decal_CautionZeroG_1_Text");
+
+        var pads = new List<GravityPad>();
+        for (int i = 0; i < level.pads.Length; i++)
         {
-            Transform tile = env.transform.Find($"GravityFlipTile_0{i + 1}");
-            tile.SetParent(root, true);
-            tile.localScale = Vector3.Scale(tile.localScale, new Vector3(1f / env.transform.localScale.x, 1f / env.transform.localScale.y, 1f / env.transform.localScale.z));
-            PlaceAt(tile, root, level.gravityTiles[i].x, 0.01f, level.gravityTiles[i].y);
+            PadSpec spec = level.pads[i];
+            var pad = new GameObject($"GravityPad {i + 1}" + (spec.pair >= 0 ? (spec.sender ? " (Sender)" : " (Receiver)") : "")).transform;
+            pad.SetParent(root, false);
+            pad.localPosition = new Vector3(spec.x, 0f, spec.z);
+
+            Transform tile = Object.Instantiate(tileSource.gameObject, env).transform;
+            tile.name = "Tile";
+            tile.SetParent(pad, true);
+            tile.localScale = Vector3.Scale(tile.localScale, new Vector3(1f / env.localScale.x, 1f / env.localScale.y, 1f / env.localScale.z));
+            PlaceAt(tile, root, spec.x, 0.01f, spec.z);
+            Bounds tb = LocalBounds(pad, tile.GetComponentsInChildren<Renderer>());
+
+            foreach (Transform src in new[] { decalSource, decalTextSource })
+            {
+                Transform decal = Object.Instantiate(src.gameObject, mainModel.transform).transform;
+                decal.name = src.name;
+                decal.SetParent(pad, true);
+                PlaceAt(decal, root, spec.x, 0.012f, spec.z + tb.size.z * 0.5f + 0.45f);
+            }
+
+            var trigger = pad.gameObject.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.center = new Vector3(0f, 0.5f, 0f);
+            trigger.size = new Vector3(tb.size.x, 1f, tb.size.z);
+            pad.gameObject.layer = 2; // Ignore Raycast
+
+            GravityPad gp = pad.gameObject.AddComponent<GravityPad>();
+            gp.glowRenderer = tile.GetComponent<Renderer>();
+            gp.tileSize = level.scale;
+            gp.mode = spec.pair >= 0 ? GravityPad.PadMode.ItemLauncher : GravityPad.PadMode.ZeroGHop;
+            gp.isSender = spec.sender;
+            gp.glowColor = spec.pair < 0 ? HopGlow : spec.sender ? SenderGlow : ReceiverGlow;
+            if (spec.hasTarget)
+            {
+                var target = new GameObject("HopTarget").transform;
+                target.SetParent(pad, false);
+                target.position = root.TransformPoint(new Vector3(spec.tx, 0f, spec.tz));
+                gp.hopTarget = target;
+            }
+            pads.Add(gp);
         }
+
+        // Link launcher pairs: each Sender fires at the Receiver with the same pair number.
+        for (int i = 0; i < pads.Count; i++)
+            if (level.pads[i].sender)
+                pads[i].receiver = pads.Where((p, j) => level.pads[j].pair == level.pads[i].pair && !level.pads[j].sender).FirstOrDefault();
+
+        Object.DestroyImmediate(mainModel);
+        foreach (Transform t in env.Cast<Transform>().Where(t => t.name.StartsWith("GravityFlipTile")).ToList())
+            Object.DestroyImmediate(t.gameObject);
+
+        // Main's own floor decals are replaced by the per-pad ones.
+        foreach (Transform t in root.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("Decal_CautionZeroG") && t.parent.name == "Platform_Slab").ToList())
+            Object.DestroyImmediate(t.gameObject);
     }
 
     // Plays the FBX's own looping "Scene" animation.
