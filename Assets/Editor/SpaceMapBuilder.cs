@@ -8,9 +8,10 @@ using UnityEngine;
 // and registers them with MapSelector. Station scripts are cloned from "Map - Classic";
 // their old meshes are hidden and the matching Furniture_Space piece is added as the visual.
 //
-// Coordinates below are in the level FBX's own space: customers are at +z, kitchens around z = -4.
-// Each map root is turned 180 degrees and shifted so it lines up with the existing camera / Classic map.
-// Yaw = direction the station's front (the side players use) faces; 0 = +z.
+// All coordinates are in the map root's space AFTER the level model is scaled up:
+// customers are at +z, the kitchen is at -z, floors are at y = 0.
+// Each map root is turned 180 degrees so customers sit at the bottom of the screen, like Classic.
+// Yaw = direction a station's front (the side players use) faces; 0 = +z (towards the camera).
 public static class SpaceMapBuilder
 {
     private const string Models = "Assets/Assets/NEW 3D MODELS/";
@@ -45,94 +46,133 @@ public static class SpaceMapBuilder
     private class Level
     {
         public string name;
-        public Place[] places;
+        public float scale = 1f;           // floor size multiplier (x/z only; stations keep their size)
+        public bool meshFloor;             // irregular floors (ring, asteroid) use mesh colliders
+        public bool movingIslands;         // SplitIslands: the two islands slide together and apart
+        public List<Place> places = new List<Place>();
         public Vector2 p1, p2;
         public Rect[] powerUpAreas;
-        public bool meshFloor;
-        public bool furnitureLayout;
+        public Vector2[] gravityTiles;     // the purple tiles from Environment_Space
+        public Vector3 sign;               // x, bottom y, z
+        public Vector3 whiteboard;         // x, z, yaw
+        public Vector3 mobile;             // x, bottom y, z
     }
 
     private static Place P(S kind, float x, float z, float yaw) => new Place(kind, x, z, yaw);
+    private static Rect R(float x, float z, float w, float h) => new Rect(x - w / 2f, z - h / 2f, w, h);
 
-    // Two-island kitchens: cooking on the +x island (screen left, P1), plating / drinks / serving on the -x island.
-    private static Place[] SplitKitchen(float outer)
+    // Symmetric kitchen: back row of cooking stations around a centre fridge, drink/side stations down both
+    // walls, a small centre island, and the serving counter at the front facing the customers.
+    private static void Kitchen(Level l, float cx, float backZ, float sideD, float[] sideZ, float[] islandZ, float frontZ, float binD)
     {
-        return new[]
+        l.places.Add(P(S.Fridge, cx, backZ, 0));
+        S[] back = { S.Grill, S.Grill, S.Fryer, S.Fryer, S.Chili };
+        S[] side = { S.Soda, S.Coffee, S.Cups, S.IceCream, S.Counter };
+        foreach (int s in new[] { 1, -1 })
         {
-            P(S.Fridge, outer, 0.6f, -90), P(S.Grill, outer, -1.2f, -90), P(S.Grill, outer, -3.0f, -90),
-            P(S.Fryer, outer, -4.8f, -90), P(S.Fryer, outer, -6.6f, -90), P(S.Chili, outer, -8.4f, -90),
-            P(S.Counter, outer - 2.0f, -9.4f, 0), P(S.Bin, outer - 3.8f, -9.4f, 0),
+            for (int i = 0; i < back.Length; i++)
+                l.places.Add(P(back[i], cx + s * (2.05f + 1.7f * i), backZ, 0));
+            for (int i = 0; i < side.Length && i < sideZ.Length; i++)
+                l.places.Add(P(side[i], cx + s * sideD, sideZ[i], -90 * s));
+            l.places.Add(P(S.Plates, cx + s * 0.85f, islandZ[0], 90 * s));
+            l.places.Add(P(S.Counter, cx + s * 0.85f, islandZ[1], 90 * s));
+            l.places.Add(P(S.Counter, cx + s * 2.6f, frontZ, 180));
+            l.places.Add(P(S.Bin, cx + s * binD, frontZ, 180));
+        }
+        l.places.Add(P(S.Serving, cx, frontZ, 180));
+    }
 
-            P(S.Serving, -outer + 2.6f, 1.6f, 180),
-            P(S.Plates, -outer, -1.2f, 90), P(S.Cups, -outer, -3.0f, 90), P(S.Soda, -outer, -4.8f, 90),
-            P(S.Coffee, -outer, -6.6f, 90), P(S.IceCream, -outer, -8.4f, 90),
-            P(S.Counter, -outer + 2.0f, -9.4f, 0), P(S.Bin, -outer + 3.8f, -9.4f, 0),
-        };
+    // Two-island kitchen: cooking on the +x island (screen left, P1), plating / drinks / serving on the -x island.
+    private static void IslandKitchen(Level l, float outer, float back)
+    {
+        float[] z = { 0.8f, -1.25f, -2.95f, -4.65f, -6.35f, -8.05f, -9.75f };
+        S[] cook = { S.Fridge, S.Grill, S.Grill, S.Fryer, S.Fryer, S.Chili, S.Counter };
+        S[] serve = { S.Plates, S.Cups, S.Soda, S.Coffee, S.IceCream, S.Counter, S.Counter };
+        for (int i = 0; i < cook.Length; i++)
+        {
+            l.places.Add(P(cook[i], outer, cook[i] == S.Fridge ? 0.8f : z[i] - 0.4f, -90));
+            l.places.Add(P(serve[i], -outer, z[i] + 0.4f, 90));
+        }
+        l.places.Add(P(S.Bin, outer - 1.8f, back, 0));
+        l.places.Add(P(S.Counter, outer - 3.5f, back, 0));
+        l.places.Add(P(S.Bin, -outer + 1.8f, back, 0));
+        l.places.Add(P(S.Counter, -outer + 3.5f, back, 0));
+        l.places.Add(P(S.Serving, -outer + 3.8f, 1.4f, 180));
     }
 
     private static Level[] Levels()
     {
-        var ring = new List<Place>();
+        var main = new Level
+        {
+            name = "Main", scale = 1.3f,
+            p1 = new Vector2(5.8f, -2f), p2 = new Vector2(-3.2f, -2f),
+            powerUpAreas = new[] { R(6.8f, -1.5f, 3f, 3f), R(-4.2f, -1.5f, 3f, 3f) },
+            gravityTiles = new[] { new Vector2(5.8f, -9.8f), new Vector2(-3.2f, -9.8f) },
+            sign = new Vector3(1.3f, 2.2f, -14.8f), whiteboard = new Vector3(-5.2f, -14.6f, 0f), mobile = new Vector3(7.5f, 3.4f, -12.5f),
+        };
+        Kitchen(main, 1.3f, -12.85f, 9.6f, new[] { -11.0f, -9.3f, -7.6f, -5.9f, -4.2f }, new[] { -8.2f, -6.5f }, 2.3f, 5.5f);
+
+        var asteroid = new Level
+        {
+            name = "AsteroidDiner", scale = 2f, meshFloor = true,
+            p1 = new Vector2(4.5f, -6f), p2 = new Vector2(-4.5f, -6f),
+            powerUpAreas = new[] { R(5f, -4f, 3f, 3f), R(-5f, -4f, 3f, 3f) },
+            gravityTiles = new[] { new Vector2(5f, -10.5f), new Vector2(-5f, -10.5f) },
+            sign = new Vector3(0f, 2.2f, -16.4f), whiteboard = new Vector3(-6.5f, -16.2f, 0f), mobile = new Vector3(5.5f, 3.4f, -13.5f),
+        };
+        Kitchen(asteroid, 0f, -14.2f, 9.2f, new[] { -11.6f, -9.9f, -8.2f, -6.5f, -4.8f }, new[] { -10f, -8.3f }, -1.8f, 5.5f);
+
+        var split = new Level
+        {
+            name = "SplitIslands", scale = 1.35f, movingIslands = true,
+            p1 = new Vector2(7.4f, -5f), p2 = new Vector2(-7.4f, -5f),
+            powerUpAreas = new[] { R(7.4f, -8f, 3f, 3f), R(-7.4f, -8f, 3f, 3f) },
+            gravityTiles = new[] { new Vector2(7.4f, -1f), new Vector2(-6.4f, -1.2f) },
+            sign = new Vector3(0f, 2.2f, -14.6f), whiteboard = new Vector3(5f, -13.5f, 0f), mobile = new Vector3(-8f, 3.4f, -10.5f),
+        };
+        IslandKitchen(split, 11.35f, -12f);
+
+        var bridge = new Level
+        {
+            name = "BridgeIslands", scale = 1.35f,
+            p1 = new Vector2(8.8f, -2.5f), p2 = new Vector2(-8.8f, -2.5f),
+            powerUpAreas = new[] { R(8.8f, -9f, 3f, 3f), R(-8.8f, -9f, 3f, 3f) },
+            gravityTiles = new[] { new Vector2(7.5f, -0.8f), new Vector2(-6.5f, -1f) },
+            sign = new Vector3(0f, 2.2f, -14.6f), whiteboard = new Vector3(6f, -13.5f, 0f), mobile = new Vector3(-9f, 3.4f, -10.5f),
+        };
+        IslandKitchen(bridge, 12.7f, -12f);
+
+        var shuttle = new Level
+        {
+            name = "ShuttleHop", scale = 1.35f,
+            p1 = new Vector2(8.8f, -5f), p2 = new Vector2(-8.8f, -5f),
+            powerUpAreas = new[] { R(9f, -8f, 3f, 3f), R(-9f, -8f, 3f, 3f) },
+            gravityTiles = new[] { new Vector2(8f, -2f), new Vector2(-7f, -2.2f) },
+            sign = new Vector3(0f, 2.2f, -14.6f), whiteboard = new Vector3(7f, -13.5f, 0f), mobile = new Vector3(-9f, 3.4f, -11f),
+        };
+        IslandKitchen(shuttle, 12.7f, -12f);
+
+        var ring = new Level
+        {
+            name = "RingStation", scale = 1.3f, meshFloor = true,
+            p1 = new Vector2(7f, -5.2f), p2 = new Vector2(-7f, -5.2f),
+            powerUpAreas = new[] { R(5f, -10.2f, 2f, 2f), R(-5f, -10.2f, 2f, 2f) },
+            gravityTiles = new[] { new Vector2(5.1f, -0.1f), new Vector2(-5.1f, -0.1f) },
+            sign = new Vector3(0f, 2.2f, -17.6f), mobile = new Vector3(0f, 4f, -5.2f),
+        };
         void Around(S kind, float degrees)
         {
-            float a = degrees * Mathf.Deg2Rad, r = 7.4f;
-            // front faces the ring's centre
-            ring.Add(P(kind, Mathf.Cos(a) * r, -4f + Mathf.Sin(a) * r, Mathf.Atan2(-Mathf.Cos(a), -Mathf.Sin(a)) * Mathf.Rad2Deg));
+            float a = degrees * Mathf.Deg2Rad, r = 10.2f;
+            ring.places.Add(P(kind, Mathf.Cos(a) * r, -5.2f + Mathf.Sin(a) * r, Mathf.Atan2(-Mathf.Cos(a), -Mathf.Sin(a)) * Mathf.Rad2Deg));
         }
         Around(S.Serving, 90);
         Around(S.Fridge, 62); Around(S.Grill, 40); Around(S.Grill, 18); Around(S.Fryer, -4); Around(S.Fryer, -26); Around(S.Chili, -48); Around(S.Counter, -70);
         Around(S.Plates, 118); Around(S.Cups, 140); Around(S.Soda, 162); Around(S.Coffee, 184); Around(S.IceCream, 206); Around(S.Counter, 228);
         Around(S.Bin, -92);
+        float wa = -114f * Mathf.Deg2Rad;
+        ring.whiteboard = new Vector3(Mathf.Cos(wa) * 10.4f, -5.2f + Mathf.Sin(wa) * 10.4f, Mathf.Atan2(-Mathf.Cos(wa), -Mathf.Sin(wa)) * Mathf.Rad2Deg);
 
-        return new[]
-        {
-            new Level
-            {
-                name = "Main", furnitureLayout = true,
-                // Furniture_Space supplies the rest; these fill in what it doesn't have.
-                places = new[] { P(S.IceCream, -6.6f, -2.6f, 90), P(S.Fryer, 8.6f, -5.6f, -90), P(S.Counter, 4.4f, -0.3f, 180) },
-                p1 = new Vector2(4f, -2.5f), p2 = new Vector2(-2f, -2.5f),
-                powerUpAreas = new[] { new Rect(-6f, -4f, 5f, 2.5f), new Rect(3f, -2.5f, 5f, 2.5f) },
-            },
-            new Level
-            {
-                name = "SplitIslands", places = SplitKitchen(8.6f),
-                p1 = new Vector2(5.5f, -4f), p2 = new Vector2(-5.5f, -4f),
-                powerUpAreas = new[] { new Rect(3.5f, -6f, 3.5f, 4f), new Rect(-7f, -6f, 3.5f, 4f) },
-            },
-            new Level
-            {
-                name = "BridgeIslands", places = SplitKitchen(9.6f),
-                p1 = new Vector2(6.5f, -4f), p2 = new Vector2(-6.5f, -4f),
-                powerUpAreas = new[] { new Rect(4.5f, -6f, 3.5f, 4f), new Rect(-8f, -6f, 3.5f, 4f) },
-            },
-            new Level
-            {
-                name = "RingStation", meshFloor = true, places = ring.ToArray(),
-                p1 = new Vector2(5.2f, -4f), p2 = new Vector2(-5.2f, -4f),
-                powerUpAreas = new[] { new Rect(3.8f, -6f, 2f, 4f), new Rect(-5.8f, -6f, 2f, 4f) },
-            },
-            new Level
-            {
-                name = "ShuttleHop", places = SplitKitchen(10.1f),
-                p1 = new Vector2(7f, -4f), p2 = new Vector2(-7f, -4f),
-                powerUpAreas = new[] { new Rect(5f, -6f, 3.5f, 4f), new Rect(-8.5f, -6f, 3.5f, 4f) },
-            },
-            new Level
-            {
-                name = "AsteroidDiner", meshFloor = true,
-                places = new[]
-                {
-                    P(S.Fridge, -4.25f, -7.4f, 0), P(S.Grill, -2.55f, -7.4f, 0), P(S.Grill, -0.85f, -7.4f, 0),
-                    P(S.Fryer, 0.85f, -7.4f, 0), P(S.Fryer, 2.55f, -7.4f, 0), P(S.Chili, 4.25f, -7.4f, 0),
-                    P(S.Plates, -5.3f, -5.4f, 90), P(S.Cups, -5.3f, -3.7f, 90), P(S.Soda, -5.3f, -2.0f, 90),
-                    P(S.Coffee, 5.3f, -5.4f, -90), P(S.IceCream, 5.3f, -3.7f, -90), P(S.Counter, 5.3f, -2.0f, -90),
-                    P(S.Serving, 0f, 0.2f, 180), P(S.Bin, -2.6f, 0.2f, 180), P(S.Counter, 2.6f, 0.2f, 180),
-                },
-                p1 = new Vector2(2f, -4f), p2 = new Vector2(-2f, -4f),
-                powerUpAreas = new[] { new Rect(-3f, -5.5f, 2.5f, 3f), new Rect(0.5f, -5.5f, 2.5f, 3f) },
-            },
-        };
+        return new[] { main, split, bridge, ring, shuttle, asteroid };
     }
 
     [MenuItem("Tools/Millennial Joint/Build Space Maps")]
@@ -193,26 +233,23 @@ public static class SpaceMapBuilder
         var root = new GameObject(rootName).transform;
         root.SetPositionAndRotation(RootPosition, RootRotation);
 
-        GameObject levelModel = Spawn("Levels/Level_" + level.name, root);
+        // Floors get bigger; heights (rails, ropes, decals) stay the same.
+        var scaler = new GameObject("Level (scaled)").transform;
+        scaler.SetParent(root, false);
+        scaler.localScale = new Vector3(level.scale, 1f, level.scale);
+        GameObject levelModel = Spawn("Levels/Level_" + level.name, scaler);
         AddFloors(levelModel.transform, root, level.meshFloor);
 
         GameObject furniture = Spawn("Kitchen/Furniture_Space", root);
         Transform stations = new GameObject("Stations").transform;
         stations.SetParent(root, false);
-
-        if (level.furnitureLayout)
-        {
-            GameObject laidOut = Spawn("Kitchen/Furniture_Space", root);
-            BuildFromFurniture(laidOut.transform, furniture.transform, stations, classic);
-            Object.DestroyImmediate(laidOut);
-        }
+        var built = new List<GameObject>();
         foreach (Place p in level.places)
-            MakeStation(p.kind, stations, new Vector3(p.x, 0f, p.z), p.yaw, furniture.transform, classic, null);
-
+            built.Add(MakeStation(p.kind, stations, new Vector3(p.x, 0f, p.z), p.yaw, furniture.transform, classic));
         Object.DestroyImmediate(furniture);
 
         if (level.name == "ShuttleHop")
-            AddShuttles(levelModel.transform, root);
+            AddShuttles(levelModel.transform, root, level.scale);
 
         var layout = new MapSelector.Layout
         {
@@ -225,7 +262,10 @@ public static class SpaceMapBuilder
         };
         AddCustomerArea(levelModel.transform, root, layout);
         AddKillZone(root);
-        AddDecor(root, level.name);
+        AddDecor(root, level, built.FirstOrDefault(b => b.name == S.Counter.ToString()));
+
+        if (level.movingIslands)
+            AddMovingIslands(levelModel.transform, root);
 
         root.gameObject.SetActive(false);
         return layout;
@@ -328,7 +368,7 @@ public static class SpaceMapBuilder
 
     private static void AddKillZone(Transform root)
     {
-        Box("Kill Zone", root, new Vector3(0f, -5f, -4f), new Vector3(80f, 2f, 80f), true).gameObject.AddComponent<KillZone>();
+        Box("Kill Zone", root, new Vector3(0f, -5f, -4f), new Vector3(120f, 2f, 120f), true).gameObject.AddComponent<KillZone>();
     }
 
     private static Transform Marker(string name, Transform root, Vector2 xz)
@@ -348,7 +388,16 @@ public static class SpaceMapBuilder
         return box;
     }
 
-    private static void AddShuttles(Transform levelModel, Transform root)
+    private static Transform DeckFrame(Transform slab, Transform root, Bounds b)
+    {
+        var frame = new GameObject("Deck").transform;
+        frame.SetParent(root, false);
+        frame.localPosition = new Vector3(b.center.x, 0f, b.center.z);
+        frame.SetParent(slab, true);
+        return frame;
+    }
+
+    private static void AddShuttles(Transform levelModel, Transform root, float scale)
     {
         foreach (Transform shuttle in levelModel)
         {
@@ -356,10 +405,7 @@ public static class SpaceMapBuilder
                 continue;
 
             Bounds b = LocalBounds(root, new[] { shuttle.GetComponent<Renderer>() });
-            var frame = new GameObject("Deck").transform;
-            frame.SetParent(root, false);
-            frame.localPosition = new Vector3(b.center.x, 0f, b.center.z);
-            frame.SetParent(shuttle, true);
+            Transform frame = DeckFrame(shuttle, root, b);
             var deck = frame.gameObject.AddComponent<BoxCollider>();
             deck.center = new Vector3(0f, -0.5f, 0f);
             deck.size = new Vector3(b.size.x, 1f, b.size.z); // frame is axis-aligned with root at scale 1
@@ -371,19 +417,160 @@ public static class SpaceMapBuilder
             // Shuttle 1 docks on the +x island, shuttle 2 on the -x island; each crosses the gap.
             float dir = b.center.x > 0f ? -1f : 1f;
             var mover = shuttle.gameObject.AddComponent<MovingPlatform>();
-            mover.localOffset = shuttle.parent.InverseTransformVector(root.TransformVector(new Vector3(3.6f * dir, 0f, 0f)));
+            mover.localOffset = shuttle.parent.InverseTransformVector(root.TransformVector(new Vector3(3.6f * scale * dir, 0f, 0f)));
         }
     }
 
-    private static void AddDecor(Transform root, string level)
+    // SplitIslands: each island (floor, stations, spawn, decor) rides a mover that slides to the centre
+    // until the throw pads meet, waits so players can walk across, then slides apart again.
+    private static void AddMovingIslands(Transform levelModel, Transform root)
+    {
+        SplitThrowZones(levelModel, root);
+
+        float SideOf(Transform t)
+        {
+            Renderer r = t.GetComponentInChildren<Renderer>();
+            return Mathf.Sign(root.InverseTransformPoint(r != null ? r.bounds.center : t.position).x);
+        }
+
+        foreach (Transform slab in levelModel.Cast<Transform>().Where(t => t.name.StartsWith("Split_")).ToList())
+        {
+            Bounds b = LocalBounds(root, new[] { slab.GetComponent<Renderer>() });
+            float side = Mathf.Sign(b.center.x);
+
+            var mover = new GameObject("Island Mover " + (side > 0 ? "+X" : "-X")).transform;
+            mover.SetParent(root, false);
+
+            // Everything standing on this island moves with it.
+            string[] onIsland = { "Spawn", "PowerUp", "GravityFlipTile", "Whiteboard" };
+            foreach (Transform t in root.Cast<Transform>().ToList())
+                if (t.name == slab.name + " Floor" || (onIsland.Any(t.name.StartsWith) && SideOf(t) == side))
+                    t.SetParent(mover, true);
+            foreach (Transform st in root.Find("Stations").Cast<Transform>().ToList())
+                if (Mathf.Sign(st.localPosition.x) == side)
+                    st.SetParent(mover, true);
+            slab.SetParent(mover, true);
+
+            var riders = Box("Riders", mover, new Vector3(b.center.x, 1f, b.center.z), new Vector3(b.size.x, 2f, b.size.z), true);
+            riders.gameObject.layer = 2;
+
+            var platform = mover.gameObject.AddComponent<MovingPlatform>();
+            float innerEdge = side > 0 ? b.min.x : -b.max.x;
+            platform.localOffset = new Vector3(-side * (innerEdge + 0.05f), 0f, 0f); // slight overlap: no seam to trip on
+            platform.travelTime = 2.5f;
+            platform.waitTime = 5f;
+        }
+    }
+
+    // The throw pads for both islands are one mesh on the +X island; split it so each island carries its own.
+    private static void SplitThrowZones(Transform levelModel, Transform root)
+    {
+        MeshFilter zones = levelModel.GetComponentsInChildren<MeshFilter>().FirstOrDefault(f => f.name.EndsWith("ThrowZones"));
+        if (zones == null)
+            return;
+        Transform otherSlab = levelModel.Cast<Transform>().First(t => t.name.StartsWith("Split_") && !zones.transform.IsChildOf(t));
+
+        Mesh src = zones.sharedMesh;
+        Vector3[] v = src.vertices;
+        Mesh Half(bool positive)
+        {
+            var m = Object.Instantiate(src);
+            m.name = src.name + (positive ? "_PosX" : "_NegX");
+            for (int s = 0; s < src.subMeshCount; s++)
+            {
+                int[] tris = src.GetTriangles(s);
+                var keep = new List<int>();
+                for (int i = 0; i < tris.Length; i += 3)
+                {
+                    Vector3 centroid = zones.transform.TransformPoint((v[tris[i]] + v[tris[i + 1]] + v[tris[i + 2]]) / 3f);
+                    if (root.InverseTransformPoint(centroid).x > 0f == positive)
+                        keep.AddRange(new[] { tris[i], tris[i + 1], tris[i + 2] });
+                }
+                m.SetTriangles(keep, s);
+            }
+            string dir = "Assets/Data/Meshes";
+            if (!AssetDatabase.IsValidFolder(dir)) AssetDatabase.CreateFolder("Assets/Data", "Meshes");
+            string path = $"{dir}/{m.name}.asset";
+            AssetDatabase.DeleteAsset(path);
+            AssetDatabase.CreateAsset(m, path);
+            return m;
+        }
+
+        bool zonesOnPositive = root.InverseTransformPoint(zones.transform.parent.GetComponent<Renderer>().bounds.center).x > 0f;
+        Mesh own = Half(zonesOnPositive), other = Half(!zonesOnPositive);
+        GameObject copy = Object.Instantiate(zones.gameObject, zones.transform.parent);
+        copy.name = zones.name;
+        copy.GetComponent<MeshFilter>().sharedMesh = other;
+        copy.transform.SetParent(otherSlab, true);
+        zones.sharedMesh = own;
+    }
+
+    // ---------- Decoration ----------
+
+    private static Bounds WorldBounds(Transform t)
+    {
+        Renderer[] rs = t.GetComponentsInChildren<Renderer>();
+        Bounds b = rs[0].bounds;
+        foreach (Renderer r in rs)
+            b.Encapsulate(r.bounds);
+        return b;
+    }
+
+    // Turns t by yaw (around the root's up axis), then moves it so its bounds centre is at x/z and its bottom at y.
+    private static void PlaceAt(Transform t, Transform root, float x, float bottomY, float z, float yaw = 0f)
+    {
+        t.rotation = Quaternion.AngleAxis(yaw, root.up) * t.rotation;
+        Bounds b = WorldBounds(t);
+        Vector3 target = root.TransformPoint(new Vector3(x, bottomY, z));
+        t.position += new Vector3(target.x - b.center.x, target.y - b.min.y, target.z - b.center.z);
+    }
+
+    private static void AddDecor(Transform root, Level level, GameObject lampCounter)
     {
         Transform decor = new GameObject("Decor").transform;
         decor.SetParent(root, false);
 
+        // Big Bang Burgers sign floats just behind the back of the kitchen, facing the camera.
         GameObject sign = Spawn("Kitchen/Sign_BigBangBurgers", decor);
-        sign.transform.localPosition = new Vector3(0f, 0f, -14f);
-        PlayScene(Spawn("Kitchen/Props_Space", decor), "Props_Space");          // solar-system mobile
-        PlayScene(Spawn("Environment/Environment_Space", decor), "Env_Space"); // asteroids + shooting stars
+        sign.transform.localScale = Vector3.one * 1.4f;
+        PlaceAt(sign.transform, root, level.sign.x, level.sign.y, level.sign.z);
+
+        GameObject props = Spawn("Kitchen/Props_Space", decor);
+        PlayScene(props, "Props_Space"); // solar-system mobile spins
+        Transform board = props.transform.Find("Whiteboard_Equations");
+        board.SetParent(root, true);
+        board.name = "Whiteboard";
+        PlaceAt(board, root, level.whiteboard.x, 0f, level.whiteboard.y, level.whiteboard.z);
+        Transform mobile = props.transform.Find("SolarSystem_Mobile");
+        PlaceAt(mobile, root, level.mobile.x, level.mobile.y, level.mobile.z);
+
+        // Lava-lamp condiment dispensers sit on the back corners of a counter.
+        if (lampCounter != null)
+        {
+            Transform counter = lampCounter.transform;
+            Bounds top = WorldBounds(counter.Find("Space Visual"));
+            int i = 0;
+            foreach (string lamp in new[] { "LavaLamp_Ketchup", "LavaLamp_Mustard" })
+            {
+                Transform t = props.transform.Find(lamp);
+                Bounds b = WorldBounds(t);
+                Vector3 target = top.center + counter.right * (i++ == 0 ? 0.45f : -0.45f) - counter.forward * 0.45f;
+                t.position += new Vector3(target.x - b.center.x, top.max.y - b.min.y, target.z - b.center.z);
+                t.SetParent(counter, true);
+            }
+        }
+
+        // Asteroids + shooting stars: spread out to suit the bigger map; gravity tiles go on open floor.
+        GameObject env = Spawn("Environment/Environment_Space", decor);
+        env.transform.localScale = Vector3.one * level.scale * 1.15f;
+        PlayScene(env, "Env_Space");
+        for (int i = 0; i < level.gravityTiles.Length; i++)
+        {
+            Transform tile = env.transform.Find($"GravityFlipTile_0{i + 1}");
+            tile.SetParent(root, true);
+            tile.localScale = Vector3.Scale(tile.localScale, new Vector3(1f / env.transform.localScale.x, 1f / env.transform.localScale.y, 1f / env.transform.localScale.z));
+            PlaceAt(tile, root, level.gravityTiles[i].x, 0.01f, level.gravityTiles[i].y);
+        }
     }
 
     // Plays the FBX's own looping "Scene" animation.
@@ -399,33 +586,7 @@ public static class SpaceMapBuilder
 
     // ---------- Stations ----------
 
-    private static readonly Dictionary<string, S> FurnitureStations = new Dictionary<string, S>
-    {
-        { "fridge", S.Fridge }, { "grill_mt", S.Grill }, { "grill_mt.001", S.Grill }, { "fryer_mt", S.Fryer },
-        { "plates", S.Plates }, { "glasses", S.Cups }, { "SodaMachine", S.Soda }, { "CoffeeMachine", S.Coffee },
-        { "base_top", S.Counter }, { "base_top.002", S.Counter }, { "ChiliPot", S.Chili }, { "dustbin", S.Bin },
-        { "OrderUp_Teleporter", S.Serving },
-    };
-
-    // Level_Main: a station at every Furniture_Space piece, using that exact piece (as laid out) as its visual.
-    private static void BuildFromFurniture(Transform furniture, Transform library, Transform stations, Transform classic)
-    {
-        foreach (var pair in FurnitureStations)
-        {
-            Transform piece = furniture.Find(pair.Key);
-            Bounds b = LocalBounds(stations, piece.GetComponentsInChildren<Renderer>());
-            MakeStation(pair.Value, stations, new Vector3(b.center.x, 0f, b.center.z), 0f, library, classic, piece);
-        }
-
-        // Remaining props (paper etc.) stay as decoration.
-        Transform props = new GameObject("Furniture Props").transform;
-        props.SetParent(stations.parent, false);
-        foreach (Transform t in furniture.Cast<Transform>().ToList())
-            if (t.GetComponentsInChildren<Renderer>().Any(r => r.bounds.size.sqrMagnitude > 0.0001f))
-                t.SetParent(props, true);
-    }
-
-    private static void MakeStation(S kind, Transform parent, Vector3 localPos, float yaw, Transform furniture, Transform classic, Transform existingPiece)
+    private static GameObject MakeStation(S kind, Transform parent, Vector3 localPos, float yaw, Transform furniture, Transform classic)
     {
         Transform template = classic.Find(Template[kind]);
         GameObject st;
@@ -448,7 +609,7 @@ public static class SpaceMapBuilder
 
         string[] pieceNames = Pieces[kind];
         if (pieceNames.Length == 0)
-            return; // ice cream keeps its old look
+            return st; // ice cream keeps its old look
 
         foreach (Renderer r in st.GetComponentsInChildren<Renderer>(true))
             if (!(r is ParticleSystemRenderer))
@@ -463,23 +624,16 @@ public static class SpaceMapBuilder
         Quaternion turn = parent.rotation * Quaternion.Euler(0f, yaw, 0f) * Quaternion.Inverse(parent.rotation);
         Vector3 worldCenter = parent.TransformPoint(localPos);
         float floorY = worldCenter.y;
-        for (int i = 0; i < pieceNames.Length; i++)
+        foreach (string pieceName in pieceNames)
         {
-            Transform piece = i == 0 && existingPiece != null && pieceNames.Length == 1
-                ? existingPiece
-                : Object.Instantiate(furniture.Find(pieceNames[i]).gameObject, furniture).transform;
-
-            if (piece != existingPiece)
-                piece.rotation = turn * piece.rotation;
+            Transform piece = Object.Instantiate(furniture.Find(pieceName).gameObject, furniture).transform;
+            piece.rotation = turn * piece.rotation;
 
             Bounds b = WorldBounds(piece);
             piece.position += new Vector3(worldCenter.x - b.center.x, floorY - b.min.y, worldCenter.z - b.center.z);
             piece.SetParent(visual, true);
             floorY = WorldBounds(piece).max.y; // next piece sits on top
         }
-
-        if (existingPiece != null && existingPiece.parent != visual)
-            Object.DestroyImmediate(existingPiece.gameObject); // plates / glasses: replaced by counter + stack
 
         Bounds local = LocalBounds(st.transform, visual.GetComponentsInChildren<Renderer>());
         BoxCollider box = st.GetComponent<BoxCollider>();
@@ -490,15 +644,7 @@ public static class SpaceMapBuilder
 
         if (kind == S.Serving)
             FixServeBurst(st, template);
-    }
-
-    private static Bounds WorldBounds(Transform t)
-    {
-        Renderer[] rs = t.GetComponentsInChildren<Renderer>();
-        Bounds b = rs[0].bounds;
-        foreach (Renderer r in rs)
-            b.Encapsulate(r.bounds);
-        return b;
+        return st;
     }
 
     // The template's serve burst lives in Classic's decor; give each serving counter its own copy.
