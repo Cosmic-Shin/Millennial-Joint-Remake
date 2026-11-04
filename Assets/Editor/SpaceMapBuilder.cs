@@ -31,7 +31,7 @@ public static class SpaceMapBuilder
     private static readonly Dictionary<S, string[]> Pieces = new Dictionary<S, string[]>
     {
         { S.Fridge, new[] { "fridge" } }, { S.Grill, new[] { "grill_mt" } }, { S.Fryer, new[] { "fryer_mt" } },
-        { S.Plates, new[] { "base_top", "plates" } }, { S.Cups, new[] { "base_top", "glasses" } },
+        { S.Plates, new[] { "base_top" } }, { S.Cups, new[] { "base_top", "glasses" } }, // plates: the original plate stack goes on top (see MakeStation)
         { S.Soda, new[] { "SodaMachine" } }, { S.Coffee, new[] { "CoffeeMachine" } }, { S.Counter, new[] { "base_top" } },
         { S.Serving, new[] { "OrderUp_Teleporter" } }, { S.Chili, new[] { "ChiliPot" } }, { S.Bin, new[] { "dustbin" } },
         { S.IceCream, new string[0] }, // no space version: keeps the old model
@@ -714,6 +714,16 @@ public static class SpaceMapBuilder
             piece.position += new Vector3(worldCenter.x - b.center.x, floorY - b.min.y, worldCenter.z - b.center.z);
             piece.SetParent(visual, true);
             floorY = WorldBounds(piece).max.y; // next piece sits on top
+        }
+
+        // The space "plates" model is too small to read as a plate station; reuse the game's original plate stack.
+        if (kind == S.Plates)
+        {
+            Transform stack = st.transform.Find("Plates");
+            foreach (Renderer r in stack.GetComponentsInChildren<Renderer>(true))
+                r.enabled = true;
+            Bounds sb = WorldBounds(stack);
+            stack.position += new Vector3(worldCenter.x - sb.center.x, floorY - sb.min.y, worldCenter.z - sb.center.z);
         }
 
         Bounds local = LocalBounds(st.transform, visual.GetComponentsInChildren<Renderer>());
