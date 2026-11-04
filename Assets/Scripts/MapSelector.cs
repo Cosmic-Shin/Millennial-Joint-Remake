@@ -11,9 +11,24 @@ public class MapSelector : MonoBehaviour
         public Transform player1Spawn;
         public Transform player2Spawn;
         public Collider[] powerUpAreas;
+
+        [Tooltip("Optional: moves the CustomerQueue here (maps with their own customer platform)")]
+        public Transform customerAnchor;
+        public Transform[] queuePoints;
+        [Tooltip("How far behind the queue customers appear (0 = CustomerQueue default)")]
+        public float customerEntranceDistance;
     }
 
     public Layout[] layouts;
+
+    [Header("Shared customer area")]
+    public CustomerQueue customerQueue;
+    [Tooltip("Shared customer bridge visuals, hidden on maps with a customerAnchor")]
+    public GameObject[] customerBridgeVisuals;
+
+    private Vector3 queueHome;
+    private Quaternion queueHomeRotation;
+    private float defaultEntranceDistance;
 
     public static MapSelector Instance { get; private set; }
 
@@ -24,6 +39,12 @@ public class MapSelector : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        if (customerQueue != null)
+        {
+            queueHome = customerQueue.transform.position;
+            queueHomeRotation = customerQueue.transform.rotation;
+            defaultEntranceDistance = customerQueue.entranceDistance;
+        }
         Choose(GameSession.Map);
     }
 
@@ -65,8 +86,30 @@ public class MapSelector : MonoBehaviour
             }
         }
 
+        PlaceCustomers(chosen);
+
         PowerUpSpawner spawner = FindFirstObjectByType<PowerUpSpawner>();
         if (spawner != null && chosen.powerUpAreas != null && chosen.powerUpAreas.Length > 0)
             spawner.SetSpawnAreas(chosen.powerUpAreas);
+    }
+
+    private void PlaceCustomers(Layout chosen)
+    {
+        if (customerQueue == null)
+            return;
+
+        bool own = chosen.customerAnchor != null;
+        Transform q = customerQueue.transform;
+        if (own)
+            q.SetPositionAndRotation(chosen.customerAnchor.position, chosen.customerAnchor.rotation);
+        else
+            q.SetPositionAndRotation(queueHome, queueHomeRotation);
+
+        customerQueue.queuePoints = own ? chosen.queuePoints : null;
+        customerQueue.entranceDistance = own && chosen.customerEntranceDistance > 0f ? chosen.customerEntranceDistance : defaultEntranceDistance;
+
+        foreach (GameObject visual in customerBridgeVisuals)
+            if (visual != null)
+                visual.SetActive(!own);
     }
 }

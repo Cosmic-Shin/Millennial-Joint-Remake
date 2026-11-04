@@ -17,6 +17,8 @@ public class CustomerQueue : MonoBehaviour
 
     [Header("Layout")]
     public float spotSpacing = 1.4f;
+    [Tooltip("Optional explicit queue spots, left to right (set per map by MapSelector). Empty = evenly spaced spots.")]
+    public Transform[] queuePoints;
     [Tooltip("Where the walkway meets the pad, behind the spots")]
     public float padEntryDistance = 1.3f;
     public float entranceDistance = 14f;
@@ -341,10 +343,12 @@ public class CustomerQueue : MonoBehaviour
 
     private Vector3 SpotFor(int slot)
     {
-        float x = IsVersus
-            ? (slot < 3 ? -(slot + 1) : slot - 2) * spotSpacing
-            : (slot - 1) * spotSpacing;
-        return Local(x, 0f);
+        int k = IsVersus ? (slot < 3 ? -(slot + 1) : slot - 2) : slot - 1;
+
+        if (queuePoints != null && queuePoints.Length > 0)
+            return queuePoints[Mathf.Clamp(queuePoints.Length / 2 + k, 0, queuePoints.Length - 1)].position;
+
+        return Local(k * spotSpacing, 0f);
     }
 
     private void Retarget(Customer c, Vector3 spot)
