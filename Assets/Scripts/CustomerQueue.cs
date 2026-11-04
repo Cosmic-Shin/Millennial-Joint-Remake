@@ -21,6 +21,15 @@ public class CustomerQueue : MonoBehaviour
     public Transform[] queuePoints;
     [Tooltip("Optional: waiting customers face this (the Order Up counter). Empty = face the queue's forward.")]
     public Transform faceTarget;
+    [Tooltip("Optional arrival dock (set per map): customers appear at spawnPoint, walk on via entryPoint, and leave the same way")]
+    public Transform spawnPoint;
+    public Transform entryPoint;
+    [Tooltip("With a dock, customers walk along a lane this far behind the spots")]
+    public float laneBehind = 0.9f;
+
+    private bool HasDock => spawnPoint != null && entryPoint != null;
+    private Vector3 Lane(Vector3 spot) => spot - transform.forward * laneBehind;
+    private static Vector3 Flat(Vector3 v) { v.y = 0f; return v.sqrMagnitude > 0.0001f ? v : Vector3.forward; }
 
     private Transform[] versusSpots;
     private Transform[] versusSpotsSource;
@@ -421,8 +430,18 @@ public class CustomerQueue : MonoBehaviour
         c.path.Clear();
         c.waitTime = delay;
         c.speed = 0f;
-        c.path.Enqueue(Local(laneOffset, -padEntryDistance));
-        c.path.Enqueue(Local(laneOffset, -entranceDistance - 2f));
+        if (HasDock)
+        {
+            // Back along the lane, down the ramp, and away on the dock's pad.
+            c.path.Enqueue(Lane(c.root.position));
+            c.path.Enqueue(entryPoint.position);
+            c.path.Enqueue(spawnPoint.position);
+        }
+        else
+        {
+            c.path.Enqueue(Local(laneOffset, -padEntryDistance));
+            c.path.Enqueue(Local(laneOffset, -entranceDistance - 2f));
+        }
         leaving.Add(c);
     }
 
@@ -435,6 +454,8 @@ public class CustomerQueue : MonoBehaviour
         if (c.waitTime > 0f)
         {
             c.waitTime -= dt;
+            if (c.waitTime <= 0f && !c.go.activeSelf)
+                c.go.SetActive(true); // staggered dock arrival
         }
         else if (c.path.Count > 0)
         {
@@ -591,9 +612,23 @@ public class CustomerQueue : MonoBehaviour
         SetTint(c, 0f);
         PickAlien(c);
 
+        c.path.Clear();
+        if (HasDock)
+        {
+            // Appear on the dock's pad (staggered when several arrive at once), walk the ramp, the lane, then onto the spot.
+            c.root.position = spawnPoint.position;
+            c.root.rotation = Quaternion.LookRotation(Flat(entryPoint.position - spawnPoint.position));
+            c.waitTime = spawnBurst * 0.6f;
+            c.go.SetActive(c.waitTime <= 0f);
+            c.path.Enqueue(entryPoint.position);
+            c.path.Enqueue(Lane(spot));
+            c.path.Enqueue(spot);
+            c.bubble.gameObject.SetActive(false);
+            return c;
+        }
+
         c.root.position = Local(-laneOffset, -entranceDistance - spawnBurst * spawnSpacing);
         c.root.rotation = transform.rotation;
-        c.path.Clear();
         c.path.Enqueue(Local(-laneOffset, -padEntryDistance));
         c.path.Enqueue(spot);
         c.bubble.gameObject.SetActive(false);

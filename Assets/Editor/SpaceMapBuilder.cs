@@ -296,7 +296,6 @@ public static class SpaceMapBuilder
         AddCustomerArea(levelModel.transform, root, layout, serving);
         AddKillZone(root);
         AddDecor(root, level, built.FirstOrDefault(b => b.name == S.Counter.ToString()));
-        FrameCamera(root, layout);
 
         if (level.movingIslands)
             AddMovingIslands(levelModel.transform, root);
@@ -429,64 +428,23 @@ public static class SpaceMapBuilder
         anchor.localRotation = Quaternion.Euler(0f, 180f, 0f); // queue faces the kitchen (-z)
         layout.customerAnchor = anchor;
 
+        // Arrival dock: its ramp foot (EntryPoint) meets the platform end nearest the map centre, on the lane just
+        // behind the circles, with the dock pointing outward. Customers appear on its pad (SpawnPoint).
+        float laneZ = centers.Average(c => c.z) + 0.9f; // root +z = away from the kitchen
+        float side = Mathf.Abs(b.max.x) < Mathf.Abs(b.min.x) ? 1f : -1f;
+        GameObject dock = Spawn("Kitchen/Customer_ArrivalDock", root);
+        dock.name = "Customer Arrival Dock";
+        Transform entry = dock.GetComponentsInChildren<Transform>().First(t => t.name == "EntryPoint");
+        Transform spawn = dock.GetComponentsInChildren<Transform>().First(t => t.name == "SpawnPoint");
+        Vector3 along = root.InverseTransformVector(spawn.position - entry.position);
+        along.y = 0f;
+        float yaw = Vector3.SignedAngle(along, new Vector3(side, 0f, 0f), Vector3.up);
+        dock.transform.rotation = Quaternion.AngleAxis(yaw, root.up) * dock.transform.rotation;
+        dock.transform.position += root.TransformPoint(new Vector3(side > 0f ? b.max.x : b.min.x, 0f, laneZ)) - entry.position;
+        layout.customerSpawn = spawn;
+        layout.customerEntry = entry;
+
         Debug.Log($"SpaceMapBuilder: {root.name} has {spots.Count} queue circles");
-    }
-
-    // Fixed camera that keeps both kitchen platform(s) and the customer platform (with customers and their
-    // bubbles) in view, below the order tickets / money HUD. Same angle and FOV as the scene camera.
-    private const float ViewXMin = 0.03f, ViewXMax = 0.97f, ViewYMin = 0.03f, ViewYMax = 0.62f; // tickets / money reach down to ~0.68
-
-    private static void FrameCamera(Transform root, MapSelector.Layout layout)
-    {
-        CameraMovement rig = Object.FindFirstObjectByType<CameraMovement>(FindObjectsInactive.Include);
-        Camera source = rig.Cam.GetComponent<Camera>();
-
-        var points = new List<Vector3>();
-        foreach (Renderer r in root.GetComponentsInChildren<Renderer>(true).Where(r => r.name.EndsWith("_Slab")))
-        {
-            Bounds w = r.bounds;
-            if (r.name.StartsWith("Customers_"))
-                w.SetMinMax(w.min, new Vector3(w.max.x, Mathf.Max(w.max.y, root.position.y + 3f), w.max.z)); // customers + bubbles
-            for (int i = 0; i < 8; i++)
-                points.Add(new Vector3(i % 2 == 0 ? w.min.x : w.max.x, (i / 2) % 2 == 0 ? w.min.y : w.max.y, i / 4 == 0 ? w.min.z : w.max.z));
-        }
-
-        var go = new GameObject("__FrameCam");
-        Camera cam = go.AddComponent<Camera>();
-        cam.enabled = false;
-        cam.fieldOfView = source.fieldOfView;
-        cam.aspect = 16f / 9f;
-        go.transform.rotation = rig.transform.rotation * rig.Cam.localRotation;
-
-        Vector3 focus = points.Aggregate(Vector3.zero, (a, p) => a + p) / points.Count;
-        float distance = 30f;
-        Vector2 min = Vector2.zero, max = Vector2.zero;
-        for (int iter = 0; iter < 200; iter++)
-        {
-            go.transform.position = focus - go.transform.forward * distance;
-            min = new Vector2(float.MaxValue, float.MaxValue);
-            max = new Vector2(float.MinValue, float.MinValue);
-            foreach (Vector3 p in points)
-            {
-                Vector3 v = cam.WorldToViewportPoint(p);
-                min = Vector2.Min(min, v);
-                max = Vector2.Max(max, v);
-            }
-
-            float scale = Mathf.Max((max.x - min.x) / (ViewXMax - ViewXMin), (max.y - min.y) / (ViewYMax - ViewYMin));
-            float h = 2f * distance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
-            focus += go.transform.right * ((min.x + max.x) / 2f - (ViewXMin + ViewXMax) / 2f) * h * cam.aspect
-                   + go.transform.up * ((min.y + max.y) / 2f - (ViewYMin + ViewYMax) / 2f) * h;
-            distance *= Mathf.Lerp(1f, scale, 0.5f);
-        }
-        Object.DestroyImmediate(go);
-
-        var focusT = new GameObject("Camera Focus").transform;
-        focusT.SetParent(root, false);
-        focusT.position = focus;
-        layout.cameraFocus = focusT;
-        layout.cameraDistance = distance;
-        Debug.Log($"SpaceMapBuilder: {root.name} camera distance {distance:F1}, viewport x {min.x:F2}-{max.x:F2}, y {min.y:F2}-{max.y:F2}");
     }
 
     private static void AddKillZone(Transform root)
