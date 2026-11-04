@@ -50,6 +50,17 @@ public class CustomerQueue : MonoBehaviour
     public float patienceBarHeight = 1.55f;
     public Vector2 patienceBarSize = new Vector2(0.9f, 0.12f);
 
+    [Header("Alien Customers (leave empty to use the crewmate)")]
+    [Tooltip("Customer FBXs, one picked at random per spawn")]
+    public GameObject[] alienPrefabs;
+    [Tooltip("Animator per alien, same order as alienPrefabs")]
+    public RuntimeAnimatorController[] alienAnimators;
+    public float alienScale = 0.7f;
+    [Tooltip("Patience fraction above which the alien is Happy")]
+    [Range(0f, 1f)] public float happyAbove = 0.6f;
+    [Tooltip("Patience fraction below which the alien is Angry")]
+    [Range(0f, 1f)] public float angryBelow = 0.3f;
+
     private enum Phase { Arriving, Waiting, Leaving }
 
     private class Customer
@@ -79,6 +90,8 @@ public class CustomerQueue : MonoBehaviour
         public bool impatientShown;
         public bool angry;
         public float bubbleTimer;
+        public AlienCustomerVisual alien;
+        public AlienCustomerVisual[] aliens;
     }
 
     private readonly Dictionary<QueuedOrder, Customer> byOrder = new Dictionary<QueuedOrder, Customer>();
@@ -130,6 +143,7 @@ public class CustomerQueue : MonoBehaviour
             else
             {
                 React(c, Emoji("2639"), new Color(1f, 0.25f, 0.2f), angry: true);
+                c.alien?.SetMood(AlienCustomerVisual.Mood.Angry);
                 StartLeaving(c, 1.2f);
             }
         }
@@ -222,6 +236,11 @@ public class CustomerQueue : MonoBehaviour
         }
 
         SetTint(c, 0f);
+        if (c.alien != null)
+        {
+            c.alien.SetMood(AlienCustomerVisual.Mood.Happy);
+            c.alien.SetEating(true);
+        }
         HoldFood(c);
         StartCoroutine(FlyCoin(c.root.position + Vector3.up * 1.2f, c.player));
         StartLeaving(c, 0.7f);
@@ -411,6 +430,14 @@ public class CustomerQueue : MonoBehaviour
         if (c.phase == Phase.Waiting)
             SetTint(c, urgency * 0.6f);
 
+        if (c.alien != null && c.phase != Phase.Leaving && c.order != null)
+        {
+            float patience = c.order.timer / Mathf.Max(0.01f, c.order.duration);
+            c.alien.SetMood(patience > happyAbove ? AlienCustomerVisual.Mood.Happy
+                : patience >= angryBelow ? AlienCustomerVisual.Mood.Impatient
+                : AlienCustomerVisual.Mood.Angry);
+        }
+
         float walk = moving ? Mathf.Clamp01(c.speed / walkSpeed) : 0f;
         float stride = c.animTime * (moving ? 11f * Mathf.Max(0.6f, c.speedScale) : 2f);
         float bob = moving ? Mathf.Abs(Mathf.Sin(stride)) * 0.09f * walk : Mathf.Sin(stride) * 0.02f;
@@ -511,6 +538,7 @@ public class CustomerQueue : MonoBehaviour
         c.materials[2] = backpackMaterials[colour];
         c.renderer.sharedMaterials = c.materials;
         SetTint(c, 0f);
+        PickAlien(c);
 
         c.root.position = Local(-laneOffset, -entranceDistance - spawnBurst * spawnSpacing);
         c.root.rotation = transform.rotation;
@@ -520,6 +548,36 @@ public class CustomerQueue : MonoBehaviour
         c.bubble.gameObject.SetActive(false);
         c.go.SetActive(true);
         return c;
+    }
+
+    // Shows a random alien instead of the crewmate (each pooled customer keeps one instance per alien type).
+    private void PickAlien(Customer c)
+    {
+        int count = alienPrefabs != null ? alienPrefabs.Length : 0;
+        c.renderer.enabled = count == 0;
+        if (count == 0)
+            return;
+
+        c.aliens ??= new AlienCustomerVisual[count];
+        int pick = Random.Range(0, count);
+        for (int i = 0; i < count; i++)
+            if (c.aliens[i] != null)
+                c.aliens[i].gameObject.SetActive(i == pick);
+
+        if (c.aliens[pick] == null)
+        {
+            GameObject go = Instantiate(alienPrefabs[pick], c.body, false);
+            go.transform.localScale = Vector3.one * alienScale;
+            foreach (Renderer r in go.GetComponentsInChildren<Renderer>(true))
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            c.aliens[pick] = go.AddComponent<AlienCustomerVisual>();
+            c.aliens[pick].Init(alienPrefabs[pick].name.Replace("Customer_", ""),
+                alienAnimators != null && pick < alienAnimators.Length ? alienAnimators[pick] : null);
+        }
+
+        c.alien = c.aliens[pick];
+        c.alien.SetMood(AlienCustomerVisual.Mood.Happy);
+        c.alien.SetEating(false);
     }
 
     private Customer Build()
@@ -537,7 +595,7 @@ public class CustomerQueue : MonoBehaviour
 
         var bubbleGo = new GameObject("Bubble");
         bubbleGo.transform.SetParent(go.transform, false);
-        bubbleGo.transform.localPosition = new Vector3(0f, 1.95f, 0f);
+        bubbleGo.transform.localPosition = new Vector3(0f, patienceBarHeight + 0.4f, 0f);
         var bubble = bubbleGo.AddComponent<TextMeshPro>();
         if (bubbleFont != null)
             bubble.font = bubbleFont;
