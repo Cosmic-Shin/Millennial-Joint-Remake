@@ -402,7 +402,7 @@ public class SelectFlow : MonoBehaviour
                 line = r == RandomizeRow ? "Randomize" : r == ResetRow ? "Reset" : "Ready";
             }
 
-            sb.AppendLine(r == row[i] && !ready[i] ? $"<color=#{Hex(highlightColor)}>> {line}</color>" : line);
+            sb.AppendLine(r == row[i] && !ready[i] ? $"<mark=#{Hex(highlightColor)}99>> {line}</mark>" : line);
         }
         return sb.ToString();
     }
