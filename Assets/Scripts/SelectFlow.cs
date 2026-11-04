@@ -25,7 +25,6 @@ public class SelectFlow : MonoBehaviour
     [Header("3D Preview")]
     public Camera previewCamera;
     public Transform[] previewPivots = new Transform[2];
-    public float previewSpinSpeed = 35f;
     [Tooltip("Preview chef X offset on the character screen / cosmetics screen")]
     public float characterPivotX = 1.4f;
     public float cosmeticPivotX = 0.55f;
@@ -136,9 +135,6 @@ public class SelectFlow : MonoBehaviour
         // Keep UI selection empty so Enter (P2's interact) doesn't click a button.
         if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
             EventSystem.current.SetSelectedGameObject(null);
-
-        foreach (Transform pivot in previewPivots)
-            pivot.Rotate(0f, previewSpinSpeed * Time.unscaledDeltaTime, 0f, Space.World);
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
