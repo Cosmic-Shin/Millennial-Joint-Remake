@@ -17,8 +17,13 @@ public class CustomerQueue : MonoBehaviour
 
     [Header("Layout")]
     public float spotSpacing = 1.4f;
-    [Tooltip("Optional explicit queue spots, left to right (set per map by MapSelector). Empty = evenly spaced spots.")]
+    [Tooltip("Optional explicit queue spots, closest to the Order Up first (set per map by MapSelector). Empty = evenly spaced spots.")]
     public Transform[] queuePoints;
+    [Tooltip("Optional: waiting customers face this (the Order Up counter). Empty = face the queue's forward.")]
+    public Transform faceTarget;
+
+    private Transform[] versusSpots;
+    private Transform[] versusSpotsSource;
     [Tooltip("Where the walkway meets the pad, behind the spots")]
     public float padEntryDistance = 1.3f;
     public float entranceDistance = 14f;
@@ -341,14 +346,54 @@ public class CustomerQueue : MonoBehaviour
 
     private Vector3 Local(float x, float z) => transform.TransformPoint(new Vector3(x, 0f, z));
 
+    private Quaternion WaitingRotation(Customer c)
+    {
+        if (faceTarget == null)
+            return transform.rotation;
+        Vector3 to = faceTarget.position - c.root.position;
+        to.y = 0f;
+        return to.sqrMagnitude > 0.01f ? Quaternion.LookRotation(to) : transform.rotation;
+    }
+
     private Vector3 SpotFor(int slot)
     {
         int k = IsVersus ? (slot < 3 ? -(slot + 1) : slot - 2) : slot - 1;
 
         if (queuePoints != null && queuePoints.Length > 0)
-            return queuePoints[Mathf.Clamp(queuePoints.Length / 2 + k, 0, queuePoints.Length - 1)].position;
+        {
+            if (!IsVersus)
+                return queuePoints[Mathf.Min(slot, queuePoints.Length - 1)].position;
+
+            Transform[] spots = VersusSpots();
+            return spots[Mathf.Min(slot, spots.Length - 1)].position;
+        }
 
         return Local(k * spotSpacing, 0f);
+    }
+
+    // Versus: the 6 spots closest to the Order Up; the left three go to P1 (slots 0-2), the right three to P2 (slots 3-5),
+    // each side filled closest-first.
+    private Transform[] VersusSpots()
+    {
+        if (versusSpotsSource == queuePoints && versusSpots != null)
+            return versusSpots;
+
+        var closest = new List<Transform>(queuePoints);
+        if (closest.Count > 6)
+            closest.RemoveRange(6, closest.Count - 6);
+        var byX = new List<Transform>(closest);
+        byX.Sort((a, b) => transform.InverseTransformPoint(a.position).x.CompareTo(transform.InverseTransformPoint(b.position).x));
+
+        int half = (byX.Count + 1) / 2;
+        var left = byX.GetRange(0, half);
+        var right = byX.GetRange(half, byX.Count - half);
+        left.Sort((a, b) => closest.IndexOf(a).CompareTo(closest.IndexOf(b)));
+        right.Sort((a, b) => closest.IndexOf(a).CompareTo(closest.IndexOf(b)));
+        left.AddRange(right);
+
+        versusSpotsSource = queuePoints;
+        versusSpots = left.ToArray();
+        return versusSpots;
     }
 
     private void Retarget(Customer c, Vector3 spot)
@@ -401,6 +446,8 @@ public class CustomerQueue : MonoBehaviour
 
             if (dist < 0.05f)
             {
+                // Snap so customers stand exactly on their spot.
+                c.root.position = new Vector3(target.x, c.root.position.y, target.z);
                 c.path.Dequeue();
                 if (c.path.Count == 0 && c.phase == Phase.Arriving)
                     c.phase = Phase.Waiting;
@@ -426,7 +473,7 @@ public class CustomerQueue : MonoBehaviour
         }
 
         if (!moving && c.phase == Phase.Waiting)
-            c.root.rotation = Quaternion.Slerp(c.root.rotation, transform.rotation, turnSpeed * 0.6f * dt);
+            c.root.rotation = Quaternion.Slerp(c.root.rotation, WaitingRotation(c), turnSpeed * 0.6f * dt);
 
         float urgency = c.phase == Phase.Waiting && c.order != null
             ? 1f - Mathf.Clamp01(c.order.timer / impatientSeconds)

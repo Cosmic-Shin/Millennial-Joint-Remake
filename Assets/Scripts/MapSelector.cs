@@ -17,6 +17,12 @@ public class MapSelector : MonoBehaviour
         public Transform[] queuePoints;
         [Tooltip("How far behind the queue customers appear (0 = CustomerQueue default)")]
         public float customerEntranceDistance;
+        [Tooltip("Customers waiting in the queue face this (the Order Up counter)")]
+        public Transform servingCounter;
+
+        [Tooltip("Optional fixed camera framing for this map")]
+        public Transform cameraFocus;
+        public float cameraDistance;
     }
 
     public Layout[] layouts;
@@ -88,6 +94,13 @@ public class MapSelector : MonoBehaviour
 
         PlaceCustomers(chosen);
 
+        CameraMovement cam = CameraMovement.Instance != null ? CameraMovement.Instance : FindFirstObjectByType<CameraMovement>();
+        if (cam != null)
+        {
+            cam.fixedFocus = chosen.cameraFocus;
+            cam.fixedDistance = chosen.cameraDistance;
+        }
+
         PowerUpSpawner spawner = FindFirstObjectByType<PowerUpSpawner>();
         if (spawner != null && chosen.powerUpAreas != null && chosen.powerUpAreas.Length > 0)
             spawner.SetSpawnAreas(chosen.powerUpAreas);
@@ -106,6 +119,7 @@ public class MapSelector : MonoBehaviour
             q.SetPositionAndRotation(queueHome, queueHomeRotation);
 
         customerQueue.queuePoints = own ? chosen.queuePoints : null;
+        customerQueue.faceTarget = own ? chosen.servingCounter : null;
         customerQueue.entranceDistance = own && chosen.customerEntranceDistance > 0f ? chosen.customerEntranceDistance : defaultEntranceDistance;
 
         foreach (GameObject visual in customerBridgeVisuals)

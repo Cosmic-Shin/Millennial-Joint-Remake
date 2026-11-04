@@ -17,6 +17,11 @@ public class CameraMovement : MonoBehaviour
     public float shakeFrequency = 22f;
     public float maxShakeRoll = 2.5f;
 
+    [Header("Fixed Framing (set per map by MapSelector)")]
+    [Tooltip("When set, the camera holds on this point at fixedDistance instead of following the players")]
+    public Transform fixedFocus;
+    public float fixedDistance = 20f;
+
     public static CameraMovement Instance { get; private set; }
 
     private Quaternion baseRotation;
@@ -89,6 +94,12 @@ public class CameraMovement : MonoBehaviour
         }
 
         pos /= FollowGroup.Length;
+
+        if (fixedFocus != null)
+        {
+            pos = fixedFocus.position;
+            dis = fixedDistance - DistanceOffset;
+        }
 
         float follow = Damp(LerpTime, Time.deltaTime);
         float zoom = Damp(LerpTime / 2f, Time.deltaTime);

@@ -186,27 +186,58 @@ public static class SpaceMapBuilder
 
     public static void Rebuild()
     {
-        Transform classic = SceneRoot("Map - Classic");
+        Transform classic = StationTemplates();
         MapSelector selector = Object.FindFirstObjectByType<MapSelector>(FindObjectsInactive.Include);
         if (classic == null || selector == null)
         {
-            Debug.LogError("SpaceMapBuilder: needs 'Map - Classic' and a MapSelector in the open scene.");
+            Debug.LogError("SpaceMapBuilder: needs 'Station Templates' (or 'Map - Classic') and a MapSelector in the open scene.");
             return;
         }
 
-        var layouts = selector.layouts.Where(l => l.root == null || !l.root.name.StartsWith("Map - Space")).ToList();
+        var layouts = selector.layouts.Where(l => l.root != null && !l.root.name.StartsWith("Map - Space")).ToList();
         foreach (Level level in Levels())
             layouts.Add(Build(level, classic));
         selector.layouts = layouts.ToArray();
 
         Transform bridge = SceneRoot("Customer Bridge");
         selector.customerQueue = Object.FindFirstObjectByType<CustomerQueue>(FindObjectsInactive.Include);
-        if (bridge != null)
-            selector.customerBridgeVisuals = bridge.Cast<Transform>().Where(t => t.GetComponent<CustomerQueue>() == null).Select(t => t.gameObject).ToArray();
+        selector.customerBridgeVisuals = bridge != null
+            ? bridge.Cast<Transform>().Where(t => t.GetComponent<CustomerQueue>() == null).Select(t => t.gameObject).ToArray()
+            : new GameObject[0];
 
         EditorUtility.SetDirty(selector);
         EditorSceneManager.MarkSceneDirty(selector.gameObject.scene);
         Debug.Log("SpaceMapBuilder: built " + Levels().Length + " space maps.");
+    }
+
+    // One inactive copy of each station (scripts, UI panels, anchors) to clone from.
+    // Made once from the old Classic map, so the old maps can be deleted.
+    private static Transform StationTemplates()
+    {
+        Transform templates = SceneRoot("Station Templates");
+        if (templates != null)
+            return templates;
+
+        Transform classic = SceneRoot("Map - Classic");
+        if (classic == null)
+            return null;
+
+        templates = new GameObject("Station Templates").transform;
+        templates.gameObject.SetActive(false);
+        foreach (string name in Template.Values.Distinct())
+        {
+            GameObject copy = Object.Instantiate(classic.Find(name).gameObject, templates);
+            copy.name = name;
+        }
+
+        ServingCounter serving = templates.Find(Template[S.Serving]).GetComponent<ServingCounter>();
+        if (serving.serveBurst != null)
+        {
+            ParticleSystem burst = Object.Instantiate(serving.serveBurst, templates);
+            burst.name = "Serve Burst";
+            serving.serveBurst = burst;
+        }
+        return templates;
     }
 
     private static Transform SceneRoot(string name)
@@ -260,9 +291,12 @@ public static class SpaceMapBuilder
             powerUpAreas = level.powerUpAreas.Select((r, i) => PowerUpArea(root, r, i)).ToArray(),
             customerEntranceDistance = 1.5f,
         };
-        AddCustomerArea(levelModel.transform, root, layout);
+        Transform serving = built.First(b => b.name == S.Serving.ToString()).transform;
+        layout.servingCounter = serving;
+        AddCustomerArea(levelModel.transform, root, layout, serving);
         AddKillZone(root);
         AddDecor(root, level, built.FirstOrDefault(b => b.name == S.Counter.ToString()));
+        FrameCamera(root, layout);
 
         if (level.movingIslands)
             AddMovingIslands(levelModel.transform, root);
@@ -330,40 +364,129 @@ public static class SpaceMapBuilder
         }
     }
 
-    private static void AddCustomerArea(Transform levelModel, Transform root, MapSelector.Layout layout)
+    private static void AddCustomerArea(Transform levelModel, Transform root, MapSelector.Layout layout, Transform serving)
     {
         Transform slab = levelModel.Cast<Transform>().First(t => t.name.StartsWith("Customers_"));
+        Bounds Platform() => LocalBounds(root, new[] { slab.GetComponent<Renderer>() });
+
+        // Customers don't grow with the map, so their platform keeps its original size (round circles).
+        Vector3 originalScale = slab.localScale;
+        slab.SetParent(root, true);
+        slab.localScale = originalScale;
+
+        // Move the customer platform (children too) so its back edge is 0.5 in front of the kitchen's front edge,
+        // centred on the Order Up counter.
+        float kitchenFront = levelModel.Cast<Transform>()
+            .Where(t => !t.name.StartsWith("Customers_") && !t.name.StartsWith("Shuttle_Platform"))
+            .Max(t => LocalBounds(root, new[] { t.GetComponent<Renderer>() }).max.z);
+        Bounds b = Platform();
+        float servingX = root.InverseTransformPoint(serving.position).x;
+        slab.position += root.TransformVector(new Vector3(servingX - b.center.x, 0f, kitchenFront + 0.5f - b.min.z));
+        b = Platform();
 
         // Solid block over the customer platform keeps players (and thrown food) off it.
-        Bounds b = LocalBounds(root, new[] { slab.GetComponent<Renderer>() });
         Box("Customer Barrier", root, new Vector3(b.center.x, 1.5f, b.center.z), new Vector3(b.size.x, 3f, b.size.z));
 
-        // Queue spots: the wide vertex clusters of the QueueSpotsPosts mesh (the thin ones are rope posts).
-        MeshFilter spots = slab.GetComponentsInChildren<MeshFilter>().First(f => f.name.EndsWith("QueueSpotsPosts"));
-        var verts = spots.sharedMesh.vertices.Select(v => root.InverseTransformPoint(spots.transform.TransformPoint(v))).OrderBy(v => v.x).ToList();
-        var centers = new List<Vector3>();
-        for (int i = 0; i < verts.Count;)
+        // Pink circles: the cust_queue_* submeshes of the QueueSpotsPosts mesh. Cluster their vertices; each cluster is one circle.
+        MeshFilter posts = slab.GetComponentsInChildren<MeshFilter>().First(f => f.name.EndsWith("QueueSpotsPosts"));
+        Material[] mats = posts.GetComponent<Renderer>().sharedMaterials;
+        Vector3[] verts = posts.sharedMesh.vertices;
+        var clusters = new List<List<Vector3>>();
+        for (int s = 0; s < posts.sharedMesh.subMeshCount; s++)
         {
-            int j = i;
-            while (j + 1 < verts.Count && verts[j + 1].x - verts[j].x < 0.3f) j++;
-            List<Vector3> c = verts.GetRange(i, j - i + 1);
-            if (c[c.Count - 1].x - c[0].x > 0.6f)
-                centers.Add(new Vector3((c[0].x + c[c.Count - 1].x) / 2f, 0f, (c.Min(v => v.z) + c.Max(v => v.z)) / 2f));
-            i = j + 1;
+            if (mats[s] == null || !mats[s].name.StartsWith("cust_queue_"))
+                continue;
+            foreach (int i in posts.sharedMesh.GetTriangles(s).Distinct())
+            {
+                Vector3 p = root.InverseTransformPoint(posts.transform.TransformPoint(verts[i]));
+                List<Vector3> home = clusters.FirstOrDefault(c => Vector2.Distance(new Vector2(c[0].x, c[0].z), new Vector2(p.x, p.z)) < 1.2f);
+                if (home == null) clusters.Add(home = new List<Vector3>());
+                home.Add(p);
+            }
         }
+
+        var centers = clusters
+            .Select(c => new Vector3((c.Min(v => v.x) + c.Max(v => v.x)) / 2f, 0f, (c.Min(v => v.z) + c.Max(v => v.z)) / 2f))
+            .OrderByDescending(c => c.x) // root +x is screen left
+            .ToList();
+        var spots = new List<Transform>();
+        for (int i = 0; i < centers.Count; i++)
+        {
+            var t = new GameObject($"QueueSpot_{i + 1:00}").transform;
+            t.SetParent(root, false);
+            t.localPosition = centers[i];
+            t.SetParent(slab, true);
+            spots.Add(t);
+        }
+
+        Vector3 servingLocal = root.InverseTransformPoint(serving.position);
+        float Dist(Transform t) { Vector3 p = root.InverseTransformPoint(t.position); return new Vector2(p.x - servingLocal.x, p.z - servingLocal.z).magnitude; }
+        layout.queuePoints = spots.OrderBy(Dist).ToArray(); // fill the circles nearest the Order Up first
 
         var anchor = new GameObject("Customer Anchor").transform;
         anchor.SetParent(root, false);
-        anchor.localPosition = new Vector3(centers.Average(c => c.x), 0f, centers.Average(c => c.z));
-        anchor.localRotation = Quaternion.Euler(0f, 180f, 0f); // customers face the kitchen (-z)
+        anchor.localPosition = new Vector3(b.center.x, 0f, centers.Average(c => c.z));
+        anchor.localRotation = Quaternion.Euler(0f, 180f, 0f); // queue faces the kitchen (-z)
         layout.customerAnchor = anchor;
 
-        layout.queuePoints = centers
-            .Select((c, i) => { var t = new GameObject("Queue Spot " + i).transform; t.SetParent(anchor.parent, false); t.localPosition = c; return t; })
-            .OrderBy(t => anchor.InverseTransformPoint(t.position).x)
-            .ToArray();
-        foreach (Transform t in layout.queuePoints)
-            t.SetParent(anchor, true);
+        Debug.Log($"SpaceMapBuilder: {root.name} has {spots.Count} queue circles");
+    }
+
+    // Fixed camera that keeps both kitchen platform(s) and the customer platform (with customers and their
+    // bubbles) in view, below the order tickets / money HUD. Same angle and FOV as the scene camera.
+    private const float ViewXMin = 0.03f, ViewXMax = 0.97f, ViewYMin = 0.03f, ViewYMax = 0.62f; // tickets / money reach down to ~0.68
+
+    private static void FrameCamera(Transform root, MapSelector.Layout layout)
+    {
+        CameraMovement rig = Object.FindFirstObjectByType<CameraMovement>(FindObjectsInactive.Include);
+        Camera source = rig.Cam.GetComponent<Camera>();
+
+        var points = new List<Vector3>();
+        foreach (Renderer r in root.GetComponentsInChildren<Renderer>(true).Where(r => r.name.EndsWith("_Slab")))
+        {
+            Bounds w = r.bounds;
+            if (r.name.StartsWith("Customers_"))
+                w.SetMinMax(w.min, new Vector3(w.max.x, Mathf.Max(w.max.y, root.position.y + 3f), w.max.z)); // customers + bubbles
+            for (int i = 0; i < 8; i++)
+                points.Add(new Vector3(i % 2 == 0 ? w.min.x : w.max.x, (i / 2) % 2 == 0 ? w.min.y : w.max.y, i / 4 == 0 ? w.min.z : w.max.z));
+        }
+
+        var go = new GameObject("__FrameCam");
+        Camera cam = go.AddComponent<Camera>();
+        cam.enabled = false;
+        cam.fieldOfView = source.fieldOfView;
+        cam.aspect = 16f / 9f;
+        go.transform.rotation = rig.transform.rotation * rig.Cam.localRotation;
+
+        Vector3 focus = points.Aggregate(Vector3.zero, (a, p) => a + p) / points.Count;
+        float distance = 30f;
+        Vector2 min = Vector2.zero, max = Vector2.zero;
+        for (int iter = 0; iter < 200; iter++)
+        {
+            go.transform.position = focus - go.transform.forward * distance;
+            min = new Vector2(float.MaxValue, float.MaxValue);
+            max = new Vector2(float.MinValue, float.MinValue);
+            foreach (Vector3 p in points)
+            {
+                Vector3 v = cam.WorldToViewportPoint(p);
+                min = Vector2.Min(min, v);
+                max = Vector2.Max(max, v);
+            }
+
+            float scale = Mathf.Max((max.x - min.x) / (ViewXMax - ViewXMin), (max.y - min.y) / (ViewYMax - ViewYMin));
+            float h = 2f * distance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            focus += go.transform.right * ((min.x + max.x) / 2f - (ViewXMin + ViewXMax) / 2f) * h * cam.aspect
+                   + go.transform.up * ((min.y + max.y) / 2f - (ViewYMin + ViewYMax) / 2f) * h;
+            distance *= Mathf.Lerp(1f, scale, 0.5f);
+        }
+        Object.DestroyImmediate(go);
+
+        var focusT = new GameObject("Camera Focus").transform;
+        focusT.SetParent(root, false);
+        focusT.position = focus;
+        layout.cameraFocus = focusT;
+        layout.cameraDistance = distance;
+        Debug.Log($"SpaceMapBuilder: {root.name} camera distance {distance:F1}, viewport x {min.x:F2}-{max.x:F2}, y {min.y:F2}-{max.y:F2}");
     }
 
     private static void AddKillZone(Transform root)
