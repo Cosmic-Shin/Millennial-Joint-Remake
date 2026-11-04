@@ -2,13 +2,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Ping-pongs between its start and start + localOffset (in parent space), pausing at each dock.
-// Rigidbodies standing in its rider zones (players, dropped food, power-ups) are carried along.
+// Players standing in its rider zones are carried along; loose items ride on friction.
 public class MovingPlatform : MonoBehaviour
 {
     public Vector3 localOffset = new Vector3(-3.6f, 0f, 0f);
     public float travelTime = 2.5f;
     public float waitTime = 1.5f;
-    [Tooltip("Trigger boxes over the deck; whatever is inside them rides along")]
+    [Tooltip("Trigger boxes over the deck; players inside them ride along")]
     public BoxCollider[] riderZones;
 
     private Vector3 start;
@@ -55,8 +55,10 @@ public class MovingPlatform : MonoBehaviour
                 Vector3 halfExtents = Vector3.Scale(zone.size, zone.transform.lossyScale) * 0.5f;
                 foreach (Collider c in Physics.OverlapBox(zone.transform.TransformPoint(zone.center), halfExtents, zone.transform.rotation, ~0, QueryTriggerInteraction.Ignore))
                 {
+                    // Only players: they overwrite their own velocity each step. Items and power-ups
+                    // already ride along by friction; moving them here too made them travel double.
                     Rigidbody r = c.attachedRigidbody;
-                    if (r != null && r != body && !r.isKinematic)
+                    if (r != null && r != body && !r.isKinematic && r.GetComponent<PlayerControl>() != null)
                         riders.Add(r);
                 }
             }

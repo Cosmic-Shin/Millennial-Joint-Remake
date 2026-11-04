@@ -7,6 +7,7 @@ using UnityEngine.Events;
 //  ZeroGHop:     players who step on float in an arc to a safe landing spot (or a fixed HopTarget child).
 //  ItemLauncher: a Sender launches items dropped on it (or the held item, on interact) to its paired Receiver.
 [RequireComponent(typeof(BoxCollider))]
+[DefaultExecutionOrder(100)] // after PlayerControl, so the same interact press can't re-pick up the item we drop
 public class GravityPad : MonoBehaviour
 {
     public enum PadMode { ZeroGHop, ItemLauncher }
