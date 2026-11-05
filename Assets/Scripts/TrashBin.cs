@@ -14,6 +14,6 @@ public class TrashBin : BaseStation, IInteractable
         player.RefreshHeldItemDisplay();
         Show(player, "Trashed item!");
 
-        AudioManager.Instance?.PlayCounterTopInteractSFX();
+        AudioManager.Instance?.PlayTrashSFX();
     }
 }

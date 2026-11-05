@@ -394,6 +394,86 @@ public class OrderUIManager : MonoBehaviour
             if (changingOrders == 0)
                 UpdatePatience(new[] { order1Image, order2Image, order3Image }, OrderManager.Instance.GetOrderQueue());
         }
+
+        if (GatherWorldUiRects())
+        {
+            VersusUIManager vs = VersusUIManager.Instance;
+            FadeTicketsOverWorldUi(order1Image, order2Image, order3Image);
+            if (vs != null)
+                FadeTicketsOverWorldUi(vs.p1Order1Image, vs.p1Order2Image, vs.p1Order3Image, vs.p2Order1Image, vs.p2Order2Image, vs.p2Order3Image);
+        }
+    }
+
+    [Tooltip("Ticket opacity while in-world UI (cook timers, ingredient picker, player text) is behind it")]
+    public float coveredTicketAlpha = 0.2f;
+    private readonly Vector3[] corners = new Vector3[8];
+    private readonly System.Collections.Generic.List<Rect> popupRects = new System.Collections.Generic.List<Rect>();
+    private readonly System.Collections.Generic.List<Canvas> worldCanvases = new System.Collections.Generic.List<Canvas>();
+    private TextMesh[] worldTexts = new TextMesh[0];
+    private float nextWorldUiScan;
+
+    // Overlay tickets always draw on top of in-world UI, so we find what's on screen and fade tickets hiding it.
+    private bool GatherWorldUiRects()
+    {
+        Camera cam = Camera.main;
+        if (cam == null)
+            return false;
+
+        if (Time.unscaledTime >= nextWorldUiScan) // maps and floating texts come and go, so rescan a few times a second
+        {
+            nextWorldUiScan = Time.unscaledTime + 0.25f;
+            worldCanvases.Clear();
+            foreach (Canvas c in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+                if (c.isRootCanvas && c.renderMode == RenderMode.WorldSpace)
+                    worldCanvases.Add(c);
+            worldTexts = FindObjectsByType<TextMesh>(FindObjectsSortMode.None);
+        }
+
+        popupRects.Clear();
+        foreach (Canvas c in worldCanvases)
+            if (c != null && c.isActiveAndEnabled)
+            {
+                ((RectTransform)c.transform).GetWorldCorners(corners);
+                AddScreenRect(cam, 4);
+            }
+        foreach (TextMesh t in worldTexts)
+            if (t != null && t.gameObject.activeInHierarchy && !string.IsNullOrEmpty(t.text) && t.TryGetComponent(out Renderer r))
+            {
+                Bounds b = r.bounds;
+                for (int i = 0; i < 8; i++)
+                    corners[i] = b.center + Vector3.Scale(b.extents, new Vector3((i & 1) * 2 - 1, (i & 2) - 1, (i & 4) / 2f - 1));
+                AddScreenRect(cam, 8);
+            }
+        return true;
+    }
+
+    private void AddScreenRect(Camera cam, int count)
+    {
+        Vector2 min = new Vector2(float.MaxValue, float.MaxValue), max = -min;
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 s = cam.WorldToScreenPoint(corners[i]);
+            if (s.z < 0f)
+                return; // behind the camera
+            min = Vector2.Min(min, s);
+            max = Vector2.Max(max, s);
+        }
+        popupRects.Add(Rect.MinMaxRect(min.x, min.y, max.x, max.y));
+    }
+
+    private void FadeTicketsOverWorldUi(params Image[] tickets)
+    {
+        foreach (Image ticket in tickets)
+        {
+            if (ticket == null || !ticket.gameObject.activeInHierarchy)
+                continue;
+            ticket.rectTransform.GetWorldCorners(corners); // overlay canvas: corners are already screen pixels
+            Rect r = Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);
+            bool covered = popupRects.Exists(p => p.Overlaps(r));
+            if (!ticket.TryGetComponent(out CanvasGroup group))
+                group = ticket.gameObject.AddComponent<CanvasGroup>();
+            group.alpha = Mathf.MoveTowards(group.alpha, covered ? coveredTicketAlpha : 1f, Time.unscaledDeltaTime * 6f);
+        }
     }
 
     [Tooltip("Tickets wobble when this many seconds are left")]

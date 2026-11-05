@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 // Purple gravity-flip floor pad.
-//  ZeroGHop:     players who step on float in an arc to a safe landing spot (or a fixed HopTarget child).
+//  ZeroGHop:     players who step on float in an arc along the tile's arrow to a safe landing spot.
 //  ItemLauncher: a Sender launches items dropped on it (or the held item, on interact) to its paired Receiver.
 [RequireComponent(typeof(BoxCollider))]
 [DefaultExecutionOrder(100)] // after PlayerControl, so the same interact press can't re-pick up the item we drop
@@ -17,11 +17,14 @@ public class GravityPad : MonoBehaviour
     [Header("Feedback")]
     public Renderer glowRenderer;
     [ColorUsage(false)] public Color glowColor = new Color(0.65f, 0.3f, 1f);
-    public float idleGlow = 2f;
+    [Tooltip("Glow while ready to use (breathes gently)")]
+    public float idleGlow = 3f;
     public float activeGlow = 8f;
-    public float cooldownGlow = 0.6f;
+    [Tooltip("Glow right after use; it slowly charges back up to idle over the cooldown")]
+    public float cooldownGlow = 0.1f;
     public float pulseTime = 0.35f;
-    public float cooldown = 1f;
+    [Tooltip("Seconds before the pad can launch again")]
+    public float cooldown = 3f;
     public AudioClip activateSound;
     [Range(0f, 1f)] public float soundVolume = 0.8f;
     public UnityEvent onActivated;
@@ -29,11 +32,10 @@ public class GravityPad : MonoBehaviour
     [Header("Zero-G Hop")]
     [Tooltip("Floor tile size, for the hop distance")]
     public float tileSize = 1.3f;
-    public int hopTiles = 4;
-    public float hopHeight = 1.5f;
-    public float hopTime = 0.9f;
-    [Tooltip("Optional fixed landing point (defaults to a child named HopTarget)")]
-    public Transform hopTarget;
+    [Tooltip("How far the pad throws you along its painted arrow (the pad's -Z), in tiles")]
+    public float hopTiles = 5.25f;
+    public float hopHeight = 1.35f;
+    public float hopTime = 0.6f;
     public float playerRadius = 0.45f;
     [Tooltip("Landing floor may differ from the take-off floor by at most this much")]
     public float maxStepHeight = 0.35f;
@@ -58,15 +60,13 @@ public class GravityPad : MonoBehaviour
     private void Awake()
     {
         GetComponent<BoxCollider>().isTrigger = true;
-        if (hopTarget == null)
-            hopTarget = transform.Find("HopTarget");
 
         block = new MaterialPropertyBlock();
         if (glowRenderer != null)
         {
             Material[] mats = glowRenderer.sharedMaterials;
             for (int i = 0; i < mats.Length; i++)
-                if (mats[i] != null && mats[i].name.StartsWith("gravtile_glow"))
+                if (mats[i] != null && (mats[i].name.StartsWith("gravtile_glow") || mats[i].name.StartsWith("receiver_glow_purple")))
                     glowIndex = i;
         }
     }
@@ -97,15 +97,20 @@ public class GravityPad : MonoBehaviour
             lastActivation = Time.time;
         if (activateSound != null)
             AudioSource.PlayClipAtPoint(activateSound, transform.position, soundVolume);
+        else
+            AudioManager.Instance?.PlayPadSFX();
         onActivated?.Invoke();
     }
 
     private void Update()
     {
+        // Used: flash, go dark, charge back up (a visible timer). Ready: flash once, then breathe.
         float since = Time.time - lastActivation;
+        float readyFor = since - cooldown;
         float glow = since < pulseTime ? Mathf.Lerp(activeGlow, cooldownGlow, since / pulseTime)
-            : since < cooldown ? cooldownGlow
-            : idleGlow;
+            : readyFor < 0f ? Mathf.Lerp(cooldownGlow, idleGlow * 0.35f, (since - pulseTime) / (cooldown - pulseTime))
+            : readyFor < pulseTime ? Mathf.Lerp(activeGlow, idleGlow, readyFor / pulseTime)
+            : idleGlow * (0.8f + 0.2f * Mathf.Sin(Time.time * 4f));
         SetGlow(glowRenderer, glowIndex, glow);
         SetGlow(arrowRenderer, 0, glow);
 
@@ -171,10 +176,7 @@ public class GravityPad : MonoBehaviour
         float floorY = Physics.Raycast(start, Vector3.down, out RaycastHit below, 5f, ~0, QueryTriggerInteraction.Ignore) ? below.point.y : start.y - 1f;
         float pivotHeight = start.y - floorY;
 
-        Vector3 dir = Flat(body.linearVelocity);
-        if (dir.sqrMagnitude < 0.01f)
-            dir = Flat(player.transform.forward);
-        dir.Normalize();
+        Vector3 dir = Flat(-transform.forward).normalized; // the arrow painted on the tile points along -Z
 
         bool found = FindLanding(player, start, dir, floorY, out Vector3 landingFloor);
         Vector3 landing = found ? landingFloor + Vector3.up * pivotHeight : start; // nowhere safe: bounce in place
@@ -191,7 +193,7 @@ public class GravityPad : MonoBehaviour
         for (float t = 0f; t < hopTime; t += Time.fixedDeltaTime)
         {
             float k = t / hopTime;
-            float ease = 1f - (1f - k) * (1f - k); // fast take-off, gentle float down
+            float ease = 1f - (1f - k) * (1f - k) * (1f - k); // hard launch, gentle float down
             Vector3 p = Vector3.Lerp(start, landing, ease) + Vector3.up * Mathf.Sin(k * Mathf.PI) * height;
             body.MovePosition(p);
             yield return new WaitForFixedUpdate();
@@ -209,20 +211,12 @@ public class GravityPad : MonoBehaviour
 
     private bool FindLanding(PlayerControl player, Vector3 start, Vector3 dir, float floorY, out Vector3 landing)
     {
+        // Farthest spot along the arrow first, stepping back a tile at a time if it's blocked.
         var candidates = new List<Vector3>();
-        if (hopTarget != null)
-        {
-            Vector3 side = Vector3.Cross(Vector3.up, Flat(hopTarget.position - start).normalized);
-            foreach (int lateral in new[] { 0, 1, -1, 2, -2 })
-                candidates.Add(hopTarget.position + side * lateral * tileSize);
-        }
-        else
-        {
-            Vector3 side = Vector3.Cross(Vector3.up, dir);
-            for (int n = hopTiles; n >= 1; n--)
-                foreach (int lateral in new[] { 0, 1, -1 })
-                    candidates.Add(start + dir * n * tileSize + side * lateral * tileSize);
-        }
+        Vector3 side = Vector3.Cross(Vector3.up, dir);
+        for (float n = hopTiles; n >= 1f; n -= 1f)
+            foreach (int lateral in new[] { 0, 1, -1 })
+                candidates.Add(start + dir * n * tileSize + side * lateral * tileSize);
 
         foreach (Vector3 c in candidates)
             if (IsSafeLanding(c, player, floorY, out landing))

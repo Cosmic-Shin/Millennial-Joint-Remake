@@ -54,6 +54,9 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioClip comboLostSFX;
     [SerializeField] private AudioClip chalkHoverSFX;
     [SerializeField] private AudioClip burnSizzleSFX;
+    [SerializeField] private AudioClip padWhooshSFX;
+    [SerializeField] private AudioClip powerUpSFX;
+    [SerializeField] private AudioClip trashSFX;
 
     [Header("Volume")]
     [Range(0f, 1f)] [SerializeField] private float sfxVolume = 1f;
@@ -245,6 +248,9 @@ public class AudioManager : MonoBehaviour
     public void PlayFreezeSFX() => PlaySFX(freezeSFX);
     public void PlayComboLostSFX() => PlaySFX(comboLostSFX);
     public void PlayChalkHoverSFX() => PlaySFX(chalkHoverSFX);
+    public void PlayPadSFX() => PlayVariedSFX(padWhooshSFX);
+    public void PlayPowerUpSFX() => PlayVariedSFX(powerUpSFX);
+    public void PlayTrashSFX() => PlayVariedSFX(trashSFX);
 
     public AudioClip BurnSizzleClip => burnSizzleSFX;
 

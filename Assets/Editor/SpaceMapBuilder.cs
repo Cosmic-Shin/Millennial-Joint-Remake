@@ -53,6 +53,7 @@ public static class SpaceMapBuilder
         public Vector2 p1, p2;
         public Rect[] powerUpAreas;
         public PadSpec[] pads;             // gravity-flip pads (purple tiles)
+        public float hopTiles = 5.25f;     // how far hop pads throw players, in floor tiles
         public Vector3 sign;               // x, bottom y, z
         public Vector3 whiteboard;         // x, z, yaw
         public Vector3 mobile;             // x, bottom y, z
@@ -127,7 +128,7 @@ public static class SpaceMapBuilder
 
         var asteroid = new Level
         {
-            name = "AsteroidDiner", scale = 2f, meshFloor = true,
+            name = "AsteroidDiner", scale = 2f, meshFloor = true, hopTiles = 3.25f, // big tiles: a shorter throw keeps players in front of the back stoves
             p1 = new Vector2(4.5f, -6f), p2 = new Vector2(-4.5f, -6f),
             powerUpAreas = new[] { R(5f, -4f, 3f, 3f), R(-5f, -4f, 3f, 3f) },
             pads = new[] { HopTo(4.0f, -9.2f, -4.0f, -9.2f), HopTo(-4.0f, -4.2f, 4.0f, -4.2f) },
@@ -148,7 +149,7 @@ public static class SpaceMapBuilder
 
         var bridge = new Level
         {
-            name = "BridgeIslands", scale = 1.35f,
+            name = "BridgeIslands", scale = 1.35f, hopTiles = 7f,
             p1 = new Vector2(8.8f, -2.5f), p2 = new Vector2(-8.8f, -2.5f),
             powerUpAreas = new[] { R(8.8f, -9f, 3f, 3f), R(-8.8f, -9f, 3f, 3f) },
             pads = new[] { Hop(7.5f, -0.8f), Hop(-6.5f, -1f) },
@@ -709,17 +710,11 @@ public static class SpaceMapBuilder
             GravityPad gp = pad.gameObject.AddComponent<GravityPad>();
             gp.glowRenderer = tile.GetComponent<Renderer>();
             gp.tileSize = level.scale;
+            gp.hopTiles = level.hopTiles;
             gp.mode = spec.pair >= 0 ? GravityPad.PadMode.ItemLauncher : GravityPad.PadMode.ZeroGHop;
             gp.isSender = spec.sender;
             gp.glowColor = spec.pair < 0 ? HopGlow : spec.sender ? SenderGlow : ReceiverGlow;
-            if (spec.hasTarget)
-            {
-                var target = new GameObject("HopTarget").transform;
-                target.SetParent(pad, false);
-                target.position = root.TransformPoint(new Vector3(spec.tx, 0f, spec.tz));
-                gp.hopTarget = target;
-            }
-            pads.Add(gp);
+            pads.Add(gp); // hop direction comes from the arrow on the tile (pad -Z)
         }
 
         // Link launcher pairs: each Sender fires at the Receiver with the same pair number.

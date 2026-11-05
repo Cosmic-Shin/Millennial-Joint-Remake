@@ -26,6 +26,7 @@ public class PauseManager : MonoBehaviour
     [Header("Display Settings")]
     public Button fullscreenButton;
     public Button resolutionButton;
+    public Button particlesButton;
 
     private bool isPaused = false;
     private Vector2Int[] resolutions;
@@ -81,6 +82,13 @@ public class PauseManager : MonoBehaviour
         if (resolutionButton != null)
             resolutionButton.onClick.AddListener(() => ApplyDisplay(Screen.fullScreen, (resolutionIndex + 1) % Mathf.Max(1, resolutions.Length)));
 
+        if (particlesButton != null)
+            particlesButton.onClick.AddListener(() =>
+            {
+                ParticleQuality.Level = (ParticleQuality.Level + 1) % ParticleQuality.Names.Length; // Off -> Low -> Medium -> High -> Off
+                UpdateDisplayLabels(Screen.fullScreen);
+            });
+
         UpdateDisplayLabels(Screen.fullScreen);
     }
 
@@ -111,6 +119,10 @@ public class PauseManager : MonoBehaviour
 
         if (resolutionText != null && resolutions.Length > 0)
             resolutionText.text = $"{resolutions[resolutionIndex].x} x {resolutions[resolutionIndex].y}";
+
+        TMPro.TMP_Text particlesText = particlesButton != null ? particlesButton.GetComponentInChildren<TMPro.TMP_Text>() : null;
+        if (particlesText != null)
+            particlesText.text = "Particles: " + ParticleQuality.Names[ParticleQuality.Level];
     }
 
     private bool openedFromMainMenu;

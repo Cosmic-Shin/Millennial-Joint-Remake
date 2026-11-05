@@ -180,6 +180,16 @@ public class KeybindManager : MonoBehaviour
 
         keybindMappings.Add(mapping);
 
+        // One line per key: shrink long names instead of wrapping into the row below.
+        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (label != null)
+        {
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.fontSizeMax = label.fontSize;
+            label.fontSizeMin = label.fontSize * 0.5f;
+            label.enableAutoSizing = true;
+        }
+
         int capturedPlayer = playerNumber;
         string capturedFieldName = fieldName;
 
@@ -307,7 +317,7 @@ public class KeybindManager : MonoBehaviour
 
         button.GetComponent<Image>().color = new Color32(0xFF, 0xE0, 0x66, 0xFF); // highlighter while listening
         if (currentButtonText != null)
-            currentButtonText.text = joystick ? "Press a button/stick..." : "Press any key...";
+            currentButtonText.text = joystick ? "Press a button" : "Press a key";
     }
 
     private void Update()
@@ -458,10 +468,12 @@ public class KeybindManager : MonoBehaviour
         if (player.UsesJoystick && code >= KeyCode.JoystickButton0)
         {
             int index = (code - KeyCode.JoystickButton0) % 20;
-            return index < PadButtonNames.Length ? PadButtonNames[index] : "BUTTON" + index;
+            return index < PadButtonNames.Length ? PadButtonNames[index] : "Button " + index;
         }
 
-        return code.ToString().ToUpper();
+        // "LeftShift" -> "Left Shift", "Alpha1" -> "1"
+        string name = code.ToString().Replace("Alpha", "");
+        return System.Text.RegularExpressions.Regex.Replace(name, "(?<=[a-z])(?=[A-Z0-9])", " ");
     }
 
     private string GetFormattedDisplayString(int playerNumber, string fieldName)
@@ -473,17 +485,17 @@ public class KeybindManager : MonoBehaviour
         {
             string stickPrefix = player.padMovementAxis switch
             {
-                ControllerAxisSource.RSB => "RSB",
-                ControllerAxisSource.DPad => "DPAD_",
-                _ => "LSB"
+                ControllerAxisSource.RSB => "R-stick",
+                ControllerAxisSource.DPad => "D-pad",
+                _ => "Stick"
             };
 
             return fieldName switch
             {
-                "MoveUp" => $"{stickPrefix}UP",
-                "MoveLeft" => $"{stickPrefix}LEFT",
-                "MoveDown" => $"{stickPrefix}DOWN",
-                "MoveRight" => $"{stickPrefix}RIGHT",
+                "MoveUp" => $"{stickPrefix} up",
+                "MoveLeft" => $"{stickPrefix} left",
+                "MoveDown" => $"{stickPrefix} down",
+                "MoveRight" => $"{stickPrefix} right",
                 _ => ""
             };
         }
