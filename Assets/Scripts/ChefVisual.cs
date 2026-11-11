@@ -53,6 +53,7 @@ public class ChefVisual : MonoBehaviour
             if (t.name.EndsWith("_Hat_Propeller_Blades"))
                 t.gameObject.AddComponent<Spin>();
 
+        PlayerOutline.AddTo(go); // in-game chefs and select previews alike
         return animator;
     }
 }

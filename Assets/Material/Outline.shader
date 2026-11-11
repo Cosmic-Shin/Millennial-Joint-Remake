@@ -5,6 +5,7 @@ Shader "Custom/Outline"
     {
         _Color ("Color", Color) = (0.05, 0.05, 0.07, 1)
         _Width ("Width (world units)", Float) = 0.02
+        _ScreenWidth ("Minimum width (pixels)", Float) = 0
     }
     SubShader
     {
@@ -24,6 +25,7 @@ Shader "Custom/Outline"
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
                 float _Width;
+                float _ScreenWidth;
             CBUFFER_END
 
             struct Attributes
@@ -36,7 +38,14 @@ Shader "Custom/Outline"
             {
                 float3 positionWS = TransformObjectToWorld(i.positionOS.xyz);
                 float3 normalWS = TransformObjectToWorldNormal(i.normalOS);
-                return TransformWorldToHClip(positionWS + normalWS * _Width);
+                float4 pos = TransformWorldToHClip(positionWS + normalWS * _Width);
+
+                // Extra push in screen space so the rim stays visible from far away.
+                float2 dir = mul((float3x3)UNITY_MATRIX_VP, normalWS).xy;
+                float len = length(dir);
+                if (len > 1e-4)
+                    pos.xy += dir / len * _ScreenWidth * 2.0 / _ScreenParams.xy * pos.w;
+                return pos;
             }
 
             half4 frag() : SV_Target

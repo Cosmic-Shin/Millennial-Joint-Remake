@@ -15,6 +15,10 @@ public class MenuChefs : MonoBehaviour
         if (chefCamera != null)
             chefCamera.enabled = true;
 
+        foreach (Animator chef in chefs)
+            if (chef != null)
+                PlayerOutline.AddTo(chef.gameObject);
+
         nextEmote = new float[chefs.Length];
         for (int i = 0; i < chefs.Length; i++)
             nextEmote[i] = Time.unscaledTime + Random.Range(1f, emoteInterval.y) + i * 1.5f;

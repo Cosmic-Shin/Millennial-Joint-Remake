@@ -25,6 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _ScreenWidth: 1.5
     - _Width: 0.05
     m_Colors:
     - _Color: {r: 0.049999982, g: 0.049999982, b: 0.06999998, a: 1}
