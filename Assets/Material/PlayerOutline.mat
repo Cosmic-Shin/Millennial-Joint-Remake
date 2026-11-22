@@ -25,6 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _DepthOffset: 0.15
     - _ScreenWidth: 1.5
     - _Width: 0.05
     m_Colors:

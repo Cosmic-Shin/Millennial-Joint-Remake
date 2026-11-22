@@ -21,6 +21,8 @@ public class OrderManager : MonoBehaviour
     public float strawberryIceCreamPrice = 5f;
     public float bubblegumIceCreamPrice = 5f;
     public float mangoIceCreamPrice = 5f;
+    public float shrimpTempuraPrice = 9f;
+    public float donutPrice = 6f;
 
     [Header("Order Rewards")]
     public float expiredOrderPenalty = 2f;
@@ -247,13 +249,14 @@ public class OrderManager : MonoBehaviour
     private void UpdateQueueTimers(List<QueuedOrder> queue, int playerNumber)
     {
         float slow = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetSlowTimeMultiplier(playerNumber) : 1f;
+        float rush = PowerUpManager.Instance != null ? PowerUpManager.Instance.GetRushMultiplier(playerNumber) : 1f;
 
         for (int i = 0; i < queue.Count; i++)
         {
             if (queue[i].IsServed())
                 continue;
 
-            queue[i].UpdateTimer(Time.deltaTime * slow);
+            queue[i].UpdateTimer(Time.deltaTime * slow * rush);
 
             if (queue[i].IsExpired())
             {
@@ -463,6 +466,8 @@ public class OrderManager : MonoBehaviour
             OrderItemType.StrawberryIceCream => strawberryIceCreamPrice,
             OrderItemType.BubblegumIceCream => bubblegumIceCreamPrice,
             OrderItemType.MangoIceCream => mangoIceCreamPrice,
+            OrderItemType.ShrimpTempura => shrimpTempuraPrice,
+            OrderItemType.ChocolateDonut or OrderItemType.StrawberryDonut or OrderItemType.GalaxyDonut => donutPrice,
             _ => 0f
         };
     }

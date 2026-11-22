@@ -22,6 +22,9 @@ public class PowerUp : MonoBehaviour
     [Header("Random Power-Up")]
     [SerializeField] private PowerUpType powerUpType;
 
+    private Vector3 baseScale = Vector3.one;
+    private Color Color => PowerUpManager.IsSabotage(powerUpType) ? new Color(1f, 0.25f, 0.85f) : new Color(1f, 0.8f, 0.2f);
+
     private bool hasBeenPickedUp;
     private bool hasLanded;
 
@@ -50,6 +53,15 @@ public class PowerUp : MonoBehaviour
         initialEuler = transform.eulerAngles;
         currentYRotation = initialEuler.y;
 
+        // Gold = helps you, magenta = hurts the other player. Readable at a glance from across the map.
+        baseScale = transform.localScale;
+        VisualFx.Tint(gameObject, Color, 0.7f);
+        var glow = new GameObject("Glow").AddComponent<Light>();
+        glow.transform.SetParent(transform, false);
+        glow.color = Color;
+        glow.range = 2.5f;
+        glow.intensity = 2f;
+
         if (rb != null)
         {
             rb.useGravity = true;
@@ -66,6 +78,7 @@ public class PowerUp : MonoBehaviour
     private void Update()
     {
         currentYRotation += yRotationSpeed * Time.deltaTime;
+        transform.localScale = baseScale * (1f + 0.08f * Mathf.Sin(Time.time * 5f));
 
         transform.rotation = Quaternion.Euler(
             initialEuler.x,
@@ -99,6 +112,7 @@ public class PowerUp : MonoBehaviour
     private void LandPowerUp()
     {
         hasLanded = true;
+        VisualFx.Puff(transform.position, Color, 10, 0.3f, 1.5f);
 
         landingPosition = transform.position + Vector3.up * floatHeight;
 
@@ -141,6 +155,8 @@ public class PowerUp : MonoBehaviour
             AudioManager.Instance?.PlayPowerUpSFX();
 
         ApplyPowerUpEffect(player);
+        VisualFx.Puff(transform.position, Color, 24, 0.25f, 3.5f);
+        player.PlayLanding(0.25f);
 
         Destroy(gameObject);
     }
@@ -182,6 +198,22 @@ public class PowerUp : MonoBehaviour
             case PowerUpType.ChangeOpponentOrder:
                 PowerUpManager.Instance?.ChangeOpponentOrder(player.playerNumber);
                 break;
+
+            case PowerUpType.InstaCook:
+                PowerUpManager.Instance?.ActivateInstaCook(player.playerNumber);
+                break;
+
+            case PowerUpType.ReverseControls:
+                PowerUpManager.Instance?.ReverseOpponentControls(player.playerNumber);
+                break;
+
+            case PowerUpType.StationLockout:
+                PowerUpManager.Instance?.LockOpponentStation(player.playerNumber);
+                break;
+
+            case PowerUpType.CustomerRush:
+                PowerUpManager.Instance?.RushOpponentCustomers(player.playerNumber);
+                break;
         }
     }
 
@@ -201,7 +233,7 @@ public class PowerUp : MonoBehaviour
 
     private KitchenItemData GenerateRandomCompleteFood()
     {
-        int randomChoice = Random.Range(0, 3);
+        int randomChoice = Random.Range(0, 5);
 
         KitchenItemData food = new KitchenItemData();
 
@@ -222,6 +254,17 @@ public class PowerUp : MonoBehaviour
             case 2:
                 food.Set(ItemType.Plate);
                 food.plateHasChicken = true;
+                break;
+
+            case 3:
+                food.Set(ItemType.Plate);
+                food.plateHasShrimp = true;
+                break;
+
+            case 4:
+                food.Set(ItemType.Plate);
+                food.plateHasDonut = true;
+                food.donutGlaze = (DonutGlaze)Random.Range(1, 4);
                 break;
         }
 

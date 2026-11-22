@@ -47,6 +47,10 @@ public class OrderUIManager : MonoBehaviour
     public Sprite strawberryIceCreamSprite;
     public Sprite bubblegumIceCreamSprite;
     public Sprite mangoIceCreamSprite;
+    public Sprite shrimpTempuraSprite;
+    public Sprite chocolateDonutSprite;
+    public Sprite strawberryDonutSprite;
+    public Sprite galaxyDonutSprite;
 
     [Header("TMP UI")]
     public TextMeshProUGUI moneyText;
@@ -71,7 +75,12 @@ public class OrderUIManager : MonoBehaviour
     [Header("HUD")]
     [Tooltip("The round timer pulses red with this many seconds left")]
     public float timerWarningSeconds = 15f;
-    public Color goalBarColor = new Color(1f, 0.8f, 0.2f);
+    [Tooltip("Tints the fill sprite; white keeps the highlighter's own yellow")]
+    public Color goalBarColor = Color.white;
+    [Tooltip("Highlighter stroke that fills the money bar")]
+    public Sprite goalBarFillSprite;
+    public Color goalBarPaperColor = new Color(0.97f, 0.95f, 0.88f);
+    public Color goalBarInkColor = new Color(0.12f, 0.1f, 0.15f);
 
     private string lastCountdownText;
     private RectTransform goalBar;
@@ -105,24 +114,30 @@ public class OrderUIManager : MonoBehaviour
         ? Color.Lerp(Color.yellow, new Color(0.3f, 1f, 0.35f), (fill - 0.5f) * 2f)
         : Color.Lerp(new Color(1f, 0.2f, 0.15f), Color.yellow, fill * 2f);
 
-    private static RectTransform MakeBar(Transform parent, Vector2 position, Vector2 size, int siblingIndex)
+    // A strip of paper with an ink border, filled by a highlighter stroke, to match the tickets.
+    private RectTransform MakeBar(Transform parent, Vector2 position, Vector2 size, int siblingIndex)
     {
-        var back = new GameObject("Bar", typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
+        var back = new GameObject("Bar", typeof(RectTransform), typeof(Image), typeof(Outline)).GetComponent<RectTransform>();
         back.SetParent(parent, false);
         back.SetSiblingIndex(siblingIndex);
         back.anchoredPosition = position;
         back.sizeDelta = size;
         var backImage = back.GetComponent<Image>();
-        backImage.color = new Color(0f, 0f, 0f, 0.6f);
+        backImage.color = goalBarPaperColor;
         backImage.raycastTarget = false;
+        var ink = back.GetComponent<Outline>();
+        ink.effectColor = goalBarInkColor;
+        ink.effectDistance = new Vector2(3f, 3f);
 
         var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
         fill.SetParent(back, false);
         fill.anchorMin = Vector2.zero;
         fill.anchorMax = Vector2.one;
-        fill.offsetMin = new Vector2(5f, 5f);
-        fill.offsetMax = new Vector2(-5f, -5f);
-        fill.GetComponent<Image>().raycastTarget = false;
+        fill.offsetMin = new Vector2(4f, 3f);
+        fill.offsetMax = new Vector2(-4f, -3f);
+        var fillImage = fill.GetComponent<Image>();
+        fillImage.sprite = goalBarFillSprite;
+        fillImage.raycastTarget = false;
         return fill;
     }
 
@@ -382,9 +397,9 @@ public class OrderUIManager : MonoBehaviour
             if (v != null)
             {
                 if (changingPlayer1Orders == 0)
-                    UpdatePatience(new[] { v.p1Order1Image, v.p1Order2Image, v.p1Order3Image }, OrderManager.Instance.GetPlayer1OrderQueue());
+                    UpdatePatience(Imgs(v.p1Order1Image, v.p1Order2Image, v.p1Order3Image), OrderManager.Instance.GetPlayer1OrderQueue());
                 if (changingPlayer2Orders == 0)
-                    UpdatePatience(new[] { v.p2Order1Image, v.p2Order2Image, v.p2Order3Image }, OrderManager.Instance.GetPlayer2OrderQueue());
+                    UpdatePatience(Imgs(v.p2Order1Image, v.p2Order2Image, v.p2Order3Image), OrderManager.Instance.GetPlayer2OrderQueue());
             }
         }
         else
@@ -392,7 +407,7 @@ public class OrderUIManager : MonoBehaviour
             UpdateNormalDisplay(OrderManager.Instance.GetOrderQueue());
 
             if (changingOrders == 0)
-                UpdatePatience(new[] { order1Image, order2Image, order3Image }, OrderManager.Instance.GetOrderQueue());
+                UpdatePatience(Imgs(order1Image, order2Image, order3Image), OrderManager.Instance.GetOrderQueue());
         }
 
         if (GatherWorldUiRects())
@@ -493,16 +508,25 @@ public class OrderUIManager : MonoBehaviour
                 : 0f;
 
             ticket.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 18f) * 6f * urgency);
+
+            // Reddens over twice the wobble window, pulsing harder as it runs out.
+            float heat = order != null && !order.IsServed() && ticket.enabled
+                ? 1f - Mathf.Clamp01(order.timer / (patienceWobbleSeconds * 2f))
+                : 0f;
+            float pulse = 0.75f + 0.25f * Mathf.Sin(Time.time * (6f + 10f * heat));
+            ticket.color = Color.Lerp(Color.white, urgentTicketColor, heat * pulse);
         }
     }
+
+    public Color urgentTicketColor = new Color(1f, 0.55f, 0.5f);
 
     public void UpdateNormalDisplay(System.Collections.Generic.List<QueuedOrder> queue)
     {
         if (changingOrders > 0)
             return;
 
-        Image[] images = new[] { order1Image, order2Image, order3Image };
-        TextMeshProUGUI[] timerTexts = new[] { order1TimerText, order2TimerText, order3TimerText };
+        Image[] images = Imgs(order1Image, order2Image, order3Image);
+        TextMeshProUGUI[] timerTexts = Texts(order1TimerText, order2TimerText, order3TimerText);
 
         for (int i = 0; i < 3; i++)
         {
@@ -517,7 +541,7 @@ public class OrderUIManager : MonoBehaviour
                 if (timerTexts[i] != null)
                 {
                     int timerDisplayValue = Mathf.CeilToInt(Mathf.Max(0, queue[i].timer));
-                    timerTexts[i].text = timerDisplayValue.ToString();
+                    timerTexts[i].text = Num(timerDisplayValue);
                     timerTexts[i].color = queue[i].timer <= 10f ? Color.red : Color.white;
                 }
             }
@@ -539,11 +563,22 @@ public class OrderUIManager : MonoBehaviour
     public void UpdateVersusDisplay(System.Collections.Generic.List<QueuedOrder> player1Queue, System.Collections.Generic.List<QueuedOrder> player2Queue)
     {
         if (changingPlayer1Orders == 0)
-            UpdateTimerTexts(player1Queue, new[] { player1Order1TimerText, player1Order2TimerText, player1Order3TimerText });
+            UpdateTimerTexts(player1Queue, Texts(player1Order1TimerText, player1Order2TimerText, player1Order3TimerText));
 
         if (changingPlayer2Orders == 0)
-            UpdateTimerTexts(player2Queue, new[] { player2Order1TimerText, player2Order2TimerText, player2Order3TimerText });
+            UpdateTimerTexts(player2Queue, Texts(player2Order1TimerText, player2Order2TimerText, player2Order3TimerText));
     }
+
+    // Per-frame UI used to allocate fresh arrays and number strings every frame; reuse them instead.
+    private readonly Image[] imageBuffer = new Image[3];
+    private readonly TextMeshProUGUI[] textBuffer = new TextMeshProUGUI[3];
+    private static readonly string[] numberStrings = new string[1000];
+
+    private Image[] Imgs(Image a, Image b, Image c) { imageBuffer[0] = a; imageBuffer[1] = b; imageBuffer[2] = c; return imageBuffer; }
+    private TextMeshProUGUI[] Texts(TextMeshProUGUI a, TextMeshProUGUI b, TextMeshProUGUI c) { textBuffer[0] = a; textBuffer[1] = b; textBuffer[2] = c; return textBuffer; }
+
+    private static string Num(int n) =>
+        n >= 0 && n < numberStrings.Length ? numberStrings[n] ??= n.ToString() : n.ToString();
 
     private void UpdateTimerTexts(System.Collections.Generic.List<QueuedOrder> queue, TextMeshProUGUI[] timerTexts)
     {
@@ -554,7 +589,7 @@ public class OrderUIManager : MonoBehaviour
 
             if (i < queue.Count && queue[i] != null)
             {
-                timerTexts[i].text = Mathf.CeilToInt(Mathf.Max(0, queue[i].timer)).ToString();
+                timerTexts[i].text = Num(Mathf.CeilToInt(Mathf.Max(0, queue[i].timer)));
                 timerTexts[i].color = queue[i].timer <= 10f ? Color.red : Color.white;
             }
             else
@@ -647,6 +682,10 @@ public class OrderUIManager : MonoBehaviour
             OrderItemType.StrawberryIceCream => strawberryIceCreamSprite,
             OrderItemType.BubblegumIceCream => bubblegumIceCreamSprite,
             OrderItemType.MangoIceCream => mangoIceCreamSprite,
+            OrderItemType.ShrimpTempura => shrimpTempuraSprite,
+            OrderItemType.ChocolateDonut => chocolateDonutSprite,
+            OrderItemType.StrawberryDonut => strawberryDonutSprite,
+            OrderItemType.GalaxyDonut => galaxyDonutSprite,
             _ => null
         };
     }
@@ -709,7 +748,7 @@ public class OrderUIManager : MonoBehaviour
         }
 
         float progress = quota > 0f ? money / quota : 0f;
-        SetBar(goalBar, progress, progress >= 1f ? new Color(0.3f, 1f, 0.35f) : goalBarColor);
+        SetBar(goalBar, progress, progress >= 1f ? new Color(0.55f, 1f, 0.5f) : goalBarColor);
     }
 
     public void HideStatus()

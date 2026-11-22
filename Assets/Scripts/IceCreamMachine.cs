@@ -22,10 +22,8 @@ public class IceCreamMachine : BaseStation, IInteractable
     public float scoopingTime = 3f;
     public GameObject scoopingUIPanel;
 
-    [Header("Scooping Animation")]
+    [Tooltip("Anchor for the timer ring (its own sprite stays hidden)")]
     public Image scoopingUIImage;
-    public Sprite[] scoopingSprites;
-    public int animationLoops = 3;
 
     private PlayerControl currentPlayer;
     private bool isSelectingIceCream;
@@ -33,8 +31,6 @@ public class IceCreamMachine : BaseStation, IInteractable
     private int selectedIceCreamIndex;
 
     private float scoopingTimer;
-    private float animationTimer;
-    private float animationDurationPerLoop;
 
     public bool CanInteractWith(PlayerControl player)
     {
@@ -55,7 +51,7 @@ public class IceCreamMachine : BaseStation, IInteractable
             return;
 
         scoopingTimer -= Time.deltaTime * CookRate(currentPlayer);
-        UpdateScoopingAnimation();
+        SetCookRing(scoopingUIImage, 1f - scoopingTimer / scoopingTime, new Color(1f, 0.6f, 0.85f));
 
         if (scoopingTimer <= 0f)
         {
@@ -126,8 +122,6 @@ public class IceCreamMachine : BaseStation, IInteractable
             currentPlayer.emoteSelectionText.text = string.Empty;
 
         scoopingTimer = scoopingTime;
-        animationTimer = 0f;
-        animationDurationPerLoop = scoopingTime / Mathf.Max(1, animationLoops);
 
         ShowScoopingUI(true);
         Show(currentPlayer, "Scooping ice cream...");
@@ -216,22 +210,6 @@ public class IceCreamMachine : BaseStation, IInteractable
             selectedIceCreamIndex = (selectedIceCreamIndex + step + iceCreamSelectionLabels.Length) % iceCreamSelectionLabels.Length;
             UpdateIceCreamSelectionText();
         }
-    }
-
-    private void UpdateScoopingAnimation()
-    {
-        if (scoopingUIImage == null || scoopingSprites == null || scoopingSprites.Length == 0)
-            return;
-
-        animationTimer += Time.deltaTime;
-
-        float timeInLoop = animationTimer % animationDurationPerLoop;
-        float normalizedTime = timeInLoop / animationDurationPerLoop;
-
-        int frameIndex = Mathf.FloorToInt(normalizedTime * scoopingSprites.Length);
-        frameIndex = Mathf.Clamp(frameIndex, 0, scoopingSprites.Length - 1);
-
-        scoopingUIImage.sprite = scoopingSprites[frameIndex];
     }
 
     private void ShowScoopingUI(bool show)

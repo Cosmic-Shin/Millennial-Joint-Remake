@@ -22,8 +22,6 @@ public class MainMenuManager : MonoBehaviour
 
     [Header("Fade")]
     public Image blackFadeImage;
-    public float fadeInSpeed = 8f;
-    public float fadeOutSpeed = 3f;
 
     private void Awake()
     {
@@ -80,53 +78,17 @@ public class MainMenuManager : MonoBehaviour
         }
     }
 
-    public void OnPlay()
+    public void OnPlay() => PaperWipe.Play(() =>
     {
-        StartCoroutine(FadeToStartPanel());
-    }
-
-    private IEnumerator FadeToStartPanel()
-    {
-        yield return StartCoroutine(Fade(1f, fadeInSpeed));
-
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (startPanel != null) startPanel.SetActive(true);
+    });
 
-        yield return StartCoroutine(Fade(0f, fadeOutSpeed));
-    }
-
-    public void OnBack()
+    public void OnBack() => PaperWipe.Play(() =>
     {
-        StartCoroutine(FadeToMainMenu());
-    }
-
-    private IEnumerator FadeToMainMenu()
-    {
-        yield return StartCoroutine(Fade(1f, fadeInSpeed));
-
         if (startPanel != null) startPanel.SetActive(false);
         if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
-
-        yield return StartCoroutine(Fade(0f, fadeOutSpeed));
-    }
-
-    private IEnumerator Fade(float targetAlpha, float speed)
-    {
-        float start = blackFadeImage.color.a;
-        float t = 0f;
-
-        while (t < 1f)
-        {
-            t += Time.unscaledDeltaTime * speed;
-
-            float a = Mathf.Lerp(start, targetAlpha, t);
-            SetFade(a);
-
-            yield return null;
-        }
-
-        SetFade(targetAlpha);
-    }
+    });
 
     private void SetFade(float alpha)
     {

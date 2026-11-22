@@ -17,12 +17,6 @@ public class GameModeSelector : MonoBehaviour
     public TMP_Text speedModeDesc;
     public TMP_Text versusModeDesc;
 
-    [Header("Best Star Rating per Mode")]
-    public Image[] timeBestStars;
-    public Image[] speedBestStars;
-    public Color bestStarOnColor = new Color(1f, 0.85f, 0.2f);
-    public Color bestStarOffColor = new Color(1f, 1f, 1f, 0.25f);
-
     [Header("Choose Control Panel")]
     public GameObject controlPanel;
     public TMP_Text p1DeviceText;
@@ -73,9 +67,6 @@ public class GameModeSelector : MonoBehaviour
 
         FillModeDescriptions();
 
-        ShowBestStars(timeBestStars, ScoreManager.GetBestStars(OrderManager.GameMode.TIME));
-        ShowBestStars(speedBestStars, ScoreManager.GetBestStars(OrderManager.GameMode.SPEED));
-
         if (p1PrevBut != null) p1PrevBut.onClick.AddListener(() => CycleDevice(0, -1));
         if (p1NextBut != null) p1NextBut.onClick.AddListener(() => CycleDevice(0, 1));
         if (p2PrevBut != null) p2PrevBut.onClick.AddListener(() => CycleDevice(1, -1));
@@ -112,16 +103,6 @@ public class GameModeSelector : MonoBehaviour
 
         if (versusModeDesc != null)
             versusModeDesc.text = $"{Duration(om.versusModeDuration)} head to head. Most money wins!";
-    }
-
-    private void ShowBestStars(Image[] stars, int earned)
-    {
-        if (stars == null)
-            return;
-
-        for (int i = 0; i < stars.Length; i++)
-            if (stars[i] != null)
-                stars[i].color = i < earned ? bestStarOnColor : bestStarOffColor;
     }
 
     private static string Duration(float seconds)
@@ -211,8 +192,10 @@ public class GameModeSelector : MonoBehaviour
 
         if (joystickStatusText != null)
         {
-            string detected = found == 0 ? "No joystick detected" : $"Joysticks detected: {found}";
-            joystickStatusText.text = enough ? detected : $"{detected} - connect {needed - found} more to start";
+            // Kept short so it fits the panel on one line; the red colour already says "can't start yet".
+            joystickStatusText.text = found == 0 ? "No joystick detected"
+                : enough ? $"Joysticks detected: {found}"
+                : $"Need {needed - found} more joystick";
             joystickStatusText.color = enough ? new Color32(0x2A, 0x2A, 0x35, 255) : new Color32(0xD6, 0x33, 0x6C, 255);
         }
 
@@ -265,12 +248,15 @@ public class GameModeSelector : MonoBehaviour
 
         KeybindManager.Instance?.RefreshAllKeybindDisplay();
 
-        controlPanel.SetActive(false);
+        PaperWipe.Play(() =>
+        {
+            controlPanel.SetActive(false);
 
-        if (SelectFlow.Instance != null && !retrying)
-            SelectFlow.Instance.Open(() => StartMode(pendingMode), () => controlPanel.SetActive(true));
-        else
-            StartMode(pendingMode);
+            if (SelectFlow.Instance != null && !retrying)
+                SelectFlow.Instance.Open(() => PaperWipe.Play(() => StartMode(pendingMode)), () => controlPanel.SetActive(true));
+            else
+                StartMode(pendingMode);
+        });
     }
 
     private bool retrying;

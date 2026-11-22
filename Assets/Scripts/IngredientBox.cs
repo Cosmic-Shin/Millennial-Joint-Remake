@@ -14,7 +14,9 @@ public class IngredientBox : BaseStation, IInteractable
         ItemType.ChickenRaw,
         ItemType.HamRaw,
         ItemType.DogBun,
-        ItemType.HotDogRaw
+        ItemType.HotDogRaw,
+        ItemType.ShrimpRaw,
+        ItemType.DonutRaw
     };
 
     [Header("Smart Suggestion")]
@@ -25,7 +27,8 @@ public class IngredientBox : BaseStation, IInteractable
     private static readonly (string name, ItemType[] items)[] Categories =
     {
         ("Breads", new[] { ItemType.Bun, ItemType.Bread, ItemType.DogBun }),
-        ("Meats", new[] { ItemType.PattyRaw, ItemType.ChickenRaw, ItemType.HamRaw, ItemType.HotDogRaw }),
+        ("Meats", new[] { ItemType.PattyRaw, ItemType.ChickenRaw, ItemType.HamRaw, ItemType.HotDogRaw, ItemType.ShrimpRaw }),
+        ("Sweets", new[] { ItemType.DonutRaw }),
         ("Produce", new[] { ItemType.VeggieRaw, ItemType.FrozenFries })
     };
 
@@ -186,6 +189,8 @@ public class IngredientBox : BaseStation, IInteractable
             case ItemType.HamRaw: return "Ham & Cheese";
             case ItemType.DogBun: return "Dog Bun";
             case ItemType.HotDogRaw: return "Raw Hotdog";
+            case ItemType.ShrimpRaw: return "Raw Shrimp";
+            case ItemType.DonutRaw: return "Donut Dough";
             default: return type.ToString();
         }
     }
@@ -305,6 +310,10 @@ public class IngredientBox : BaseStation, IInteractable
             case OrderItemType.ChiliDog: return ItemType.DogBun;
             case OrderItemType.Fries: return ItemType.FrozenFries;
             case OrderItemType.FriedChicken: return ItemType.ChickenRaw;
+            case OrderItemType.ShrimpTempura: return ItemType.ShrimpRaw;
+            case OrderItemType.ChocolateDonut:
+            case OrderItemType.StrawberryDonut:
+            case OrderItemType.GalaxyDonut: return ItemType.DonutRaw;
             default: return null;
         }
     }

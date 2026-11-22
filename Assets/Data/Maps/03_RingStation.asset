@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapDefinition
   displayName: Ring Station
   layoutName: RingStation
-  preview: {fileID: 0}
+  preview: {fileID: 21300000, guid: 7d1c17e632745d14db679a0c1d4c278e, type: 3}

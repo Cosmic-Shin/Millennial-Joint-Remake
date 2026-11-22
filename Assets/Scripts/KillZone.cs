@@ -20,6 +20,8 @@ public class KillZone : MonoBehaviour
         body.linearVelocity = Vector3.zero;
         body.position = spawn.position;
         player.transform.SetPositionAndRotation(spawn.position, spawn.rotation);
-        VisualFx.Puff(spawn.position + Vector3.up * 0.2f, Color.white, 10, 0.4f);
+        VisualFx.Puff(spawn.position + Vector3.up * 0.2f, Color.white, 16, 0.45f, 2f);
+        VisualFx.Puff(spawn.position + Vector3.up * 0.8f, new Color(2.2f, 1.8f, 0.6f), 10, 0.15f, 3f); // sparkle as they pop back in
+        player.PlayLanding(0.4f);
     }
 }

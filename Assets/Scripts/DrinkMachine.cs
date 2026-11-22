@@ -22,10 +22,8 @@ public class DrinkMachine : BaseStation, IInteractable
     public float pouringTime = 3f;
     public GameObject pouringUIPanel;
 
-    [Header("Pouring Animation")]
+    [Tooltip("Anchor for the timer ring (its own sprite stays hidden)")]
     public Image pouringUIImage;
-    public Sprite[] pouringSprites;
-    public int animationLoops = 3;
 
     private PlayerControl currentPlayer;
     private bool isSelectingDrink;
@@ -33,8 +31,6 @@ public class DrinkMachine : BaseStation, IInteractable
     private int selectedDrinkIndex;
 
     private float pouringTimer;
-    private float animationTimer;
-    private float animationDurationPerLoop;
 
     public bool CanInteractWith(PlayerControl player)
     {
@@ -58,7 +54,7 @@ public class DrinkMachine : BaseStation, IInteractable
             return;
 
         pouringTimer -= Time.deltaTime * CookRate(currentPlayer);
-        UpdatePouringAnimation();
+        SetCookRing(pouringUIImage, 1f - pouringTimer / pouringTime, new Color(0.4f, 0.8f, 1f));
 
         if (pouringTimer <= 0f)
         {
@@ -135,8 +131,6 @@ public class DrinkMachine : BaseStation, IInteractable
             currentPlayer.emoteSelectionText.text = string.Empty;
 
         pouringTimer = pouringTime;
-        animationTimer = 0f;
-        animationDurationPerLoop = pouringTime / Mathf.Max(1, animationLoops);
 
         ShowPouringUI(true);
         Show(currentPlayer, "Pouring drink...");
@@ -229,22 +223,6 @@ public class DrinkMachine : BaseStation, IInteractable
             selectedDrinkIndex = (selectedDrinkIndex + step + drinkSelectionLabels.Length) % drinkSelectionLabels.Length;
             UpdateDrinkSelectionText();
         }
-    }
-
-    private void UpdatePouringAnimation()
-    {
-        if (pouringUIImage == null || pouringSprites == null || pouringSprites.Length == 0)
-            return;
-
-        animationTimer += Time.deltaTime;
-
-        float timeInLoop = animationTimer % animationDurationPerLoop;
-        float normalizedTime = timeInLoop / animationDurationPerLoop;
-
-        int frameIndex = Mathf.FloorToInt(normalizedTime * pouringSprites.Length);
-        frameIndex = Mathf.Clamp(frameIndex, 0, pouringSprites.Length - 1);
-
-        pouringUIImage.sprite = pouringSprites[frameIndex];
     }
 
     private void ShowPouringUI(bool show)

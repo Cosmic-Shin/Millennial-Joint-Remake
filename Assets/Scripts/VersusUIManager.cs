@@ -60,6 +60,10 @@ public class VersusUIManager : MonoBehaviour
     public Sprite strawberryIceCreamSprite;
     public Sprite bubblegumIceCreamSprite;
     public Sprite mangoIceCreamSprite;
+    public Sprite shrimpTempuraSprite;
+    public Sprite chocolateDonutSprite;
+    public Sprite strawberryDonutSprite;
+    public Sprite galaxyDonutSprite;
 
     private void Awake()
     {
@@ -196,6 +200,10 @@ public class VersusUIManager : MonoBehaviour
             OrderItemType.StrawberryIceCream => strawberryIceCreamSprite,
             OrderItemType.BubblegumIceCream => bubblegumIceCreamSprite,
             OrderItemType.MangoIceCream => mangoIceCreamSprite,
+            OrderItemType.ShrimpTempura => shrimpTempuraSprite,
+            OrderItemType.ChocolateDonut => chocolateDonutSprite,
+            OrderItemType.StrawberryDonut => strawberryDonutSprite,
+            OrderItemType.GalaxyDonut => galaxyDonutSprite,
             _ => null
         };
     }
@@ -264,13 +272,13 @@ public class VersusUIManager : MonoBehaviour
         Time.timeScale = 1f;
         GameModeSelector.retryMode = OrderManager.Instance?.GetCurrentMode();
         MainMenuManager.skipMainMenuOnLoad = true;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        PaperWipe.ReloadScene();
     }
 
     private void Menu()
     {
         Time.timeScale = 1f;
         MainMenuManager.skipMainMenuOnLoad = true;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        PaperWipe.ReloadScene();
     }
 }

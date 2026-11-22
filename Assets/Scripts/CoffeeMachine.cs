@@ -7,24 +7,19 @@ public class CoffeeMachine : BaseStation, IInteractable
     public float pouringTime = 3f;
     public GameObject pouringUIPanel;
 
-    [Header("Pouring Animation")]
+    [Tooltip("Anchor for the timer ring (its own sprite stays hidden)")]
     public Image pouringUIImage;
-    public Sprite[] pouringSprites;
-    public int animationLoops = 3;
 
     private bool isPouring = false;
     private float pouringTimer = 0f;
     private PlayerControl currentPlayer;
-
-    private float animationTimer = 0f;
-    private float animationDurationPerLoop;
 
     private void Update()
     {
         if (isPouring)
         {
             pouringTimer -= Time.deltaTime * CookRate(currentPlayer);
-            UpdatePouringAnimation();
+            SetCookRing(pouringUIImage, 1f - pouringTimer / pouringTime, new Color(0.85f, 0.6f, 0.35f));
 
             if (pouringTimer <= 0f)
             {
@@ -78,28 +73,9 @@ public class CoffeeMachine : BaseStation, IInteractable
 
         pouringTimer = pouringTime;
 
-        animationTimer = 0f;
-        animationDurationPerLoop = pouringTime / Mathf.Max(1, animationLoops);
-
         ShowPouringUI(true);
         Show(player, "Pouring coffee...");
         AudioManager.Instance?.PlayStartDrinkCoffeeSFX();
-    }
-
-    private void UpdatePouringAnimation()
-    {
-        if (pouringUIImage == null || pouringSprites == null || pouringSprites.Length == 0)
-            return;
-
-        animationTimer += Time.deltaTime;
-
-        float timeInLoop = animationTimer % animationDurationPerLoop;
-        float normalizedTime = timeInLoop / animationDurationPerLoop;
-
-        int frameIndex = Mathf.FloorToInt(normalizedTime * pouringSprites.Length);
-        frameIndex = Mathf.Clamp(frameIndex, 0, pouringSprites.Length - 1);
-
-        pouringUIImage.sprite = pouringSprites[frameIndex];
     }
 
     private void ShowPouringUI(bool show)

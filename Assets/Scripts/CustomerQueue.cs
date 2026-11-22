@@ -518,18 +518,24 @@ public class CustomerQueue : MonoBehaviour
         if (urgency > 0f)
             bob += Mathf.Abs(Mathf.Sin(c.animTime * (8f + urgency * 10f))) * 0.05f * urgency;
 
-        float hop = 0f;
+        float hop = 0f, squash = 0f;
         if (c.hopTime > 0f)
         {
             c.hopTime -= dt;
             hop = Mathf.Abs(Mathf.Sin(c.animTime * 11f)) * 0.35f;
+            squash = Mathf.Cos(c.animTime * 22f) * 0.14f; // squashed on landing, stretched at the top
         }
+
+        // Nearly out of patience: rock side to side, fuming.
+        if (c.phase == Phase.Waiting && urgency > 0.65f)
+            tilt += Mathf.Sin(c.animTime * 16f) * 9f * urgency;
 
         float shake = c.angry ? Mathf.Sin(c.animTime * 45f) * 0.05f : 0f;
         float slump = c.speedScale > 0f && c.speedScale < 1f ? -10f : 0f;
 
         c.body.localPosition = new Vector3(shake, bob + hop, 0f);
         c.body.localRotation = Quaternion.Euler(slump, 0f, tilt);
+        c.body.localScale = new Vector3(1f + squash * 0.5f, 1f - squash, 1f + squash * 0.5f);
 
         TickBubble(c, dt);
         TickPatience(c);
@@ -656,6 +662,7 @@ public class CustomerQueue : MonoBehaviour
             go.transform.localScale = Vector3.one * alienScale;
             foreach (Renderer r in go.GetComponentsInChildren<Renderer>(true))
                 r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            PlayerOutline.AddTo(go);
             c.aliens[pick] = go.AddComponent<AlienCustomerVisual>();
             c.aliens[pick].Init(alienPrefabs[pick].name.Replace("Customer_", ""),
                 alienAnimators != null && pick < alienAnimators.Length ? alienAnimators[pick] : null);

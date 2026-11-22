@@ -34,7 +34,11 @@ public class QueuedOrder
             OrderItemType.ChiliDog,
             OrderItemType.StrawberryIceCream,
             OrderItemType.BubblegumIceCream,
-            OrderItemType.MangoIceCream
+            OrderItemType.MangoIceCream,
+            OrderItemType.ShrimpTempura,
+            OrderItemType.ChocolateDonut,
+            OrderItemType.StrawberryDonut,
+            OrderItemType.GalaxyDonut
         };
 
         return types[UnityEngine.Random.Range(0, types.Length)];

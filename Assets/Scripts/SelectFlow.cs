@@ -42,6 +42,8 @@ public class SelectFlow : MonoBehaviour
     public TMP_Text[] mapCardLabels;
     public TMP_Text mapStatusText;
     public int mapColumns = 5;
+    [Tooltip("Picture on the Random card (a shadowed map)")]
+    public Sprite randomPreview;
 
     [Header("Back buttons (mouse)")]
     public Button[] backButtons;
@@ -50,6 +52,9 @@ public class SelectFlow : MonoBehaviour
     public Color[] playerColors = { new Color(1f, 0.38f, 0.32f), new Color(0.38f, 0.62f, 1f) };
     public Color highlightColor = new Color(1f, 0.85f, 0.25f);
     public Color cardColor = new Color(1f, 1f, 1f, 0.15f);
+    public Color dimmedPictureColor = new Color(0.6f, 0.6f, 0.6f);
+    public Color bestStarOnColor = new Color(0.91f, 0.643f, 0f);
+    public Color bestStarOffColor = new Color(0.78f, 0.76f, 0.706f);
 
     private enum Step { None, Character, Cosmetics, Map }
 
@@ -131,6 +136,8 @@ public class SelectFlow : MonoBehaviour
     {
         if (step == Step.None || Time.frameCount == openedFrame)
             return;
+
+        AnimateMapCards();
 
         // Keep UI selection empty so Enter (P2's interact) doesn't click a button.
         if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
@@ -372,13 +379,114 @@ public class SelectFlow : MonoBehaviour
                     continue;
 
                 MapDefinition map = c < maps.Length ? maps[c] : null;
-                mapCards[c].sprite = map != null ? map.preview : null;
-                mapCards[c].color = c == mapIndex ? highlightColor : map != null && map.preview != null ? Color.white : cardColor;
+                mapCards[c].sprite = map != null ? map.preview : randomPreview;
+                bool picture = mapCards[c].sprite != null;
+                Transform question = mapCards[c].transform.Find("Question");
+                if (question != null)
+                    question.gameObject.SetActive(map == null);
+                bool selected = c == mapIndex;
+                // A yellow tint would muddy the picture, so picture cards dim when not selected instead.
+                mapCards[c].color = picture ? (selected ? Color.white : dimmedPictureColor) : selected ? highlightColor : cardColor;
                 mapCardLabels[c].text = map != null ? map.displayName : "Random";
+                ShowBestStars(mapCards[c].transform.Find("Best Stars"), map);
             }
             string p1 = KeyName(players[0], true), p2 = players.Length > 1 ? KeyName(players[1], true) : p1;
             mapStatusText.text = $"Either player: move to browse, {p1} / {p2} to start";
         }
+    }
+
+    [Tooltip("Glowing border colour around the selected map card")]
+    public Color mapGlowColor = new Color(1f, 0.6f, 0.05f);
+
+    // The selected card grows, breathes and wears a thick glowing border, so it's obvious which map is picked.
+    private void AnimateMapCards()
+    {
+        if (step != Step.Map || mapCards == null)
+            return;
+
+        float k = 1f - Mathf.Exp(-14f * Time.unscaledDeltaTime);
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5f);
+
+        for (int c = 0; c < mapCards.Length; c++)
+        {
+            if (mapCards[c] == null || !mapCards[c].gameObject.activeSelf)
+                continue;
+
+            bool selected = c == mapIndex;
+            Transform t = mapCards[c].transform;
+            float target = selected ? 1.15f + 0.02f * pulse : 0.95f;
+            t.localScale = Vector3.Lerp(t.localScale, Vector3.one * target, k);
+
+            Image glow = MapGlow(c);
+            Color col = mapGlowColor;
+            col.a = Mathf.Lerp(glow.color.a, selected ? 0.85f + 0.15f * pulse : 0f, k);
+            glow.color = col;
+
+            // Glow sits behind the card (sibling just before it) and tracks its rect and scale.
+            RectTransform g = glow.rectTransform, card = (RectTransform)t;
+            g.anchorMin = card.anchorMin; g.anchorMax = card.anchorMax; g.pivot = card.pivot;
+            g.anchoredPosition = card.anchoredPosition;
+            g.sizeDelta = card.sizeDelta + Vector2.one * 130f;
+            g.localScale = t.localScale;
+            if (g.GetSiblingIndex() != t.GetSiblingIndex() - 1)
+                g.SetSiblingIndex(t.GetSiblingIndex());
+        }
+    }
+
+    private Image[] mapGlows;
+    private static Sprite glowSprite;
+
+    private Image MapGlow(int c)
+    {
+        if (mapGlows == null || mapGlows.Length != mapCards.Length)
+            mapGlows = new Image[mapCards.Length];
+        if (mapGlows[c] != null)
+            return mapGlows[c];
+
+        if (glowSprite == null)
+        {
+            // Soft-edged rounded rect, 9-sliced so it stretches to any card size.
+            const int n = 64, edge = 28;
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float dx = Mathf.Max(0f, edge - Mathf.Min(x, n - 1 - x)), dy = Mathf.Max(0f, edge - Mathf.Min(y, n - 1 - y));
+                    float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy) / edge);
+                    px[y * n + x] = new Color32(255, 255, 255, (byte)(Mathf.Sqrt(a) * 255));
+                }
+            tex.SetPixels32(px);
+            tex.Apply();
+            glowSprite = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(edge, edge, edge, edge));
+        }
+
+        var go = new GameObject("Map Glow", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        go.GetComponent<LayoutElement>().ignoreLayout = true;
+        go.transform.SetParent(mapCards[c].transform.parent, false);
+        Image img = go.GetComponent<Image>();
+        img.sprite = glowSprite;
+        img.type = Image.Type.Sliced;
+        img.pixelsPerUnitMultiplier = 0.35f; // wider soft edge
+        img.raycastTarget = false;
+        img.color = new Color(mapGlowColor.r, mapGlowColor.g, mapGlowColor.b, 0f);
+        return mapGlows[c] = img;
+    }
+
+    // Best rating on this map for the chosen mode; Versus and Random have none.
+    private void ShowBestStars(Transform stars, MapDefinition map)
+    {
+        if (stars == null)
+            return;
+        OrderManager.GameMode mode = GameModeSelector.Instance != null ? GameModeSelector.Instance.PendingMode : OrderManager.GameMode.TIME;
+        bool show = map != null && mode != OrderManager.GameMode.VERSUS;
+        stars.gameObject.SetActive(show);
+        if (!show)
+            return;
+        int earned = ScoreManager.GetBestStars(mode, map.layoutName);
+        for (int i = 0; i < stars.childCount; i++)
+            if (stars.GetChild(i).TryGetComponent(out Image star))
+                star.color = i < earned ? bestStarOnColor : bestStarOffColor;
     }
 
     private string CosmeticList(int i)

@@ -7,7 +7,8 @@ public class CounterTop : BaseStation, IInteractable
     private enum Contents
     {
         None = 0, Bun = 1, Patty = 2, Veggie = 4, Bread = 8, Ham = 16,
-        Fries = 32, Chicken = 64, DogBun = 128, Hotdog = 256, Chili = 512
+        Fries = 32, Chicken = 64, DogBun = 128, Hotdog = 256, Chili = 512,
+        Shrimp = 1024, Donut = 2048
     }
 
     private static Contents GetContents(KitchenItemData plate)
@@ -23,6 +24,8 @@ public class CounterTop : BaseStation, IInteractable
         if (plate.plateHasDogBun) c |= Contents.DogBun;
         if (plate.plateHasHotdog) c |= Contents.Hotdog;
         if (plate.plateHasChili) c |= Contents.Chili;
+        if (plate.plateHasShrimp) c |= Contents.Shrimp;
+        if (plate.plateHasDonut) c |= Contents.Donut;
         return c;
     }
 
@@ -41,6 +44,8 @@ public class CounterTop : BaseStation, IInteractable
             ItemType.ChickenCooked => c == Contents.None,
             ItemType.DogBun => c == Contents.None,
             ItemType.HotDogCooked => c == Contents.DogBun,
+            ItemType.ShrimpCooked => c == Contents.None,
+            ItemType.DonutCooked => c == Contents.None,
             _ => false
         };
     }
@@ -101,7 +106,8 @@ public class CounterTop : BaseStation, IInteractable
 
         if (!CanAdd(storedItem, ingredient))
         {
-            Show(player, ingredient == ItemType.PattyRaw || ingredient == ItemType.HotDogRaw
+            Show(player, ingredient == ItemType.PattyRaw || ingredient == ItemType.HotDogRaw ||
+                         ingredient == ItemType.ShrimpRaw || ingredient == ItemType.DonutRaw
                 ? "Cook it first"
                 : "Wrong item for this plate");
             return;
@@ -118,6 +124,8 @@ public class CounterTop : BaseStation, IInteractable
             case ItemType.ChickenCooked: storedItem.plateHasChicken = true; break;
             case ItemType.DogBun: storedItem.plateHasDogBun = true; break;
             case ItemType.HotDogCooked: storedItem.plateHasHotdog = true; break;
+            case ItemType.ShrimpCooked: storedItem.plateHasShrimp = true; break;
+            case ItemType.DonutCooked: storedItem.plateHasDonut = true; break;
         }
 
         player.heldItem.Clear();

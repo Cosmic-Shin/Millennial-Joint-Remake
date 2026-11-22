@@ -39,9 +39,39 @@ public class CosmeticApplier : MonoBehaviour
             }
 
         foreach (CosmeticDefinition c in worn)
+        {
             visible.ExceptWith(c.hides);
+            if (c.lift != 0f && parts.TryGetValue(c.partSuffix, out GameObject part))
+                Lift(part, c.lift);
+        }
 
         foreach (var pair in parts)
             pair.Value.SetActive(visible.Contains(pair.Key));
+    }
+
+    // Parts are skinned to the head bone, so moving the transform does nothing: shift the mesh itself
+    // (in bind-pose space, so it still follows the head). One shifted copy per source mesh, shared by all chefs.
+    private static readonly Dictionary<Mesh, Mesh> liftedMeshes = new Dictionary<Mesh, Mesh>();
+
+    private void Lift(GameObject part, float lift)
+    {
+        var smr = part.GetComponent<SkinnedMeshRenderer>();
+        if (smr == null || smr.sharedMesh == null || liftedMeshes.ContainsValue(smr.sharedMesh))
+            return;
+
+        if (!liftedMeshes.TryGetValue(smr.sharedMesh, out Mesh lifted))
+        {
+            lifted = Instantiate(smr.sharedMesh);
+            lifted.name = smr.sharedMesh.name + "_Lifted";
+            Vector3 up = smr.transform.InverseTransformVector(transform.up) * lift;
+            Vector3[] v = lifted.vertices;
+            for (int i = 0; i < v.Length; i++)
+                v[i] += up;
+            lifted.vertices = v;
+            lifted.RecalculateBounds();
+            liftedMeshes[smr.sharedMesh] = lifted;
+        }
+
+        smr.sharedMesh = lifted;
     }
 }

@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapDefinition
   displayName: Main Kitchen
   layoutName: Main
-  preview: {fileID: 0}
+  preview: {fileID: 21300000, guid: f1c692ff84f3c5d4db492043539878fd, type: 3}

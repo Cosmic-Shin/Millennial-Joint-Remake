@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapDefinition
   displayName: Shuttle Hop
   layoutName: ShuttleHop
-  preview: {fileID: 0}
+  preview: {fileID: 21300000, guid: 31c65029535470d4c9e1d6ce431563e1, type: 3}

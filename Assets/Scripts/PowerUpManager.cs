@@ -8,7 +8,11 @@ public enum PowerUpType
     RandomFood,
     SlowTime,
     FreezeOpponent,
-    ChangeOpponentOrder
+    ChangeOpponentOrder,
+    InstaCook,
+    ReverseControls,
+    StationLockout,
+    CustomerRush
 }
 
 public class PowerUpManager : MonoBehaviour
@@ -20,6 +24,14 @@ public class PowerUpManager : MonoBehaviour
 
     [Header("Versus Sabotage")]
     public float freezeDuration = 3f;
+    public float reverseDuration = 5f;
+    public float lockoutDuration = 10f;
+    public float rushDuration = 15f;
+    [Tooltip("How much faster the opponent's order timers run during Customer Rush")]
+    public float rushMultiplier = 1.5f;
+
+    [Header("Insta Cook")]
+    public float instaCookDuration = 30f;
 
     [Header("Power-Up UI")]
     [SerializeField] private TMP_Text powerUpText;
@@ -37,6 +49,8 @@ public class PowerUpManager : MonoBehaviour
     private readonly float[] unlimitedStaminaTimers = new float[3];
     private readonly float[] halvedCookingTimers = new float[3];
     private readonly float[] slowTimeTimers = new float[3];
+    private readonly float[] instaCookTimers = new float[3];
+    private readonly float[] rushTimers = new float[3];
     private float messageTimer;
 
     private void Awake()
@@ -71,6 +85,8 @@ public class PowerUpManager : MonoBehaviour
             unlimitedStaminaTimers[i] -= Time.deltaTime;
             halvedCookingTimers[i] -= Time.deltaTime;
             slowTimeTimers[i] -= Time.deltaTime;
+            instaCookTimers[i] -= Time.deltaTime;
+            rushTimers[i] -= Time.deltaTime;
         }
 
         if (messageTimer > 0f)
@@ -87,16 +103,16 @@ public class PowerUpManager : MonoBehaviour
     private static bool IsVersus =>
         OrderManager.Instance != null && OrderManager.Instance.GetCurrentMode() == OrderManager.GameMode.VERSUS;
 
-    private void Activate(float[] timers, int playerNumber, string message)
+    private void Activate(float[] timers, int playerNumber, string message, float duration = -1f)
     {
         if (IsVersus)
         {
-            timers[Slot(playerNumber)] = effectDuration;
+            timers[Slot(playerNumber)] = duration > 0f ? duration : effectDuration;
             ShowPowerUpMessage($"P{Slot(playerNumber)}: {message}", playerNumber);
         }
         else
         {
-            timers[1] = timers[2] = effectDuration;
+            timers[1] = timers[2] = duration > 0f ? duration : effectDuration;
             ShowPowerUpMessage(message, playerNumber);
         }
     }
@@ -104,11 +120,56 @@ public class PowerUpManager : MonoBehaviour
     public void ActivateUnlimitedStamina(int playerNumber) => Activate(unlimitedStaminaTimers, playerNumber, "Unli Stamina");
     public void ActivateHalvedCookingTime(int playerNumber) => Activate(halvedCookingTimers, playerNumber, "Cook Time Halved");
     public void ActivateSlowTime(int playerNumber) => Activate(slowTimeTimers, playerNumber, "Slow Time");
+    public void ActivateInstaCook(int playerNumber) => Activate(instaCookTimers, playerNumber, "Insta Cook!", instaCookDuration);
 
     public static bool IsSabotage(PowerUpType type) =>
-        type == PowerUpType.FreezeOpponent || type == PowerUpType.ChangeOpponentOrder;
+        type == PowerUpType.FreezeOpponent || type == PowerUpType.ChangeOpponentOrder ||
+        type == PowerUpType.ReverseControls || type == PowerUpType.StationLockout || type == PowerUpType.CustomerRush;
 
     private static int Opponent(int playerNumber) => Slot(playerNumber) == 1 ? 2 : 1;
+
+    private static PlayerControl FindPlayer(int playerNumber) =>
+        System.Array.Find(FindObjectsByType<PlayerControl>(FindObjectsSortMode.None), p => p.playerNumber == playerNumber);
+
+    public void ReverseOpponentControls(int playerNumber)
+    {
+        FindPlayer(Opponent(playerNumber))?.ReverseControls(reverseDuration);
+        ShowPowerUpMessage($"P{Slot(playerNumber)} flipped P{Opponent(playerNumber)}'s controls!", playerNumber);
+    }
+
+    public void LockOpponentStation(int playerNumber)
+    {
+        PlayerControl user = FindPlayer(Slot(playerNumber));
+        PlayerControl opponent = FindPlayer(Opponent(playerNumber));
+        if (opponent == null)
+            return;
+
+        // "Their side" = stations nearer the opponent than the picker. Plain counters and the
+        // serving window are skipped: one is pointless to lock, the other too brutal.
+        var candidates = new System.Collections.Generic.List<BaseStation>();
+        foreach (BaseStation s in FindObjectsByType<BaseStation>(FindObjectsSortMode.None))
+        {
+            if (s is CounterTop || s is ServingCounter || s.IsLocked)
+                continue;
+            Vector3 p = s.transform.position;
+            if (user == null || (p - opponent.transform.position).sqrMagnitude < (p - user.transform.position).sqrMagnitude)
+                candidates.Add(s);
+        }
+
+        if (candidates.Count == 0)
+            return;
+
+        candidates[Random.Range(0, candidates.Count)].Lock(lockoutDuration);
+        ShowPowerUpMessage($"P{Slot(playerNumber)} locked a P{Opponent(playerNumber)} station!", playerNumber);
+    }
+
+    public void RushOpponentCustomers(int playerNumber)
+    {
+        rushTimers[Opponent(playerNumber)] = rushDuration;
+        ShowPowerUpMessage($"P{Slot(playerNumber)}: Customer Rush on P{Opponent(playerNumber)}!", playerNumber);
+    }
+
+    public float GetRushMultiplier(int playerNumber) => rushTimers[Slot(playerNumber)] > 0f ? rushMultiplier : 1f;
 
     public void FreezeOpponent(int playerNumber)
     {
@@ -135,9 +196,13 @@ public class PowerUpManager : MonoBehaviour
 
     public bool HasUnlimitedStamina(int playerNumber) => unlimitedStaminaTimers[Slot(playerNumber)] > 0f;
 
+    public bool HasInstaCook(PlayerControl user) => user != null && instaCookTimers[Slot(user.playerNumber)] > 0f;
+
     public float GetCookingTimeMultiplier(PlayerControl user)
     {
-        return user != null && halvedCookingTimers[Slot(user.playerNumber)] > 0f ? 0.5f : 1f;
+        if (user == null) return 1f;
+        if (instaCookTimers[Slot(user.playerNumber)] > 0f) return 0.0001f; // finishes on the next frame
+        return halvedCookingTimers[Slot(user.playerNumber)] > 0f ? 0.5f : 1f;
     }
 
     public float GetSlowTimeMultiplier(int playerNumber)

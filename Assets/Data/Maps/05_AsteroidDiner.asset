@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapDefinition
   displayName: Asteroid Diner
   layoutName: AsteroidDiner
-  preview: {fileID: 0}
+  preview: {fileID: 21300000, guid: 6955517a97bd4164495225b1209733c1, type: 3}

@@ -117,6 +117,16 @@ public class PlayerControl : MonoBehaviour
     public float maximumThrowHoldTime = 3f;
     public float throwUpwardBoost = 1.5f;
     public float pickupRadius = 1.5f;
+    [Tooltip("How strongly targeting prefers stations in front of the chef (metres of distance forgiven)")]
+    public float facingBias = 0.6f;
+
+    // Distance minus a bonus for being in front: a station ahead beats a slightly nearer one behind.
+    private float FacingScore(Vector3 point)
+    {
+        Vector3 to = Vector3.ProjectOnPlane(point - transform.position, Vector3.up);
+        float facing = to.sqrMagnitude > 0.0001f ? Vector3.Dot(transform.forward, to.normalized) : 1f;
+        return to.magnitude - facingBias * facing;
+    }
     public float droppedItemLifetime = 30f;
 
     private Rigidbody rb;
@@ -145,6 +155,7 @@ public class PlayerControl : MonoBehaviour
     public IngredientBox currentIngredientBox;
     public DrinkMachine currentDrinkMachine;
     public IceCreamMachine currentIceCreamMachine;
+    public DonutGlazeStation currentGlazeStation;
 
     [Header("Joystick Mapping")]
     [FormerlySerializedAs("p2MovementAxis")] public ControllerAxisSource padMovementAxis = ControllerAxisSource.LSB;
@@ -289,6 +300,7 @@ public class PlayerControl : MonoBehaviour
         {
             modelBaseScale = animator.transform.localScale;
             modelBaseRotation = animator.transform.localRotation;
+            modelBasePosition = animator.transform.localPosition;
         }
 
         lastYaw = transform.eulerAngles.y;
@@ -351,7 +363,13 @@ public class PlayerControl : MonoBehaviour
         back = IsMoveDownHeld();
         right = IsMoveRightHeld();
 
-        if (!IsMovementLocked())
+        if (!IsMovementLocked() && UsesJoystick)
+        {
+            // Analog stick: full 360° steering, gentle tilt = slower walk.
+            Vector3 stick = new Vector3(PadAxis(true), 0f, PadAxis(false));
+            direction = stick.magnitude > 0.2f ? Vector3.ClampMagnitude(stick, 1f) : Vector3.zero;
+        }
+        else if (!IsMovementLocked())
         {
             direction = new Vector3(
                 (right ? 1 : 0) - (left ? 1 : 0),
@@ -364,8 +382,22 @@ public class PlayerControl : MonoBehaviour
             direction = Vector3.zero;
         }
 
+        if (reversedTimer > 0f)
+        {
+            reversedTimer -= Time.deltaTime;
+            direction = -direction;
+
+            // Pulsing purple while reversed, so both players can see why this chef is stumbling.
+            if (!IsFrozen && nopeTimer <= 0f)
+            {
+                if (reversedTimer > 0f)
+                    VisualFx.Tint(gameObject, reversedTint, 0.35f + 0.15f * Mathf.Sin(Time.time * 8f));
+                else
+                    VisualFx.ClearTint(gameObject);
+            }
+        }
+
         HandleEmoteSelectionInput();
-        HandleEmotes();
 
         if (currentIngredientBox != null)
             currentIngredientBox.HandleIngredientSelectionInput();
@@ -387,6 +419,9 @@ public class PlayerControl : MonoBehaviour
         if (currentIceCreamMachine != null)
             currentIceCreamMachine.HandleIceCreamSelectionInput();
 
+        if (currentGlazeStation != null)
+            currentGlazeStation.HandleGlazeSelectionInput();
+
         HandleDropInput(wasLocked);
 
         IInteractable target = FindInteractTarget();
@@ -407,6 +442,12 @@ public class PlayerControl : MonoBehaviour
             rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
             moveVelocity = Vector3.zero;
         }
+
+        // Turn to face the station just used (also while busy pouring/selecting); any stick input cancels it.
+        if (direction.sqrMagnitude > 0.01f)
+            faceDirection = Vector3.zero;
+        else if (rb != null && faceDirection != Vector3.zero && GameplayActive)
+            rb.MoveRotation(Quaternion.Slerp(rb.rotation, Quaternion.LookRotation(faceDirection), 1f - Mathf.Exp(-18f * Time.fixedDeltaTime)));
 
         if (!doMove || rb == null || !GameplayActive)
         {
@@ -456,19 +497,20 @@ public class PlayerControl : MonoBehaviour
             RecoverStamina();
         }
 
-        Vector3 targetVelocity = direction.normalized * currentMoveSpeed;
+        Vector3 targetVelocity = Vector3.ClampMagnitude(direction, 1f) * currentMoveSpeed;
         float rate = (hasMovementInput ? acceleration : deceleration) * (heldItem.IsEmpty ? 1f : carryingSpeedMultiplier);
         moveVelocity = Vector3.MoveTowards(moveVelocity, targetVelocity, rate * Time.fixedDeltaTime);
         rb.linearVelocity = new Vector3(moveVelocity.x, rb.linearVelocity.y, moveVelocity.z);
 
         if (hasMovementInput)
         {
+            // MoveRotation keeps Rigidbody interpolation; writing transform.rotation here made turns jitter.
             Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
+            rb.MoveRotation(Quaternion.Slerp(
+                rb.rotation,
                 targetRotation,
-                rotationSmooth * Time.fixedDeltaTime
-            );
+                1f - Mathf.Exp(-rotationSmooth * Time.fixedDeltaTime)
+            ));
         }
     }
 
@@ -504,6 +546,29 @@ public class PlayerControl : MonoBehaviour
     public void Freeze(float seconds)
     {
         frozenTimer = Mathf.Max(frozenTimer, seconds);
+    }
+
+    public Color reversedTint = new Color(0.7f, 0.3f, 1f);
+    private float reversedTimer;
+    public bool IsReversed => reversedTimer > 0f;
+
+    public void OnCaught(Vector3 from)
+    {
+        RefreshHeldItemDisplay();
+        Transform held = heldItemVisualizer != null ? heldItemVisualizer.CurrentVisual : null;
+        if (held != null)
+            heldFlyOffset = from - held.position;
+        PlaySquash(0.22f);
+        ShowFloatingText("Nice catch!", new Color(0.2f, 0.7f, 0.25f));
+        VisualFx.Puff(from, new Color(2.2f, 1.8f, 0.6f), 10, 0.15f, 2.5f);
+    }
+
+    public void ReverseControls(float seconds)
+    {
+        reversedTimer = Mathf.Max(reversedTimer, seconds);
+        ShowFloatingText("Controls reversed!", reversedTint);
+        PlaySquash(0.25f);
+        VisualFx.Puff(transform.position + Vector3.up * 1.2f, reversedTint, 12, 0.3f, 1.5f);
     }
 
     private void UpdateFrozenVisual()
@@ -545,6 +610,9 @@ public class PlayerControl : MonoBehaviour
         highlightTarget = target;
         VisualFx.Highlight(highlightTarget, true);
     }
+
+    // Big squash for landing from a pad hop or dropping back in after a fall.
+    public void PlayLanding(float amount = 0.3f) => PlaySquash(amount);
 
     private void PlaySquash(float amount = 0.2f)
     {
@@ -620,6 +688,24 @@ public class PlayerControl : MonoBehaviour
             model.localScale = Vector3.Scale(modelBaseScale, new Vector3(1f + 0.1f * charge, 1f - 0.16f * charge, 1f + 0.1f * charge));
         }
 
+        // One step phase drives the body hop, the food bob and footstep dust so they stay in sync.
+        int stepBefore = Mathf.FloorToInt(carryBob / Mathf.PI);
+        carryBob += dt * 14f * speedFraction;
+        float hop = Mathf.Abs(Mathf.Sin(carryBob)) * speedFraction;
+        model.localPosition = modelBasePosition + Vector3.up * (stepHop * hop);
+
+        if (Mathf.FloorToInt(carryBob / Mathf.PI) != stepBefore && speedFraction > 0.35f)
+            VisualFx.Puff(transform.position + Vector3.up * 0.05f, dustColor, isCurrentlySprinting ? 3 : 2, 0.2f, 0.6f);
+
+        Transform held = heldItemVisualizer != null ? heldItemVisualizer.CurrentVisual : null;
+        if (held != null)
+        {
+            held.localPosition = heldItemVisualizer.localPosition + Vector3.up * (0.07f * hop);
+            // Fresh pickups start at the station and swoop into the hands.
+            held.position += heldFlyOffset + Vector3.up * (heldFlyOffset.magnitude * 0.3f);
+        }
+        heldFlyOffset *= Mathf.Exp(-16f * dt);
+
         bool moving = direction.sqrMagnitude > 0.01f;
         if (moving != wasMovingInput)
         {
@@ -641,6 +727,12 @@ public class PlayerControl : MonoBehaviour
     private float lastYaw;
     private float currentLean;
     private float currentRoll;
+    private float carryBob;
+    private Vector3 heldFlyOffset;
+    private Vector3 faceDirection;
+    private Vector3 modelBasePosition;
+    [Tooltip("How high the chef hops with each step at full speed")]
+    public float stepHop = 0.08f;
     private bool wasMovingInput;
     private Vector3 lastMoveDirection;
     private float interactBufferTimer;
@@ -702,7 +794,8 @@ public class PlayerControl : MonoBehaviour
                currentDrinkMachine != null ||
                currentChiliPot != null ||
                currentCoffeeMachine != null ||
-               currentIceCreamMachine != null;
+               currentIceCreamMachine != null ||
+               currentGlazeStation != null;
     }
 
     private void HandleSprintEffects(bool canSprint)
@@ -719,6 +812,39 @@ public class PlayerControl : MonoBehaviour
             StopSprintAudio();
             StopSprintDust();
         }
+        SetSpeedTrail(canSprint);
+    }
+
+    private TrailRenderer speedTrail;
+
+    // A streak behind a sprinting chef, in the player's ring colour.
+    private void SetSpeedTrail(bool on)
+    {
+        if (speedTrail == null)
+        {
+            if (!on || VisualFx.FxMaterial == null)
+                return;
+
+            var go = new GameObject("Speed Trail");
+            go.transform.SetParent(transform, false);
+            go.transform.localPosition = Vector3.up * 0.45f;
+            speedTrail = go.AddComponent<TrailRenderer>();
+            speedTrail.sharedMaterial = VisualFx.FxMaterial;
+            speedTrail.time = 0.3f;
+            speedTrail.minVertexDistance = 0.1f;
+            speedTrail.widthCurve = AnimationCurve.Linear(0f, 0.5f, 1f, 0f);
+            speedTrail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+            StaminaRing ring = GetComponentInChildren<StaminaRing>(true);
+            MeshRenderer ringRenderer = ring != null ? ring.GetComponent<MeshRenderer>() : null;
+            Color c = ringRenderer != null ? ringRenderer.sharedMaterial.GetColor("_BaseColor") : Color.white;
+            var fade = new Gradient();
+            fade.SetKeys(
+                new[] { new GradientColorKey(c, 0f), new GradientColorKey(c, 1f) },
+                new[] { new GradientAlphaKey(0.7f, 0f), new GradientAlphaKey(0f, 1f) });
+            speedTrail.colorGradient = fade;
+        }
+        speedTrail.emitting = on;
     }
 
     private void StartSprintAudio()
@@ -782,9 +908,11 @@ public class PlayerControl : MonoBehaviour
 
         if (interactable == null)
         {
-            if (GetNearestValidInteractable(castRadius, requireValid: false) != null)
+            IInteractable blocked = GetNearestValidInteractable(castRadius, requireValid: false);
+            if (blocked != null)
             {
-                ShowFloatingText(heldItem.IsEmpty ? "Can't use that right now" : "Can't use " + heldItem.GetDisplayName() + " here", errorTextColor);
+                ShowFloatingText(blocked is BaseStation { IsLocked: true } ? "Locked!"
+                    : heldItem.IsEmpty ? "Can't use that right now" : "Can't use " + heldItem.GetDisplayName() + " here", errorTextColor);
                 PlayNope();
             }
         }
@@ -807,12 +935,34 @@ public class PlayerControl : MonoBehaviour
                 currentIngredientBox = ingredientBox;
             }
 
+            var source = interactable as MonoBehaviour;
+            Vector3 sourcePos = source != null ? source.transform.position + Vector3.up * 0.9f : transform.position;
+            Transform heldBeforeVisual = heldItemVisualizer != null ? heldItemVisualizer.CurrentVisual : null;
+            Vector3 handPos = heldBeforeVisual != null ? heldBeforeVisual.position : transform.position + Vector3.up;
+
+            if (source != null)
+            {
+                Vector3 to = Vector3.ProjectOnPlane(source.transform.position - transform.position, Vector3.up);
+                if (to.sqrMagnitude > 0.01f)
+                    faceDirection = to.normalized;
+            }
+
             interactable.Interact(this);
             UpdateHeldItemHUD();
             RefreshHeldItemVisual();
 
             if (heldItem.type != heldBefore)
+            {
                 PlaySquash();
+                (interactable as BaseStation)?.Bounce();
+
+                // Items travel between hands and station instead of teleporting.
+                Transform held = heldItemVisualizer != null ? heldItemVisualizer.CurrentVisual : null;
+                if (heldBefore == ItemType.None && held != null)
+                    heldFlyOffset = sourcePos - held.position;
+                else if (heldItem.IsEmpty && source != null)
+                    source.GetComponentInChildren<KitchenItemVisualizer>()?.FlyFrom(handPos);
+            }
 
             if (station != null && ingredientBox == null)
                 StartCoroutine(CloseAfterDelay(station, 0.5f));
@@ -856,8 +1006,15 @@ public class PlayerControl : MonoBehaviour
                     );
 
                     float strength = Mathf.Lerp(throwForceMin, throwForceMax, charge);
-                    velocity = transform.forward * strength + Vector3.up * throwUpwardBoost;
+                    // Half the run speed carries into the throw: lob on the move to reach further.
+                    velocity = transform.forward * strength + Vector3.up * throwUpwardBoost + moveVelocity * 0.5f;
                     AudioManager.Instance?.PlayThrowSFX();
+
+                    // Release snap: stretch forward, kick of dust, tiny shake on a full-power throw.
+                    PlaySquash(-0.15f - 0.15f * charge);
+                    VisualFx.Puff(transform.position + Vector3.up * 0.1f - transform.forward * 0.3f, dustColor, 4 + Mathf.RoundToInt(6 * charge), 0.3f);
+                    if (charge > 0.9f)
+                        CameraMovement.Instance?.Shake(0.12f, 0.15f);
                 }
                 else
                 {
@@ -892,21 +1049,6 @@ public class PlayerControl : MonoBehaviour
         t.Rotate(0f, 180f, 0f);
     }
 
-    private void HandleEmotes()
-    {
-        if (animator == null)
-            return;
-
-        if (isSelectingEmote)
-            return;
-
-        if (isEmoting)
-            return;
-
-        if (IsMoving())
-            return;
-    }
-
     private void HandleEmoteSelectionInput()
     {
         if (IsEmoteSelectPressed())
@@ -926,6 +1068,15 @@ public class PlayerControl : MonoBehaviour
 
         if (!isSelectingEmote)
             return;
+
+        // Drop/throw key backs out without dancing.
+        if (IsDropItemPressed())
+        {
+            isSelectingEmote = false;
+            ShowEmoteSelectionText(false);
+            direction = Vector3.zero;
+            return;
+        }
 
         if (IsMoveLeftPressed())
             SelectPreviousEmote();
@@ -1110,8 +1261,21 @@ public class PlayerControl : MonoBehaviour
         if (emoteSelectionText == null || emoteSelectionLabels == null || emoteSelectionLabels.Length == 0)
             return;
 
-        emoteSelectionText.text = emoteSelectionLabels[selectedEmoteIndex];
+        emoteSelectionText.text = "< " + emoteSelectionLabels[selectedEmoteIndex] + " >";
+
+        // Pop each time the choice changes so flicking through feels clicky.
+        if (emoteSelectionObject != null && emoteSelectionObject.activeInHierarchy)
+        {
+            if (emoteTextBaseScale == Vector3.zero)
+                emoteTextBaseScale = emoteSelectionObject.transform.localScale;
+            if (emoteTextPop != null)
+                StopCoroutine(emoteTextPop);
+            emoteTextPop = StartCoroutine(VisualFx.Pop(emoteSelectionObject.transform, 1.3f, 0.15f, emoteTextBaseScale));
+        }
     }
+
+    private Vector3 emoteTextBaseScale;
+    private Coroutine emoteTextPop;
 
     private void ShowEmoteSelectionText(bool show)
     {
@@ -1121,6 +1285,13 @@ public class PlayerControl : MonoBehaviour
 
     private void PlayEmote(int emoteHash)
     {
+        // No animator = nothing to wait for; without this the player stayed locked forever.
+        if (animator == null)
+        {
+            isEmoting = false;
+            return;
+        }
+
         StopSprintAudio();
         StopSprintDust();
 
@@ -1130,15 +1301,67 @@ public class PlayerControl : MonoBehaviour
         animator.ResetTrigger(emote4Hash);
 
         rb.linearVelocity = Vector3.zero;
+        moveVelocity = Vector3.zero;
+        int returnState = animator.GetCurrentAnimatorStateInfo(0).fullPathHash;
         animator.SetTrigger(emoteHash);
-        StartCoroutine(WaitForEmoteToEnd());
+
+        PlaySquash(-0.2f);
+        VisualFx.Puff(transform.position + Vector3.up * 0.1f, dustColor, 10, 0.35f, 1.5f);
+
+        if (emoteRoutine != null)
+            StopCoroutine(emoteRoutine);
+        emoteRoutine = StartCoroutine(EmoteRoutine(returnState));
     }
 
-    private System.Collections.IEnumerator WaitForEmoteToEnd()
+    private static readonly Color[] EmoteSparkColors =
     {
-        yield return new WaitForSeconds(emoteLockDuration);
+        new Color(2.2f, 0.6f, 1.6f), new Color(0.5f, 1.6f, 2.2f), new Color(2.2f, 1.8f, 0.4f), new Color(0.6f, 2.2f, 0.8f)
+    };
+
+    // Lock lasts exactly as long as the dance clip (they differ: 1.6s to 6.2s), and moving cancels it.
+    private System.Collections.IEnumerator EmoteRoutine(int returnState)
+    {
+        float t = 0f, nextSpark = 0f;
+        bool entered = false;
+
+        while (animator != null && t < emoteLockDuration * 4f)
+        {
+            t += Time.deltaTime;
+            AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
+            bool inEmote = state.fullPathHash != returnState || animator.IsInTransition(0);
+
+            if (!entered)
+            {
+                entered = inEmote;
+                if (!entered && t > 0.3f)
+                    break; // trigger never fired (state missing on this model)
+            }
+            else if (!inEmote || state.normalizedTime >= 1f)
+                break;
+
+            // Want to move? Cut the dance short after a brief beat so it doesn't feel like a trap.
+            if (t > 0.25f && (front || back || left || right))
+            {
+                animator.CrossFadeInFixedTime(returnState, 0.12f, 0);
+                PlaySquash(0.12f);
+                break;
+            }
+
+            if (t >= nextSpark)
+            {
+                nextSpark = t + 0.3f;
+                Vector3 offset = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * 0.5f;
+                VisualFx.Puff(transform.position + Vector3.up * 1.6f + offset, EmoteSparkColors[Random.Range(0, EmoteSparkColors.Length)], 3, 0.15f, 1.8f);
+            }
+
+            yield return null;
+        }
+
         isEmoting = false;
+        emoteRoutine = null;
     }
+
+    private Coroutine emoteRoutine;
 
     private void EnsureMovementState()
     {
@@ -1174,6 +1397,7 @@ public class PlayerControl : MonoBehaviour
         animator = model;
         modelBaseScale = model.transform.localScale;
         modelBaseRotation = model.transform.localRotation;
+        modelBasePosition = model.transform.localPosition;
         hasCarryParam = System.Array.Exists(model.parameters, p => p.nameHash == isCarryingHash);
         UpdateAnimator();
     }
@@ -1232,22 +1456,22 @@ public class PlayerControl : MonoBehaviour
     private IInteractable GetNearestValidInteractable(float radius, bool requireValid = true)
     {
         int maskValue = hitMask.value == 0 ? ~0 : hitMask.value;
-        Collider[] hits = Physics.OverlapSphere(transform.position, radius, maskValue);
+        Collider[] hits = OverlapNearby(radius, maskValue, QueryTriggerInteraction.UseGlobal, out int hitCount);
 
         IInteractable nearest = null;
         float nearestDist = Mathf.Infinity;
 
-        foreach (Collider hit in hits)
+        foreach (Collider hit in new System.ArraySegment<Collider>(hits, 0, hitCount))
         {
             IInteractable interactable = GetBestInteractable(hit);
 
             if (interactable == null)
                 continue;
 
-            if (requireValid && !interactable.CanInteractWith(this))
+            if (requireValid && (interactable is BaseStation { IsLocked: true } || !interactable.CanInteractWith(this)))
                 continue;
 
-            float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
+            float dist = FacingScore(hit.ClosestPoint(transform.position));
 
             if (dist < nearestDist)
             {
@@ -1262,17 +1486,17 @@ public class PlayerControl : MonoBehaviour
     private IInteractable GetNearestValidDroppedItem(float radius, bool skipOwnFreshDrops = false)
     {
         int maskValue = hitMask.value == 0 ? ~0 : hitMask.value;
-        Collider[] hits = Physics.OverlapSphere(transform.position, radius, maskValue, QueryTriggerInteraction.Collide);
+        Collider[] hits = OverlapNearby(radius, maskValue, QueryTriggerInteraction.Collide, out int hitCount);
 
         DroppedItem nearestDropped = null;
         float nearestDist = Mathf.Infinity;
 
-        foreach (Collider hit in hits)
+        foreach (Collider hit in new System.ArraySegment<Collider>(hits, 0, hitCount))
         {
-            DroppedItem dropped = hit.GetComponent<DroppedItem>() ?? hit.GetComponentInParent<DroppedItem>();
+            DroppedItem dropped = hit.GetComponentInParent<DroppedItem>(); // includes the collider itself; no fake-null `??`
 
             if (dropped == null && hit.attachedRigidbody != null)
-                dropped = hit.attachedRigidbody.GetComponent<DroppedItem>();
+                hit.attachedRigidbody.TryGetComponent(out dropped);
 
             if (dropped == null)
                 continue;
@@ -1283,7 +1507,7 @@ public class PlayerControl : MonoBehaviour
             if (skipOwnFreshDrops && dropped.droppedBy == this)
                 continue;
 
-            float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
+            float dist = FacingScore(hit.ClosestPoint(transform.position));
 
             if (dist < nearestDist)
             {
@@ -1297,14 +1521,14 @@ public class PlayerControl : MonoBehaviour
 
         if (maskValue != ~0)
         {
-            hits = Physics.OverlapSphere(transform.position, radius, ~0, QueryTriggerInteraction.Collide);
+            hits = OverlapNearby(radius, ~0, QueryTriggerInteraction.Collide, out hitCount);
 
-            foreach (Collider hit in hits)
+            foreach (Collider hit in new System.ArraySegment<Collider>(hits, 0, hitCount))
             {
-                DroppedItem dropped = hit.GetComponent<DroppedItem>() ?? hit.GetComponentInParent<DroppedItem>();
+                DroppedItem dropped = hit.GetComponentInParent<DroppedItem>(); // includes the collider itself; no fake-null `??`
 
                 if (dropped == null && hit.attachedRigidbody != null)
-                    dropped = hit.attachedRigidbody.GetComponent<DroppedItem>();
+                    hit.attachedRigidbody.TryGetComponent(out dropped);
 
                 if (dropped == null)
                     continue;
@@ -1315,7 +1539,7 @@ public class PlayerControl : MonoBehaviour
                 if (skipOwnFreshDrops && dropped.droppedBy == this)
                     continue;
 
-                float dist = Vector3.Distance(transform.position, hit.ClosestPoint(transform.position));
+                float dist = FacingScore(hit.ClosestPoint(transform.position));
 
                 if (dist < nearestDist)
                 {
@@ -1328,9 +1552,21 @@ public class PlayerControl : MonoBehaviour
         return nearestDropped;
     }
 
+    // Shared, reused query buffer: OverlapSphere allocated a new array on every call, several times a frame.
+    private static readonly Collider[] overlapBuffer = new Collider[64];
+
+    private Collider[] OverlapNearby(float radius, int mask, QueryTriggerInteraction triggers, out int count)
+    {
+        count = Physics.OverlapSphereNonAlloc(transform.position, radius, overlapBuffer, mask, triggers);
+        return overlapBuffer;
+    }
+
+    private static readonly System.Collections.Generic.List<IInteractable> interactableBuffer = new System.Collections.Generic.List<IInteractable>();
+
     private IInteractable GetBestInteractable(Collider hit)
     {
-        IInteractable[] candidates = hit.GetComponents<IInteractable>();
+        hit.GetComponents(interactableBuffer); // reused list: no per-collider array allocation every frame
+        var candidates = interactableBuffer;
         IInteractable first = null;
 
         foreach (IInteractable candidate in candidates)
@@ -1366,6 +1602,52 @@ public class PlayerControl : MonoBehaviour
     {
         if (heldItemVisualizer != null)
             heldItemVisualizer.Refresh(heldItem);
+        UpdateHeldGlow();
+    }
+
+    [Tooltip("Soft halo behind held food, so you can tell at a glance who's carrying what")]
+    public Color heldGlowColor = new Color(1f, 0.78f, 0.3f, 0.8f);
+    public float heldGlowSize = 1.5f;
+    private SpriteRenderer heldGlow;
+    private static Sprite glowSprite;
+
+    private void UpdateHeldGlow()
+    {
+        Transform item = heldItemVisualizer != null ? heldItemVisualizer.CurrentVisual : null;
+        if (heldGlow == null)
+        {
+            if (item == null)
+                return;
+
+            if (glowSprite == null)
+                glowSprite = MakeGlowSprite();
+            var go = new GameObject("Held Glow");
+            go.transform.SetParent(item.parent, false);
+            go.transform.localPosition = heldItemVisualizer.localPosition;
+            go.transform.localScale = Vector3.one * heldGlowSize / Mathf.Max(0.0001f, item.parent.lossyScale.x);
+            heldGlow = go.AddComponent<SpriteRenderer>();
+            heldGlow.sprite = glowSprite;
+            heldGlow.color = heldGlowColor;
+            heldGlow.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            go.AddComponent<Billboard>();
+        }
+        heldGlow.gameObject.SetActive(item != null);
+    }
+
+    private static Sprite MakeGlowSprite()
+    {
+        const int n = 64;
+        var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        var px = new Color32[n * n];
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float r = Mathf.Clamp01(new Vector2(x - n / 2f + 0.5f, y - n / 2f + 0.5f).magnitude / (n / 2f));
+                px[y * n + x] = new Color32(255, 255, 255, (byte)(255 * (1f - r) * (1f - r)));
+            }
+        tex.SetPixels32(px);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), n); // 1 unit across
     }
 
     private void UpdateHeldItemHUD()

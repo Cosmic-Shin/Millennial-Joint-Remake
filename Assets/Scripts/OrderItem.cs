@@ -13,7 +13,11 @@ public enum OrderItemType
     ChiliDog,
     StrawberryIceCream,
     BubblegumIceCream,
-    MangoIceCream
+    MangoIceCream,
+    ShrimpTempura,
+    ChocolateDonut,
+    StrawberryDonut,
+    GalaxyDonut
 }
 
 [Serializable]
@@ -35,6 +39,10 @@ public class OrderItem
         if (type == OrderItemType.FriedChicken) return item.IsPlate && item.IsCompleteFriedChicken;
         if (type == OrderItemType.Fries) return item.IsPlate && item.IsCompleteFries;
         if (type == OrderItemType.ChiliDog) return item.IsPlate && item.IsCompleteChiliDog;
+        if (type == OrderItemType.ShrimpTempura) return item.IsPlate && item.IsCompleteTempura;
+        if (type == OrderItemType.ChocolateDonut) return item.IsCompleteDonut && item.donutGlaze == DonutGlaze.Chocolate;
+        if (type == OrderItemType.StrawberryDonut) return item.IsCompleteDonut && item.donutGlaze == DonutGlaze.Strawberry;
+        if (type == OrderItemType.GalaxyDonut) return item.IsCompleteDonut && item.donutGlaze == DonutGlaze.Galaxy;
 
         if (type == OrderItemType.Soda) return item.IsCup && item.cupHasSoda;
         if (type == OrderItemType.IceTea) return item.IsCup && item.cupHasIceTea;
@@ -64,6 +72,10 @@ public class OrderItem
             OrderItemType.StrawberryIceCream => "Strawberry Ice Cream",
             OrderItemType.BubblegumIceCream => "Bubblegum Ice Cream",
             OrderItemType.MangoIceCream => "Mango Ice Cream",
+            OrderItemType.ShrimpTempura => "Shrimp Tempura",
+            OrderItemType.ChocolateDonut => "Chocolate Donut",
+            OrderItemType.StrawberryDonut => "Strawberry Donut",
+            OrderItemType.GalaxyDonut => "Galaxy Donut",
             _ => "Unknown"
         };
     }

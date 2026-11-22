@@ -175,17 +175,19 @@ public static class SpaceMapBuilder
             pads = new[] { Hop(5.1f, -0.1f), Hop(-5.1f, -0.1f) },
             sign = new Vector3(0f, 2.2f, -17.6f), mobile = new Vector3(0f, 4f, -5.2f),
         };
+        // r 9.3 keeps stations on the tiles (10.2 hung them off the edge). 90 = front (camera side):
+        // only low stations near it, tall ones (fridge, soda, coffee) at the back so they don't hide players.
         void Around(S kind, float degrees)
         {
-            float a = degrees * Mathf.Deg2Rad, r = 10.2f;
+            float a = degrees * Mathf.Deg2Rad, r = 9.3f;
             ring.places.Add(P(kind, Mathf.Cos(a) * r, -5.2f + Mathf.Sin(a) * r, Mathf.Atan2(-Mathf.Cos(a), -Mathf.Sin(a)) * Mathf.Rad2Deg));
         }
         Around(S.Serving, 90);
-        Around(S.Fridge, 62); Around(S.Grill, 40); Around(S.Grill, 18); Around(S.Fryer, -4); Around(S.Fryer, -26); Around(S.Chili, -48); Around(S.Counter, -70);
-        Around(S.Plates, 118); Around(S.Cups, 140); Around(S.Soda, 162); Around(S.Coffee, 184); Around(S.IceCream, 206); Around(S.Counter, 228);
-        Around(S.Bin, -92);
-        float wa = -114f * Mathf.Deg2Rad;
-        ring.whiteboard = new Vector3(Mathf.Cos(wa) * 10.4f, -5.2f + Mathf.Sin(wa) * 10.4f, Mathf.Atan2(-Mathf.Cos(wa), -Mathf.Sin(wa)) * Mathf.Rad2Deg);
+        Around(S.Counter, 66); Around(S.Grill, 44); Around(S.Grill, 22); Around(S.Fryer, 0); Around(S.Fryer, -22); Around(S.Chili, -44); Around(S.Fridge, -66);
+        Around(S.Plates, 114); Around(S.Counter, 136); Around(S.Cups, 158); Around(S.IceCream, 180); Around(S.Soda, 202); Around(S.Coffee, 224);
+        Around(S.Bin, 270); // 246 is left free for the donut glaze station
+        float wa = 258f * Mathf.Deg2Rad;
+        ring.whiteboard = new Vector3(Mathf.Cos(wa) * 10.9f, -5.2f + Mathf.Sin(wa) * 10.9f, Mathf.Atan2(-Mathf.Cos(wa), -Mathf.Sin(wa)) * Mathf.Rad2Deg);
 
         return new[] { main, split, bridge, ring, shuttle, asteroid };
     }
@@ -315,8 +317,33 @@ public static class SpaceMapBuilder
         if (level.movingIslands)
             AddMovingIslands(levelModel.transform, root);
 
+        AddHazards(level.name, root, levelModel.transform);
+
         root.gameObject.SetActive(false);
         return layout;
+    }
+
+    // Per-map hazards: Ring's planet swallows food, Asteroid has zero-G food, Bridge's bridge shatters.
+    private static void AddHazards(string levelName, Transform root, Transform levelModel)
+    {
+        if (levelName == "RingStation")
+        {
+            var vac = new GameObject("Planet Vacuum");
+            vac.transform.SetParent(root, false);
+            vac.transform.localPosition = new Vector3(0f, 0.5f, -5.2f);
+            vac.AddComponent<ItemVacuum>();
+        }
+        else if (levelName == "AsteroidDiner")
+        {
+            root.gameObject.AddComponent<ZeroGravityItems>();
+        }
+        else if (levelName == "BridgeIslands")
+        {
+            var bridge = root.gameObject.AddComponent<ShatteringBridge>();
+            Transform floor = root.Find("Bridge Floor");
+            bridge.walkSurface = floor != null ? floor.GetComponent<Collider>() : null;
+            bridge.visuals = levelModel.GetComponentsInChildren<Renderer>(true).Where(r => r.name == "Bridge_Deck").ToArray();
+        }
     }
 
     // ---------- Floors, customer platform, hazards ----------

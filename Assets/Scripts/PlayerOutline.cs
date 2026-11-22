@@ -14,6 +14,7 @@ public class PlayerOutline : MonoBehaviour
             highlight.SetColor("_Color", highlightColor);
             highlight.SetFloat("_Width", highlightWidth);
             highlight.SetFloat("_ScreenWidth", 0f);
+            highlight.SetFloat("_DepthOffset", 0f);
             VisualFx.HighlightOutlineMaterial = highlight;
         }
 
@@ -72,9 +73,12 @@ public class PlayerOutline : MonoBehaviour
 
     // Small features on the face would get dark blobs drawn over the face, so they stay unoutlined.
     // Watches too: they sit inside the arm's outline, and their own reads as a thick band.
-    private static readonly string[] FaceParts = { "FacialHair", "GooglyEyes", "ClownNose", "Glasses", "Watch_" };
+    // The hairnet is thin wire; its outline smears black over the forehead.
+    private static readonly string[] FaceParts = { "FacialHair", "GooglyEyes", "ClownNose", "Glasses", "Watch_", "Hat_Hairnet",
+        "_Mood_", "_Emote_" }; // customer faces and speech bubbles
     // The old single-mesh chefs (Idle_C / Idle_J) keep beard, eyes and hair in one "hair" section.
-    private static readonly string[] FaceMaterials = { "c_hair", "j_hair" };
+    // Clear glass would show its outline through itself as a dark shell.
+    private static readonly string[] FaceMaterials = { "c_hair", "j_hair", "cos_fishbowl_glass" };
 
     // Prints and small details sit on top of a cosmetic; their own outlines would scribble over it.
     // "*" = outline only the cosmetic's base (first) material; otherwise the listed materials are skipped.
@@ -84,6 +88,7 @@ public class PlayerOutline : MonoBehaviour
         ("Top_EMCheese", new[] { "*" }),
         ("Top_GraphicTee", new[] { "*" }),
         ("Top_PeriodicTee", new[] { "*" }),
+        ("Top_BoltTee", new[] { "*" }),
         ("Top_LabCoat", new[] { "*" }),
         ("Top_Layered", new[] { "top_print_cream", "top_print_orange" }),
         ("Top_BurgerCostume", new[] { "food_sesame" }),
@@ -116,6 +121,13 @@ public class PlayerOutline : MonoBehaviour
         for (int s = 0; s < copy.subMeshCount && s < materials.Length; s++)
             if (SkipSection(partName, s, materials[s]))
                 copy.SetTriangles(new int[0], s); // no outline for this section
+        SmoothNormals(copy);
+        return copy;
+    }
+
+    // Averages the normals of vertices that share a position, so the pushed-out hull has no gaps at hard edges.
+    public static void SmoothNormals(Mesh copy)
+    {
         var vertices = copy.vertices;
         var normals = copy.normals;
 
@@ -129,6 +141,5 @@ public class PlayerOutline : MonoBehaviour
             normals[i] = sums[vertices[i]].normalized;
 
         copy.normals = normals;
-        return copy;
     }
 }

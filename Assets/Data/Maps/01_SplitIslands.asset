@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapDefinition
   displayName: Split Islands
   layoutName: SplitIslands
-  preview: {fileID: 0}
+  preview: {fileID: 21300000, guid: ded2e7569b8fc5c46bc24dbc126c6517, type: 3}

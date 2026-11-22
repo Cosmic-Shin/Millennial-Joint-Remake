@@ -20,3 +20,4 @@ MonoBehaviour:
   hides:
   - Hat_Chef
   conflicts: []
+  lift: 0.12

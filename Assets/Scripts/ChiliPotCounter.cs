@@ -7,17 +7,13 @@ public class ChiliPotCounter : BaseStation, IInteractable
     public float chiliTime = 2f;
     public GameObject chiliUIPanel;
 
-    [Header("Chili Animation")]
+    [Tooltip("Anchor for the timer ring (its own sprite stays hidden)")]
     public Image chiliUIImage;
-    public Sprite[] chiliSprites;
-    public int animationLoops = 3;
 
     private PlayerControl currentPlayer;
     private bool isApplyingChili;
 
     private float chiliTimer;
-    private float animationTimer;
-    private float animationDurationPerLoop;
 
     public bool CanInteractWith(PlayerControl player)
     {
@@ -38,7 +34,7 @@ public class ChiliPotCounter : BaseStation, IInteractable
             return;
 
         chiliTimer -= Time.deltaTime * CookRate(currentPlayer);
-        UpdateChiliAnimation();
+        SetCookRing(chiliUIImage, 1f - chiliTimer / chiliTime, new Color(1f, 0.45f, 0.25f));
 
         if (chiliTimer <= 0f)
             FinishApplyingChili();
@@ -86,8 +82,6 @@ public class ChiliPotCounter : BaseStation, IInteractable
         currentPlayer.doMove = false;
 
         chiliTimer = chiliTime;
-        animationTimer = 0f;
-        animationDurationPerLoop = chiliTime / Mathf.Max(1, animationLoops);
 
         ShowChiliUI(true);
         SetSteam(true);
@@ -125,22 +119,6 @@ public class ChiliPotCounter : BaseStation, IInteractable
         }
 
         currentPlayer = null;
-    }
-
-    private void UpdateChiliAnimation()
-    {
-        if (chiliUIImage == null || chiliSprites == null || chiliSprites.Length == 0)
-            return;
-
-        animationTimer += Time.deltaTime;
-
-        float timeInLoop = animationTimer % animationDurationPerLoop;
-        float normalizedTime = timeInLoop / animationDurationPerLoop;
-
-        int frameIndex = Mathf.FloorToInt(normalizedTime * chiliSprites.Length);
-        frameIndex = Mathf.Clamp(frameIndex, 0, chiliSprites.Length - 1);
-
-        chiliUIImage.sprite = chiliSprites[frameIndex];
     }
 
     private void ShowChiliUI(bool show)

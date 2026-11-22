@@ -256,7 +256,7 @@ public class PauseManager : MonoBehaviour
         GameModeSelector.retryMode = OrderManager.Instance?.GetCurrentMode();
         MainMenuManager.skipMainMenuOnLoad = true;
 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        PaperWipe.ReloadScene();
     }
 
     public void QuitToMainMenu()
@@ -267,7 +267,7 @@ public class PauseManager : MonoBehaviour
         SetPanel(howToPlayPanel, false);
         isPaused = false;
 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        PaperWipe.ReloadScene();
     }
 
     private void SetupVolumeSliders()

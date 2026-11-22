@@ -11,13 +11,64 @@ public class DroppedItem : MonoBehaviour, IInteractable
     [HideInInspector] public PlayerControl droppedBy;
     private const float forgetDropperDistance = 2.5f;
 
+    // Live list for map hazards (vacuum etc.), so they don't search the scene every frame.
+    public static readonly System.Collections.Generic.List<DroppedItem> All = new System.Collections.Generic.List<DroppedItem>();
+    private void OnEnable() => All.Add(this);
+    private void OnDisable() => All.Remove(this);
+
+    // Set by a ZeroGravityItems component on the active map (Asteroid Diner).
+    public static bool ZeroGravity;
+    private const float zeroGDrift = 0.35f;   // m/s upwards: grab it before it floats out of reach
+    private const float zeroGLostHeight = 6f;
+    private bool floating;
+
     private void Update()
     {
         if (transform.position.y < fallDestroyY)
             Destroy(gameObject);
 
+        if (floating)
+        {
+            Transform v = visualizer != null ? visualizer.CurrentVisual : null;
+            if (v != null)
+                v.Rotate(20f * Time.deltaTime, 45f * Time.deltaTime, 0f, Space.Self); // lazy zero-G tumble
+            if (transform.position.y > zeroGLostHeight)
+            {
+                VisualFx.Puff(transform.position, Color.white, 10, 0.3f, 1f);
+                Destroy(gameObject);
+                return;
+            }
+        }
+
         if (droppedBy != null && Vector3.Distance(droppedBy.transform.position, transform.position) > forgetDropperDistance)
             droppedBy = null;
+
+        TryCatch();
+    }
+
+    private const float catchRadius = 1.3f;
+    private const float catchMinSpeed = 3f;
+    private Rigidbody body;
+
+    // Thrown food flying past an empty-handed chef gets caught mid-air.
+    private void TryCatch()
+    {
+        if (body == null)
+            body = GetComponent<Rigidbody>();
+        if (body.linearVelocity.sqrMagnitude < catchMinSpeed * catchMinSpeed || !PlayerControl.GameplayActive)
+            return;
+
+        foreach (PlayerControl p in FindObjectsByType<PlayerControl>(FindObjectsSortMode.None))
+        {
+            if (p == droppedBy || !p.heldItem.IsEmpty || !p.CanMove)
+                continue;
+            if ((p.transform.position + Vector3.up - transform.position).sqrMagnitude > catchRadius * catchRadius)
+                continue;
+
+            Interact(p);
+            p.OnCaught(transform.position);
+            return;
+        }
     }
 
     private const float landImpactSpeed = 2.5f;
@@ -60,6 +111,31 @@ public class DroppedItem : MonoBehaviour, IInteractable
             visualizer.localEulerAngles = Vector3.zero;
             visualizer.localScale = Vector3.one;
             visualizer.Refresh(item);
+        }
+
+        if (ZeroGravity)
+        {
+            // No gravity: whatever velocity it was dropped/thrown with carries on (gently damped) plus a slow rise.
+            floating = true;
+            body = GetComponent<Rigidbody>();
+            body.useGravity = false;
+            body.linearDamping = 0.8f;
+            VisualFx.Puff(transform.position, new Color(0.7f, 0.85f, 1f, 0.8f), 6, 0.2f, 0.6f);
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        // Steady slow rise: the drop/throw kick lands on the first physics step (after Initialize),
+        // so the cap has to live here, not in Initialize.
+        if (floating && body != null)
+        {
+            Vector3 v = body.linearVelocity;
+            if (v.y > zeroGDrift)
+                v.y = zeroGDrift;
+            else
+                v.y = Mathf.MoveTowards(v.y, zeroGDrift, 2f * Time.fixedDeltaTime);
+            body.linearVelocity = v;
         }
     }
 

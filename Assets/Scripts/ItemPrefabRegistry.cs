@@ -51,6 +51,17 @@ public class ItemPrefabRegistry : MonoBehaviour
     public GameObject hotdogRawPrefab;
     public GameObject hotdogCookedPrefab;
 
+    [Header("Shrimp & Donut")]
+    public GameObject rawShrimpPrefab;
+    public GameObject cookedShrimpPrefab;
+    public GameObject rawDonutPrefab;
+    public GameObject cookedDonutPrefab;
+    public GameObject plateTempuraPrefab;
+    public GameObject plateDonutPrefab;
+    public GameObject plateChocolateDonutPrefab;
+    public GameObject plateStrawberryDonutPrefab;
+    public GameObject plateGalaxyDonutPrefab;
+
     private Dictionary<ItemType, GameObject> simplePrefabLookup;
     private Dictionary<string, GameObject> platePrefabLookup;
 
@@ -85,7 +96,11 @@ public class ItemPrefabRegistry : MonoBehaviour
             { ItemType.HotDogCooked, hotdogCookedPrefab },
             { ItemType.StrawberryIceCream, strawberryIceCreamPrefab },
             { ItemType.BubblegumIceCream, bubblegumIceCreamPrefab },
-            { ItemType.MangoIceCream, mangoIceCreamPrefab }
+            { ItemType.MangoIceCream, mangoIceCreamPrefab },
+            { ItemType.ShrimpRaw, rawShrimpPrefab },
+            { ItemType.ShrimpCooked, cookedShrimpPrefab },
+            { ItemType.DonutRaw, rawDonutPrefab },
+            { ItemType.DonutCooked, cookedDonutPrefab }
         };
 
         platePrefabLookup = new Dictionary<string, GameObject>
@@ -138,6 +153,10 @@ public class ItemPrefabRegistry : MonoBehaviour
             OrderItemType.StrawberryIceCream => strawberryIceCreamPrefab,
             OrderItemType.BubblegumIceCream => bubblegumIceCreamPrefab,
             OrderItemType.MangoIceCream => mangoIceCreamPrefab,
+            OrderItemType.ShrimpTempura => plateTempuraPrefab,
+            OrderItemType.ChocolateDonut => plateChocolateDonutPrefab,
+            OrderItemType.StrawberryDonut => plateStrawberryDonutPrefab,
+            OrderItemType.GalaxyDonut => plateGalaxyDonutPrefab,
             _ => null
         };
     }
@@ -154,6 +173,18 @@ public class ItemPrefabRegistry : MonoBehaviour
 
     private GameObject GetPlatePrefab(KitchenItemData itemData)
     {
+        if (itemData.plateHasShrimp)
+            return plateTempuraPrefab;
+
+        if (itemData.plateHasDonut)
+            return itemData.donutGlaze switch
+            {
+                DonutGlaze.Chocolate => plateChocolateDonutPrefab,
+                DonutGlaze.Strawberry => plateStrawberryDonutPrefab,
+                DonutGlaze.Galaxy => plateGalaxyDonutPrefab,
+                _ => plateDonutPrefab
+            };
+
         if (itemData.IsCompleteChiliDog)
             return platePrefabLookup["complete_chilidog"];
 

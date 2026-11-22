@@ -44,7 +44,7 @@ public class AlienCustomerVisual : MonoBehaviour
 
     public void SetEating(bool eating)
     {
-        if (animator != null && animator.runtimeAnimatorController != null)
+        if (animator != null && animator.runtimeAnimatorController != null && animator.isActiveAndEnabled)
             animator.SetBool(EatingHash, eating);
     }
 }

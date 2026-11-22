@@ -6,6 +6,7 @@ Shader "Custom/Outline"
         _Color ("Color", Color) = (0.05, 0.05, 0.07, 1)
         _Width ("Width (world units)", Float) = 0.02
         _ScreenWidth ("Minimum width (pixels)", Float) = 0
+        _DepthOffset ("Push back (world units)", Float) = 0
     }
     SubShader
     {
@@ -26,6 +27,7 @@ Shader "Custom/Outline"
                 half4 _Color;
                 float _Width;
                 float _ScreenWidth;
+                float _DepthOffset;
             CBUFFER_END
 
             struct Attributes
@@ -38,7 +40,13 @@ Shader "Custom/Outline"
             {
                 float3 positionWS = TransformObjectToWorld(i.positionOS.xyz);
                 float3 normalWS = TransformObjectToWorldNormal(i.normalOS);
-                float4 pos = TransformWorldToHClip(positionWS + normalWS * _Width);
+                float3 positionVS = TransformWorldToView(positionWS + normalWS * _Width);
+                float4 pos = TransformWViewToHClip(positionVS);
+
+                // Depth pushed away from the camera so it only shows past the silhouette, not over the nose and eyes.
+                // Only the depth moves; the on-screen position stays put.
+                float4 pushed = TransformWViewToHClip(positionVS - float3(0, 0, _DepthOffset));
+                pos.z = pushed.z / pushed.w * pos.w;
 
                 // Extra push in screen space so the rim stays visible from far away.
                 float2 dir = mul((float3x3)UNITY_MATRIX_VP, normalWS).xy;

@@ -22,8 +22,14 @@ public enum ItemType
     Chili,
     StrawberryIceCream,
     BubblegumIceCream,
-    MangoIceCream
+    MangoIceCream,
+    ShrimpRaw,
+    ShrimpCooked,
+    DonutRaw,
+    DonutCooked
 }
+
+public enum DonutGlaze { None, Chocolate, Strawberry, Galaxy }
 
 [Serializable]
 public class KitchenItemData
@@ -41,6 +47,9 @@ public class KitchenItemData
     public bool plateHasDogBun;
     public bool plateHasHotdog;
     public bool plateHasChili;
+    public bool plateHasShrimp;
+    public bool plateHasDonut;
+    public DonutGlaze donutGlaze;
 
     [Header("Cup Contents")]
     public bool cupHasSoda;
@@ -80,6 +89,13 @@ public class KitchenItemData
         type == ItemType.Cup &&
         (cupHasSoda || cupHasIceTea || cupHasOrangeJuice || cupHasCoffee);
 
+    public bool IsCompleteTempura =>
+        type == ItemType.Plate && plateHasShrimp && !plateHasDonut;
+
+    // A fried donut on a plate, glazed at the glaze station.
+    public bool IsCompleteDonut =>
+        type == ItemType.Plate && plateHasDonut && donutGlaze != DonutGlaze.None && !plateHasShrimp;
+
     public bool IsCompleteChiliDog =>
         type == ItemType.Plate &&
         plateHasDogBun && plateHasHotdog && plateHasChili &&
@@ -103,6 +119,9 @@ public class KitchenItemData
             plateHasDogBun  = false;
             plateHasHotdog  = false;
             plateHasChili   = false;
+            plateHasShrimp  = false;
+            plateHasDonut   = false;
+            donutGlaze      = DonutGlaze.None;
         }
 
         if (newType != ItemType.Cup)
@@ -137,6 +156,9 @@ public class KitchenItemData
         plateHasDogBun    = false;
         plateHasHotdog    = false;
         plateHasChili     = false;
+        plateHasShrimp    = false;
+        plateHasDonut     = false;
+        donutGlaze        = DonutGlaze.None;
     }
 
     public void CopyFrom(KitchenItemData other)
@@ -152,6 +174,9 @@ public class KitchenItemData
         plateHasDogBun    = other.plateHasDogBun;
         plateHasHotdog    = other.plateHasHotdog;
         plateHasChili     = other.plateHasChili;
+        plateHasShrimp    = other.plateHasShrimp;
+        plateHasDonut     = other.plateHasDonut;
+        donutGlaze        = other.donutGlaze;
         cupHasSoda        = other.cupHasSoda;
         cupHasIceTea      = other.cupHasIceTea;
         cupHasOrangeJuice = other.cupHasOrangeJuice;
@@ -173,12 +198,16 @@ public class KitchenItemData
             result += plateHasDogBun ? " + Dog Bun" : "";
             result += plateHasHotdog ? " + Hotdog" : "";
             result += plateHasChili ? " + Chili" : "";
+            result += plateHasShrimp ? " + Shrimp Tempura" : "";
+            result += plateHasDonut ? " + " + (donutGlaze == DonutGlaze.None ? "" : donutGlaze + " ") + "Donut" : "";
 
             if (IsCompleteSandwich)          result += " (Complete Sandwich)";
             else if (IsCompleteBurger)       result += " (Complete Burger)";
             else if (IsCompleteFriedChicken) result += " (Complete Fried Chicken)";
             else if (IsCompleteFries)        result += " (Complete Fries)";
             else if (IsCompleteChiliDog) result += " (Chili Dog)";
+            else if (IsCompleteTempura) result += " (Shrimp Tempura)";
+            else if (IsCompleteDonut) result += " (" + donutGlaze + " Donut)";
 
             return result;
         }
@@ -210,6 +239,10 @@ public class KitchenItemData
             ItemType.StrawberryIceCream => "Strawberry Ice Cream",
             ItemType.BubblegumIceCream  => "Bubblegum Ice Cream",
             ItemType.MangoIceCream      => "Mango Ice Cream",
+            ItemType.ShrimpRaw          => "Raw Shrimp",
+            ItemType.ShrimpCooked       => "Shrimp Tempura",
+            ItemType.DonutRaw           => "Donut Dough",
+            ItemType.DonutCooked        => "Fried Donut",
             _ => type.ToString(),
         };
     }

@@ -207,6 +207,7 @@ public class GravityPad : MonoBehaviour
         reservedLandings.Remove(landing);
         hopping.Remove(player);
         VisualFx.Puff(landing - Vector3.up * (pivotHeight - 0.1f), glowColor, 8, 0.35f);
+        player.PlayLanding();
     }
 
     private bool FindLanding(PlayerControl player, Vector3 start, Vector3 dir, float floorY, out Vector3 landing)

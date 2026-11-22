@@ -22,7 +22,9 @@ public class ServingCounter : BaseStation, IInteractable
              player.heldItem.IsCompleteSandwich ||
              player.heldItem.IsCompleteFriedChicken ||
              player.heldItem.IsCompleteFries ||
-             player.heldItem.IsCompleteChiliDog);
+             player.heldItem.IsCompleteChiliDog ||
+             player.heldItem.IsCompleteTempura ||
+             player.heldItem.IsCompleteDonut);
 
         bool hasCompleteDrink = player.heldItem.IsCompleteDrink;
 
@@ -73,6 +75,7 @@ public class ServingCounter : BaseStation, IInteractable
 
         if (serveBurst != null)
             serveBurst.Play();
+        VisualFx.Puff(transform.position + Vector3.up * popupYOffset * 0.6f, new Color(2.2f, 1.6f, 0.3f), 16, 0.2f, 3f); // gold coin spray
 
         if (CameraMovement.Instance != null)
         {

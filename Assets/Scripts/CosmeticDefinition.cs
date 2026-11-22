@@ -16,6 +16,8 @@ public class CosmeticDefinition : ScriptableObject
     public string[] hides = new string[0];
     [Tooltip("Cosmetics that can't be worn together with this one")]
     public CosmeticDefinition[] conflicts = new CosmeticDefinition[0];
+    [Tooltip("Raise (or lower, if negative) the part by this many metres, for parts modelled at the wrong height")]
+    public float lift;
 
     public bool ConflictsWith(CosmeticDefinition other) =>
         other != null && (System.Array.IndexOf(conflicts, other) >= 0 || System.Array.IndexOf(other.conflicts, this) >= 0);

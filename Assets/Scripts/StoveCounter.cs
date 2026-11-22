@@ -17,19 +17,14 @@ public class StoveCounter : BaseStation, IInteractable
     [Tooltip("Flickering light switched on while cooking")]
     public GameObject fireGlow;
 
-    [Header("Cooking Animation")]
+    [Tooltip("Anchor for the timer ring (its own sprite stays hidden)")]
     public Image cookingUIImage;
-    public Sprite[] cookingSprites;
-    public int animationLoops = 3;
 
     private bool isCooking = false;
     private PlayerControl cookingPlayer;
     private float cookingTimer = 0f;
     private bool isOvercooked = false;
     private float overcookTimer = 0f;
-
-    private float animationTimer = 0f;
-    private float animationDurationPerLoop;
 
     public bool CanInteractWith(PlayerControl player)
     {
@@ -115,7 +110,7 @@ public class StoveCounter : BaseStation, IInteractable
         {
             SetBurnSizzle(true, 0f);
             cookingTimer -= Time.deltaTime * CookRate(cookingPlayer);
-            UpdateCookingAnimation();
+            SetCookRing(cookingUIImage, 1f - cookingTimer / cookingTime, new Color(0.45f, 1f, 0.4f));
 
             if (cookingTimer <= 0f)
             {
@@ -123,6 +118,13 @@ public class StoveCounter : BaseStation, IInteractable
                 isOvercooked = true;
                 overcookTimer = overcookTime;
             }
+        }
+        else if (isOvercooked && BurnProof(cookingPlayer))
+        {
+            // Insta Cook: hold the burn timer full and keep the warning off until the boost ends.
+            overcookTimer = overcookTime;
+            ShowCookingUI(false);
+            ThrobFood(storedItemVisualizer, 0f);
         }
         else if (isOvercooked)
         {
@@ -138,6 +140,7 @@ public class StoveCounter : BaseStation, IInteractable
 
                 if (CameraMovement.Instance != null)
                     CameraMovement.Instance.Shake(0.3f, 0.35f);
+                BurnPoof();
             }
         }
     }
@@ -145,9 +148,9 @@ public class StoveCounter : BaseStation, IInteractable
     private void FlashBurnWarning()
     {
         ShowCookingUI(true);
-
-        if (cookingUIImage != null)
-            cookingUIImage.color = Color.Lerp(Color.white, Color.red, Mathf.PingPong(Time.time * 4f, 1f));
+        ThrobFood(storedItemVisualizer, 1f - overcookTimer / overcookTime);
+        SetCookRing(cookingUIImage, overcookTimer / overcookTime,
+            Color.Lerp(new Color(1f, 0.3f, 0.2f), Color.white, Mathf.PingPong(Time.time * 4f, 1f)));
 
         if (burnSmoke != null)
         {
@@ -166,9 +169,6 @@ public class StoveCounter : BaseStation, IInteractable
         isCooking = true;
         cookingTimer = cookingTime;
 
-        animationTimer = 0f;
-        animationDurationPerLoop = cookingTime / Mathf.Max(1, animationLoops);
-
         ShowCookingUI(true);
         SetSteam(true);
         AudioManager.Instance?.PlayStartCookingSFX();
@@ -186,29 +186,8 @@ public class StoveCounter : BaseStation, IInteractable
         isCooking = false;
         SetSteam(false);
         Sparkle();
+        Bounce(0.2f);
         AudioManager.Instance?.PlayFinishedCookingSFX();
-    }
-
-    private void UpdateCookingAnimation()
-    {
-        if (cookingUIImage == null || cookingSprites == null || cookingSprites.Length == 0)
-            return;
-
-        animationTimer += Time.deltaTime;
-
-        float timeInLoop = animationTimer % animationDurationPerLoop;
-        float normalizedTime = timeInLoop / animationDurationPerLoop;
-
-        int frameIndex = Mathf.FloorToInt(normalizedTime * cookingSprites.Length);
-        frameIndex = Mathf.Clamp(frameIndex, 0, cookingSprites.Length - 1);
-
-        cookingUIImage.sprite = cookingSprites[frameIndex];
-
-        cookingUIImage.color = Color.Lerp(
-            Color.white,
-            new Color(1f, 0.7f, 0.7f),
-            normalizedTime
-        );
     }
 
     private void ShowCookingUI(bool show)
@@ -224,9 +203,6 @@ public class StoveCounter : BaseStation, IInteractable
 
         if (!show)
             SetBurnSizzle(false);
-
-        if (!show && cookingUIImage != null)
-            cookingUIImage.color = Color.white;
     }
 
     private void UpdateStoredItemVisual()

@@ -42,6 +42,32 @@ public class KitchenItemVisualizer : MonoBehaviour
 
         ClearVisual();
         CreateVisual(prefab);
+        if (System.Array.IndexOf(HotFood, itemData.type) >= 0)
+            VisualFx.AddSteam(currentVisual.transform);
+    }
+
+    private static readonly ItemType[] HotFood =
+        { ItemType.PattyCooked, ItemType.ChickenCooked, ItemType.HotDogCooked, ItemType.FriesCooked, ItemType.Chili, ItemType.ShrimpCooked, ItemType.DonutCooked };
+
+    // Arc the current item in from a world point (e.g. the chef's hands) instead of popping in place.
+    public void FlyFrom(Vector3 worldFrom, float time = 0.16f)
+    {
+        if (currentVisual != null && isActiveAndEnabled)
+            StartCoroutine(Fly(currentVisual.transform, worldFrom, time));
+    }
+
+    private System.Collections.IEnumerator Fly(Transform t, Vector3 worldFrom, float time)
+    {
+        Vector3 end = t.localPosition;
+        Vector3 start = t.parent.InverseTransformPoint(worldFrom);
+        for (float e = 0f; e < time && t != null; e += Time.deltaTime)
+        {
+            float k = Mathf.SmoothStep(0f, 1f, e / time);
+            t.localPosition = Vector3.Lerp(start, end, k) + t.parent.InverseTransformVector(Vector3.up) * (Mathf.Sin(k * Mathf.PI) * 0.35f);
+            yield return null;
+        }
+        if (t != null)
+            t.localPosition = end;
     }
 
     public void ClearVisual()

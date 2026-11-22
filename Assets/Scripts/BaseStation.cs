@@ -142,10 +142,153 @@ public class BaseStation : MonoBehaviour
             burnAudio.Play();
     }
 
+    private Transform bounceTarget;
+    private Vector3 bounceBaseScale;
+    private Coroutine bounceRoutine;
+
+    // Little jelly squash on the station model when something is placed or taken.
+    public void Bounce(float amount = 0.12f)
+    {
+        if (!isActiveAndEnabled)
+            return;
+
+        if (bounceTarget == null)
+        {
+            bounceTarget = transform.Find("Space Visual");
+            if (bounceTarget == null)
+                return;
+            bounceBaseScale = bounceTarget.localScale;
+        }
+
+        if (bounceRoutine != null)
+            StopCoroutine(bounceRoutine);
+        bounceRoutine = StartCoroutine(VisualFx.Squash(bounceTarget, bounceBaseScale, amount, 0.28f));
+    }
+
+    private float lockedUntil;
+    public bool IsLocked => Time.time < lockedUntil;
+    private static readonly Color LockColor = new Color(0.25f, 0.2f, 0.35f);
+
+    // Versus sabotage: nobody can use this station for a while.
+    public void Lock(float seconds)
+    {
+        lockedUntil = Time.time + seconds;
+        StartCoroutine(LockRoutine());
+    }
+
+    private System.Collections.IEnumerator LockRoutine()
+    {
+        Bounce(-0.25f);
+        VisualFx.Puff(transform.position + fxOffset, LockColor, 14, 0.4f, 1.4f);
+        AudioManager.Instance?.PlayNopeSFX();
+
+        // Re-tint every frame: highlight and other tints elsewhere would otherwise wipe it.
+        while (IsLocked)
+        {
+            VisualFx.Tint(gameObject, LockColor, 0.55f + 0.15f * Mathf.Sin(Time.time * 6f));
+            yield return null;
+        }
+
+        VisualFx.ClearTint(gameObject);
+        Bounce(0.15f);
+        Sparkle();
+    }
+
+    // Cooked food waiting to be grabbed throbs faster and harder as it nears burning. heat 0 = rest.
+    // Starts at 30% heat so it never fights the "just cooked" pop; resets once when it stops.
+    private bool throbbing;
+    protected void ThrobFood(KitchenItemVisualizer visualizer, float heat)
+    {
+        Transform food = visualizer != null ? visualizer.CurrentVisual : null;
+        if (food == null)
+            return;
+
+        float h = Mathf.Clamp01((heat - 0.3f) / 0.7f);
+        if (h <= 0f)
+        {
+            if (throbbing)
+                food.localScale = visualizer.VisualScale;
+            throbbing = false;
+            return;
+        }
+
+        throbbing = true;
+        food.localScale = visualizer.VisualScale * (1f + 0.12f * h * Mathf.Abs(Mathf.Sin(Time.time * (5f + 15f * h))));
+    }
+
+    // Food burned to nothing: sooty cloud plus a sad slump.
+    protected void BurnPoof()
+    {
+        VisualFx.Puff(transform.position + fxOffset, new Color(0.15f, 0.13f, 0.12f, 0.9f), 18, 0.5f, 1.6f);
+        Bounce(-0.25f);
+        AudioManager.Instance?.PlayNopeSFX();
+    }
+
+    private const float CookRingWorldSize = 1.3f;
+    private static Sprite ringSprite;
+    private UnityEngine.UI.Image cookRing;
+
+    // Timer ring around the cooking icon. A child of the icon, so it hides with it.
+    protected void SetCookRing(UnityEngine.UI.Image icon, float fill, Color color)
+    {
+        if (icon == null)
+            return;
+
+        if (cookRing == null)
+        {
+            if (ringSprite == null)
+                ringSprite = MakeRingSprite();
+            cookRing = new GameObject("Cook Ring", typeof(RectTransform), typeof(UnityEngine.UI.Image)).GetComponent<UnityEngine.UI.Image>();
+            RectTransform rt = cookRing.rectTransform, irt = icon.rectTransform;
+            rt.SetParent(irt, false);
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            // Same round world size on every station, whatever the icon's scale or shape.
+            Vector3 s = irt.lossyScale;
+            rt.sizeDelta = new Vector2(CookRingWorldSize / s.x, CookRingWorldSize / s.y);
+            cookRing.sprite = ringSprite;
+            cookRing.type = UnityEngine.UI.Image.Type.Filled;
+            cookRing.fillMethod = UnityEngine.UI.Image.FillMethod.Radial360;
+            cookRing.fillOrigin = (int)UnityEngine.UI.Image.Origin360.Top;
+            cookRing.fillClockwise = true;
+            cookRing.raycastTarget = false;
+            icon.enabled = false; // the ring replaces the old animated icon
+        }
+
+        fill = Mathf.Clamp01(fill);
+        cookRing.fillAmount = fill;
+        cookRing.color = color;
+        // Heartbeat over the last 20% so "almost done" reads at a glance.
+        float beat = Mathf.Clamp01((fill - 0.8f) / 0.2f) * Mathf.Abs(Mathf.Sin(Time.time * 10f));
+        cookRing.rectTransform.localScale = Vector3.one * (1f + 0.12f * beat);
+    }
+
+    // White ring with dark ink edges, drawn once.
+    private static Sprite MakeRingSprite()
+    {
+        const int n = 128;
+        var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        var px = new Color32[n * n];
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float r = new Vector2(x - n / 2f + 0.5f, y - n / 2f + 0.5f).magnitude / (n / 2f);
+                float a = Mathf.Clamp01((1f - r) * n / 2f) * Mathf.Clamp01((r - 0.7f) * n / 2f);
+                bool ink = r < 0.76f || r > 0.94f;
+                byte v = ink ? (byte)30 : (byte)255;
+                px[y * n + x] = new Color32(v, v, v, (byte)(a * 255));
+            }
+        tex.SetPixels32(px);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f));
+    }
+
     protected static float CookRate(PlayerControl user)
     {
         return PowerUpManager.Instance != null ? 1f / PowerUpManager.Instance.GetCookingTimeMultiplier(user) : 1f;
     }
+
+    protected static bool BurnProof(PlayerControl user) =>
+        PowerUpManager.Instance != null && PowerUpManager.Instance.HasInstaCook(user);
 
     public void OpenPanel(bool show)
     {

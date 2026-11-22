@@ -106,12 +106,19 @@ public static class VisualFx
         img.preserveAspect = source.preserveAspect;
         img.raycastTarget = false;
 
-        for (float e = 0f; e < 0.7f; e += Time.unscaledDeltaTime)
+        // Crumples into a ball, then gets tossed up and away like a binned receipt.
+        float side = Random.value < 0.5f ? -1f : 1f;
+        const float crumple = 0.25f, toss = 0.75f;
+        for (float e = 0f; e < crumple + toss; e += Time.unscaledDeltaTime)
         {
-            float k = e / 0.7f;
-            rect.anchoredPosition = start + Vector2.down * 160f * k * k;
-            rect.localRotation = Quaternion.Euler(0f, 0f, -25f * k);
-            img.color = new Color(1f, 0.25f, 0.25f, 1f - k);
+            float c = Mathf.Clamp01(e / crumple);
+            float jitter = Mathf.Sin(e * 90f) * 0.08f * (1f - c);
+            rect.localScale = new Vector3(Mathf.Lerp(1f, 0.35f, c) + jitter, Mathf.Lerp(1f, 0.4f, c) - jitter, 1f);
+
+            float k = Mathf.Clamp01((e - crumple) / toss);
+            rect.anchoredPosition = start + new Vector2(side * 260f * k, 140f * k - 520f * k * k);
+            rect.localRotation = Quaternion.Euler(0f, 0f, -side * 540f * k + jitter * 40f);
+            img.color = new Color(1f, Mathf.Lerp(0.6f, 0.25f, c), Mathf.Lerp(0.55f, 0.25f, c), 1f - k * k);
             yield return null;
         }
 
@@ -180,22 +187,28 @@ public static class VisualFx
     private static readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
+    // Reused buffers: Tint runs every frame for highlights, lockouts and reversed chefs,
+    // and GetComponentsInChildren / sharedMaterials each allocated a fresh array per call.
+    private static readonly List<Renderer> rendererBuffer = new List<Renderer>();
+    private static readonly List<Material> materialBuffer = new List<Material>();
+
     public static void Tint(GameObject root, Color color, float amount)
     {
-        foreach (Renderer r in root.GetComponentsInChildren<Renderer>())
+        root.GetComponentsInChildren(rendererBuffer);
+        foreach (Renderer r in rendererBuffer)
         {
             if (r is ParticleSystemRenderer) continue;
 
-            Material[] mats = r.sharedMaterials;
+            r.GetSharedMaterials(materialBuffer);
             if (!originalColors.TryGetValue(r, out Color[] originals))
             {
-                originals = new Color[mats.Length];
-                for (int i = 0; i < mats.Length; i++)
-                    originals[i] = mats[i] != null && mats[i].HasProperty(BaseColorId) ? mats[i].GetColor(BaseColorId) : Color.clear;
+                originals = new Color[materialBuffer.Count];
+                for (int i = 0; i < materialBuffer.Count; i++)
+                    originals[i] = materialBuffer[i] != null && materialBuffer[i].HasProperty(BaseColorId) ? materialBuffer[i].GetColor(BaseColorId) : Color.clear;
                 originalColors[r] = originals;
             }
 
-            for (int i = 0; i < mats.Length && i < originals.Length; i++)
+            for (int i = 0; i < originals.Length && i < materialBuffer.Count; i++)
             {
                 if (originals[i] == Color.clear) continue;
                 block.Clear();
@@ -207,12 +220,14 @@ public static class VisualFx
 
     public static void ClearTint(GameObject root)
     {
-        foreach (Renderer r in root.GetComponentsInChildren<Renderer>())
+        root.GetComponentsInChildren(rendererBuffer);
+        foreach (Renderer r in rendererBuffer)
         {
             if (r is ParticleSystemRenderer) continue;
 
             block.Clear();
-            for (int i = 0; i < r.sharedMaterials.Length; i++)
+            r.GetSharedMaterials(materialBuffer);
+            for (int i = 0; i < materialBuffer.Count; i++)
                 r.SetPropertyBlock(block, i);
         }
     }
@@ -258,7 +273,7 @@ public static class VisualFx
         foreach (MeshRenderer r in target.GetComponentsInChildren<MeshRenderer>())
         {
             MeshFilter filter = r.GetComponent<MeshFilter>();
-            if (filter == null || filter.sharedMesh == null || !r.enabled || r.name == "HighlightOutline") continue;
+            if (filter == null || filter.sharedMesh == null || !r.enabled || r.name == "HighlightOutline" || r.name == "StationOutline") continue;
 
             var go = new GameObject("HighlightOutline");
             go.transform.SetParent(r.transform, false);
@@ -299,6 +314,48 @@ public static class VisualFx
 
     public static Material FxMaterial;
     private static ParticleSystem puffSystem;
+
+    // A thin wisp of steam rising from hot food. Lives on the food, so it goes wherever the food goes.
+    public static void AddSteam(Transform food)
+    {
+        if (FxMaterial == null || food == null)
+            return;
+
+        var go = new GameObject("Food Steam");
+        go.transform.SetParent(food, false);
+        go.transform.localPosition = Vector3.up * 0.15f;
+        go.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
+
+        var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var main = ps.main;
+        main.loop = true;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.9f, 1.3f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.25f, 0.45f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.2f);
+        main.startColor = new Color(1f, 1f, 1f, 0.35f);
+        main.gravityModifier = -0.03f;
+        var emission = ps.emission;
+        emission.rateOverTime = 4f;
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Cone;
+        shape.angle = 8f;
+        shape.radius = 0.05f;
+        var size = ps.sizeOverLifetime;
+        size.enabled = true;
+        size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.6f, 1f, 1.8f));
+        var color = ps.colorOverLifetime;
+        color.enabled = true;
+        var fade = new Gradient();
+        fade.SetKeys(
+            new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.25f), new GradientAlphaKey(0f, 1f) });
+        color.color = fade;
+        go.GetComponent<ParticleSystemRenderer>().sharedMaterial = FxMaterial;
+        ps.Play();
+    }
 
     public static void Puff(Vector3 position, Color color, int count = 8, float size = 0.35f, float speed = 1.2f)
     {

@@ -78,9 +78,10 @@ public class ScoreManager : MonoBehaviour
 
         int stars = CountStars(won, mode, money, time);
 
-        if (stars > GetBestStars(mode))
+        string map = MapSelector.Instance?.Current?.name;
+        if (stars > GetBestStars(mode, map))
         {
-            PlayerPrefs.SetInt(BestStarsKey(mode), stars);
+            PlayerPrefs.SetInt(BestStarsKey(mode, map), stars);
             PlayerPrefs.Save();
         }
 
@@ -92,9 +93,9 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
-    public static int GetBestStars(OrderManager.GameMode mode) => PlayerPrefs.GetInt(BestStarsKey(mode), 0);
+    public static int GetBestStars(OrderManager.GameMode mode, string map) => PlayerPrefs.GetInt(BestStarsKey(mode, map), 0);
 
-    private static string BestStarsKey(OrderManager.GameMode mode) => "BestStars_" + mode;
+    private static string BestStarsKey(OrderManager.GameMode mode, string map) => "BestStars_" + mode + "_" + map;
 
     private int CountStars(bool won, OrderManager.GameMode mode, float money, float time)
     {
@@ -118,13 +119,13 @@ public class ScoreManager : MonoBehaviour
         Time.timeScale = 1f;
         GameModeSelector.retryMode = OrderManager.Instance?.GetCurrentMode();
         MainMenuManager.skipMainMenuOnLoad = true;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        PaperWipe.ReloadScene();
     }
 
     private void Menu()
     {
         Time.timeScale = 1f;
         MainMenuManager.skipMainMenuOnLoad = true;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        PaperWipe.ReloadScene();
     }
 }
