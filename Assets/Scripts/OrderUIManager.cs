@@ -747,8 +747,64 @@ public class OrderUIManager : MonoBehaviour
             goalText.gameObject.SetActive(false);
         }
 
-        float progress = quota > 0f ? money / quota : 0f;
-        SetBar(goalBar, progress, progress >= 1f ? new Color(0.55f, 1f, 0.5f) : goalBarColor);
+        // Story: the bar runs up to the 3-star mark, with a star under each target.
+        float barEnd = quota * (StoryMode.IsActive ? StoryMode.ThreeStarRatio : 1f);
+        SetBar(goalBar, barEnd > 0f ? money / barEnd : 0f, quota > 0f && money >= quota ? new Color(0.55f, 1f, 0.5f) : goalBarColor);
+
+        if (StoryMode.IsActive && quota > 0f)
+            UpdateGoalStars(money / quota);
+    }
+
+    private static readonly float[] StarMarks = { 1f, StoryMode.TwoStarRatio, StoryMode.ThreeStarRatio };
+    private Image[] goalStars;
+    private int goalStarsLit = -1, goalStarsBest;
+
+    private void UpdateGoalStars(float ratio)
+    {
+        ScoreManager score = ScoreManager.Instance;
+        if (goalBar == null || score == null || score.starImages[0] == null)
+            return;
+
+        if (goalStars == null)
+        {
+            goalStars = new Image[StarMarks.Length];
+            for (int i = 0; i < goalStars.Length; i++)
+            {
+                var star = new GameObject("Goal Star", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                RectTransform r = star.rectTransform;
+                r.SetParent(goalBar.parent, false);
+                r.anchorMin = r.anchorMax = new Vector2(StarMarks[i] / StoryMode.ThreeStarRatio, 0f);
+                r.pivot = new Vector2(1f, 1f); // right edge on the mark, so the last star stays on screen
+                r.anchoredPosition = new Vector2(0f, -5f);
+                r.sizeDelta = new Vector2(36f, 36f);
+                star.sprite = score.starImages[0].sprite;
+                star.preserveAspect = true;
+                star.raycastTarget = false;
+                goalStars[i] = star;
+            }
+        }
+
+        int lit = 0;
+        while (lit < StarMarks.Length && ratio >= StarMarks[lit])
+            lit++;
+
+        if (lit == goalStarsLit)
+            return;
+        goalStarsLit = lit;
+
+        for (int i = 0; i < goalStars.Length; i++)
+            goalStars[i].color = i < lit ? score.starOnColor : goalBarPaperColor;
+
+        // Only celebrate a star once, even if a missed order drops below it and it's earned back.
+        if (lit <= goalStarsBest)
+            return;
+        goalStarsBest = lit;
+
+        StartCoroutine(VisualFx.Pop(goalStars[lit - 1].transform, 2.6f, 0.35f));
+        AudioManager.Instance?.PlayStoryStarSFX(lit - 1);
+        if (lit == 1)
+            StartCoroutine(VisualFx.FloatText((RectTransform)moneyText.transform.parent,
+                moneyText.rectTransform.anchoredPosition + Vector2.down * 230f, "GOAL!", moneyText.font, Color.yellow, 64f));
     }
 
     public void HideStatus()

@@ -78,6 +78,13 @@ public class IceCreamMachine : BaseStation, IInteractable
                 return;
             }
 
+            if (!System.Array.Exists(iceCreamOrders, StoryMode.OnMenu))
+            {
+                Show(player, "Not on today's menu");
+                player.PlayNope();
+                return;
+            }
+
             currentPlayer = player;
             currentPlayer.currentIceCreamMachine = this;
             StartIceCreamSelection();
@@ -96,7 +103,7 @@ public class IceCreamMachine : BaseStation, IInteractable
             ? OrderManager.Instance.MostUrgentOrder(currentPlayer, dish => System.Array.IndexOf(iceCreamOrders, dish) >= 0)
             : null;
         suggestedIceCreamIndex = urgent != null ? System.Array.IndexOf(iceCreamOrders, urgent.item.type) : -1;
-        selectedIceCreamIndex = Mathf.Max(0, suggestedIceCreamIndex);
+        selectedIceCreamIndex = suggestedIceCreamIndex >= 0 ? suggestedIceCreamIndex : StoryMode.NextOnMenu(iceCreamOrders, -1, 1);
 
         if (currentPlayer.emoteSelectionText != null)
             normalTextColor = currentPlayer.emoteSelectionText.color;
@@ -207,7 +214,7 @@ public class IceCreamMachine : BaseStation, IInteractable
         int step = currentPlayer.GetMenuStep();
         if (step != 0)
         {
-            selectedIceCreamIndex = (selectedIceCreamIndex + step + iceCreamSelectionLabels.Length) % iceCreamSelectionLabels.Length;
+            selectedIceCreamIndex = StoryMode.NextOnMenu(iceCreamOrders, selectedIceCreamIndex, step);
             UpdateIceCreamSelectionText();
         }
     }

@@ -42,11 +42,10 @@ public class DrinkMachine : BaseStation, IInteractable
         if ((isSelectingDrink || isPouring) && currentPlayer == player)
             return true;
 
-        return player.heldItem.IsCup
-               && !player.heldItem.cupHasSoda
-               && !player.heldItem.cupHasIceTea
-               && !player.heldItem.cupHasOrangeJuice;
+        return player.heldItem.IsCup && !player.heldItem.IsCompleteDrink;
     }
+
+    private static bool AnyOnMenu => System.Array.Exists(drinkOrders, StoryMode.OnMenu);
 
     private void Update()
     {
@@ -81,9 +80,16 @@ public class DrinkMachine : BaseStation, IInteractable
                 return;
             }
 
-            if (player.heldItem.cupHasSoda || player.heldItem.cupHasIceTea || player.heldItem.cupHasOrangeJuice)
+            if (player.heldItem.IsCompleteDrink)
             {
                 Show(player, "Cup is already filled");
+                return;
+            }
+
+            if (!AnyOnMenu)
+            {
+                Show(player, "Not on today's menu");
+                player.PlayNope();
                 return;
             }
 
@@ -105,7 +111,7 @@ public class DrinkMachine : BaseStation, IInteractable
             ? OrderManager.Instance.MostUrgentOrder(currentPlayer, dish => System.Array.IndexOf(drinkOrders, dish) >= 0)
             : null;
         suggestedDrinkIndex = urgent != null ? System.Array.IndexOf(drinkOrders, urgent.item.type) : -1;
-        selectedDrinkIndex = Mathf.Max(0, suggestedDrinkIndex);
+        selectedDrinkIndex = suggestedDrinkIndex >= 0 ? suggestedDrinkIndex : StoryMode.NextOnMenu(drinkOrders, -1, 1);
 
         if (currentPlayer.emoteSelectionText != null)
             normalTextColor = currentPlayer.emoteSelectionText.color;
@@ -220,7 +226,7 @@ public class DrinkMachine : BaseStation, IInteractable
         int step = currentPlayer.GetMenuStep();
         if (step != 0)
         {
-            selectedDrinkIndex = (selectedDrinkIndex + step + drinkSelectionLabels.Length) % drinkSelectionLabels.Length;
+            selectedDrinkIndex = StoryMode.NextOnMenu(drinkOrders, selectedDrinkIndex, step);
             UpdateDrinkSelectionText();
         }
     }

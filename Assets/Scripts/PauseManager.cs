@@ -266,6 +266,7 @@ public class PauseManager : MonoBehaviour
         SetPanel(pausePanel, false);
         SetPanel(howToPlayPanel, false);
         isPaused = false;
+        StoryMode.CurrentIndex = -1;
 
         PaperWipe.ReloadScene();
     }

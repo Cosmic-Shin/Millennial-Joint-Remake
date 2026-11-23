@@ -45,6 +45,12 @@ public class SelectFlow : MonoBehaviour
     [Tooltip("Picture on the Random card (a shadowed map)")]
     public Sprite randomPreview;
 
+    [Header("Story Mode (on the map screen)")]
+    public GameObject storyTicket;
+    public TMP_Text mapTitleText;
+    public Sprite lockSprite;
+    public Color lockedPictureColor = new Color(0.28f, 0.27f, 0.3f);
+
     [Header("Back buttons (mouse)")]
     public Button[] backButtons;
 
@@ -95,7 +101,11 @@ public class SelectFlow : MonoBehaviour
             if (GameSession.Players[i].character == null)
                 GameSession.Players[i].character = characters[i % characters.Length];
 
-        mapIndex = GameSession.Map != null ? Mathf.Max(0, Array.IndexOf(maps, GameSession.Map)) : maps.Length;
+        mapIndex = StoryMode.IsActive
+            ? Mathf.Max(0, Array.FindIndex(maps, m => m.layoutName == StoryMode.Current.layoutName))
+            : GameSession.Map != null ? Mathf.Max(0, Array.IndexOf(maps, GameSession.Map)) : maps.Length;
+        if (CardLocked(mapIndex))
+            mapIndex = maps.Length; // last map came from an unfinished chapter: fall back to Random
         previewCamera.enabled = true;
         RebuildPreview(0);
         RebuildPreview(1);
@@ -219,7 +229,7 @@ public class SelectFlow : MonoBehaviour
 
     private void MapInput(PlayerControl p)
     {
-        int count = maps.Length + 1;
+        int count = StoryMode.IsActive ? maps.Length : maps.Length + 1; // no Random card in Story
         int horizontal = p.GetMenuStep();
         int vertical = VerticalPressed(p, p.playerNumber - 1);
         if (horizontal != 0)
@@ -253,8 +263,31 @@ public class SelectFlow : MonoBehaviour
         }
     }
 
+    private int ChapterOf(int card) => card < maps.Length ? StoryMode.IndexOfLayout(maps[card].layoutName) : -1;
+
+    private bool CardLocked(int card)
+    {
+        if (card >= maps.Length)
+            return false; // Random
+        return StoryMode.IsActive ? !StoryMode.IsUnlocked(ChapterOf(card)) : !StoryMode.IsMapOpen(maps[card].layoutName);
+    }
+
     private void Finish()
     {
+        if (CardLocked(mapIndex))
+        {
+            AudioManager.Instance?.PlayChapterLockedSFX();
+            if (Time.unscaledTime >= nextLockShake) // one shake at a time, or the card drifts from its spot
+            {
+                nextLockShake = Time.unscaledTime + 0.32f;
+                StartCoroutine(VisualFx.Shake((RectTransform)mapCards[mapIndex].transform, 14f, 0.3f));
+            }
+            return;
+        }
+
+        if (StoryMode.IsActive)
+            StoryMode.CurrentIndex = ChapterOf(mapIndex);
+
         GameSession.Map = mapIndex < maps.Length ? maps[mapIndex] : null;
         MapSelector.Instance?.Choose(GameSession.Map);
 
@@ -373,10 +406,14 @@ public class SelectFlow : MonoBehaviour
         {
             for (int c = 0; c < mapCards.Length; c++)
             {
-                bool exists = c <= maps.Length;
+                bool exists = StoryMode.IsActive ? c < maps.Length : c <= maps.Length;
                 mapCards[c].gameObject.SetActive(exists);
                 if (!exists)
+                {
+                    if (mapGlows != null && c < mapGlows.Length && mapGlows[c] != null)
+                        mapGlows[c].color = Color.clear;
                     continue;
+                }
 
                 MapDefinition map = c < maps.Length ? maps[c] : null;
                 mapCards[c].sprite = map != null ? map.preview : randomPreview;
@@ -389,16 +426,126 @@ public class SelectFlow : MonoBehaviour
                 mapCards[c].color = picture ? (selected ? Color.white : dimmedPictureColor) : selected ? highlightColor : cardColor;
                 mapCardLabels[c].text = map != null ? map.displayName : "Random";
                 ShowBestStars(mapCards[c].transform.Find("Best Stars"), map);
+
+                bool locked = CardLocked(c);
+                if (locked)
+                {
+                    mapCards[c].color = lockedPictureColor;
+                    Transform stars = mapCards[c].transform.Find("Best Stars");
+                    if (stars != null)
+                        stars.gameObject.SetActive(false);
+                }
+                CardLock(c).gameObject.SetActive(locked);
             }
             string p1 = KeyName(players[0], true), p2 = players.Length > 1 ? KeyName(players[1], true) : p1;
-            mapStatusText.text = $"Either player: move to browse, {p1} / {p2} to start";
+            mapStatusText.text = !CardLocked(mapIndex) ? $"Move to browse, {p1} / {p2} to start"
+                : StoryMode.IsActive ? "Clear the chapter before this one to unlock it"
+                : $"Clear Chapter {ChapterOf(mapIndex) + 1} in Story Mode to unlock";
+            if (mapTitleText != null)
+                mapTitleText.text = StoryMode.IsActive ? "Story Mode" : "Choose a Map";
+            RefreshStoryTicket();
         }
     }
 
-    [Tooltip("Glowing border colour around the selected map card")]
-    public Color mapGlowColor = new Color(1f, 0.6f, 0.05f);
+    private Image[] cardLocks;
+    private float nextLockShake;
 
-    // The selected card grows, breathes and wears a thick glowing border, so it's obvious which map is picked.
+    private Image CardLock(int c)
+    {
+        cardLocks ??= new Image[mapCards.Length];
+        if (cardLocks[c] != null)
+            return cardLocks[c];
+
+        var go = new GameObject("Lock", typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(mapCards[c].transform, false);
+        ((RectTransform)go.transform).sizeDelta = new Vector2(110f, 110f);
+        Image img = go.GetComponent<Image>();
+        img.sprite = lockSprite;
+        img.preserveAspect = true;
+        img.raycastTarget = false;
+        return cardLocks[c] = img;
+    }
+
+    private void RefreshStoryTicket()
+    {
+        if (storyTicket == null)
+            return;
+
+        int chapter = StoryMode.IsActive ? ChapterOf(mapIndex) : -1;
+        storyTicket.SetActive(chapter >= 0);
+        if (chapter < 0)
+            return;
+
+        FillTicket(storyTicket.transform, chapter);
+    }
+
+    private void FillTicket(Transform ticket, int chapter)
+    {
+        StoryMode.Chapter info = StoryMode.Chapters[chapter];
+        bool open = StoryMode.IsUnlocked(chapter);
+        ticket.Find("Title").GetComponent<TMP_Text>().text = $"Chapter {chapter + 1}: {info.title}";
+        ticket.Find("Goal").GetComponent<TMP_Text>().text = $"Earn ${info.goal:0} in {OrderUIManager.Clock(info.seconds)}";
+
+        OrderItemType[] fresh = StoryMode.NewMeals(chapter);
+        for (int i = 0; ticket.Find("Meal " + i) != null; i++)
+        {
+            TMP_Text label = ticket.Find("Meal " + i).GetComponent<TMP_Text>();
+            bool used = i < info.menu.Length;
+            label.gameObject.SetActive(used);
+            if (!used)
+                continue;
+
+            label.text = open ? new OrderItem(info.menu[i]).GetDisplayName() : "? ? ?"; // meals stay secret until unlocked
+            var stamp = (RectTransform)label.transform.Find("New");
+            stamp.gameObject.SetActive(open && Array.IndexOf(fresh, info.menu[i]) >= 0);
+            stamp.anchoredPosition = new Vector2(label.GetPreferredValues(label.text).x - label.rectTransform.rect.width / 2f + 52f, 2f);
+        }
+    }
+
+    public void PlayChapterIntro()
+    {
+        if (storyTicket != null)
+            StartCoroutine(ChapterIntro());
+    }
+
+    // The chapter's ticket slides up during the 3-2-1, so both players see the goal and menu.
+    private System.Collections.IEnumerator ChapterIntro()
+    {
+        var card = (RectTransform)Instantiate(storyTicket, mapPanel.transform.parent).transform;
+        card.name = "Chapter Intro";
+        card.SetSiblingIndex(mapPanel.transform.GetSiblingIndex());
+        card.localRotation = Quaternion.Euler(0f, 0f, -2f);
+        card.gameObject.SetActive(true);
+        FillTicket(card, StoryMode.CurrentIndex);
+
+        // Panels are laid out at 1080p and scaled down inside the canvas, so the ticket follows that scale.
+        float scale = mapPanel.transform.localScale.y;
+        card.localScale = mapPanel.transform.localScale;
+        float hidden = -860f * scale, shown = -335f * scale;
+        const float slide = 0.35f, hold = 2.2f;
+        // Unscaled, so pausing during the countdown can't leave the ticket stuck on screen.
+        for (float t = 0f; t < slide; t += Time.unscaledDeltaTime)
+        {
+            card.anchoredPosition = new Vector2(0f, Mathf.Lerp(hidden, shown, 1f - Mathf.Pow(1f - t / slide, 3f)));
+            yield return null;
+        }
+        card.anchoredPosition = new Vector2(0f, shown);
+
+        yield return new WaitForSecondsRealtime(hold);
+
+        for (float t = 0f; t < slide; t += Time.unscaledDeltaTime)
+        {
+            float k = t / slide;
+            card.anchoredPosition = new Vector2(0f, Mathf.Lerp(shown, hidden, k * k));
+            yield return null;
+        }
+        Destroy(card.gameObject);
+    }
+
+    [Tooltip("Hand-drawn highlighter frame behind the selected map card and its label")]
+    public Sprite mapSelectFrame;
+
+    // The selected card grows slightly and sits on a highlighter swatch, like the mode buttons.
     private void AnimateMapCards()
     {
         if (step != Step.Map || mapCards == null)
@@ -414,19 +561,17 @@ public class SelectFlow : MonoBehaviour
 
             bool selected = c == mapIndex;
             Transform t = mapCards[c].transform;
-            float target = selected ? 1.15f + 0.02f * pulse : 0.95f;
+            float target = selected ? 1.05f + 0.01f * pulse : 0.95f;
             t.localScale = Vector3.Lerp(t.localScale, Vector3.one * target, k);
 
             Image glow = MapGlow(c);
-            Color col = mapGlowColor;
-            col.a = Mathf.Lerp(glow.color.a, selected ? 0.85f + 0.15f * pulse : 0f, k);
-            glow.color = col;
+            glow.color = new Color(1f, 1f, 1f, Mathf.Lerp(glow.color.a, selected ? 1f : 0f, k));
 
-            // Glow sits behind the card (sibling just before it) and tracks its rect and scale.
+            // The frame sits behind the card (sibling just before it) and wraps the picture and label.
             RectTransform g = glow.rectTransform, card = (RectTransform)t;
             g.anchorMin = card.anchorMin; g.anchorMax = card.anchorMax; g.pivot = card.pivot;
-            g.anchoredPosition = card.anchoredPosition;
-            g.sizeDelta = card.sizeDelta + Vector2.one * 130f;
+            g.anchoredPosition = card.anchoredPosition + Vector2.down * (29f * t.localScale.y);
+            g.sizeDelta = new Vector2(card.sizeDelta.x + 44f, 227f);
             g.localScale = t.localScale;
             if (g.GetSiblingIndex() != t.GetSiblingIndex() - 1)
                 g.SetSiblingIndex(t.GetSiblingIndex());
@@ -434,7 +579,6 @@ public class SelectFlow : MonoBehaviour
     }
 
     private Image[] mapGlows;
-    private static Sprite glowSprite;
 
     private Image MapGlow(int c)
     {
@@ -443,33 +587,13 @@ public class SelectFlow : MonoBehaviour
         if (mapGlows[c] != null)
             return mapGlows[c];
 
-        if (glowSprite == null)
-        {
-            // Soft-edged rounded rect, 9-sliced so it stretches to any card size.
-            const int n = 64, edge = 28;
-            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-            var px = new Color32[n * n];
-            for (int y = 0; y < n; y++)
-                for (int x = 0; x < n; x++)
-                {
-                    float dx = Mathf.Max(0f, edge - Mathf.Min(x, n - 1 - x)), dy = Mathf.Max(0f, edge - Mathf.Min(y, n - 1 - y));
-                    float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy) / edge);
-                    px[y * n + x] = new Color32(255, 255, 255, (byte)(Mathf.Sqrt(a) * 255));
-                }
-            tex.SetPixels32(px);
-            tex.Apply();
-            glowSprite = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(edge, edge, edge, edge));
-        }
-
-        var go = new GameObject("Map Glow", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        var go = new GameObject("Map Frame", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
         go.GetComponent<LayoutElement>().ignoreLayout = true;
         go.transform.SetParent(mapCards[c].transform.parent, false);
         Image img = go.GetComponent<Image>();
-        img.sprite = glowSprite;
-        img.type = Image.Type.Sliced;
-        img.pixelsPerUnitMultiplier = 0.35f; // wider soft edge
+        img.sprite = mapSelectFrame;
         img.raycastTarget = false;
-        img.color = new Color(mapGlowColor.r, mapGlowColor.g, mapGlowColor.b, 0f);
+        img.color = new Color(1f, 1f, 1f, 0f);
         return mapGlows[c] = img;
     }
 
@@ -483,7 +607,7 @@ public class SelectFlow : MonoBehaviour
         stars.gameObject.SetActive(show);
         if (!show)
             return;
-        int earned = ScoreManager.GetBestStars(mode, map.layoutName);
+        int earned = StoryMode.IsActive ? StoryMode.GetStars(StoryMode.IndexOfLayout(map.layoutName)) : ScoreManager.GetBestStars(mode, map.layoutName);
         for (int i = 0; i < stars.childCount; i++)
             if (stars.GetChild(i).TryGetComponent(out Image star))
                 star.color = i < earned ? bestStarOnColor : bestStarOffColor;

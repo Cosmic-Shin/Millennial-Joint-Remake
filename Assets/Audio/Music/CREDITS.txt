@@ -1,0 +1,6 @@
+All tracks in this folder are CC0 (public domain), from OpenGameArt.org.
+
+happy_clappy_loop.wav - "Happy Clappy Loop" by OwlishMedia - https://opengameart.org/content/happy-clappy-loop
+jump_loop.ogg - "Jump" by ThePixel - https://opengameart.org/content/jump
+game_over.wav - "Game Over!" by zuvizu - https://opengameart.org/content/game-over-0
+win_jingle.ogg - "Win Jingle" by Fupi - https://opengameart.org/content/win-jingle

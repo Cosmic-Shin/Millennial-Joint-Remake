@@ -149,8 +149,10 @@ public static class VisualFx
 
         Canvas canvas = parent.GetComponentInParent<Canvas>();
         Rect area = canvas != null ? ((RectTransform)canvas.rootCanvas.transform).rect : parent.rect;
-        float halfWidth = area.width * 0.5f;
-        float top = area.height * 0.5f;
+        // Panels are scaled inside the canvas, so convert the screen area into the panel's own units.
+        float toParent = canvas != null ? canvas.rootCanvas.transform.lossyScale.x / parent.lossyScale.x : 1f;
+        float halfWidth = area.width * 0.5f * toParent;
+        float top = area.height * 0.5f * toParent;
 
         for (int i = 0; i < count; i++)
         {

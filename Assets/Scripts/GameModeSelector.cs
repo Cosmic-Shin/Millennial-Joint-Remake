@@ -11,11 +11,13 @@ public class GameModeSelector : MonoBehaviour
     public Button timeModeBut;
     public Button speedModeBut;
     public Button versusModeBut;
+    public Button storyModeBut;
 
     [Header("Mode Card Descriptions (filled from OrderManager's settings)")]
     public TMP_Text timeModeDesc;
     public TMP_Text speedModeDesc;
     public TMP_Text versusModeDesc;
+    public TMP_Text storyModeDesc;
 
     [Header("Choose Control Panel")]
     public GameObject controlPanel;
@@ -57,13 +59,20 @@ public class GameModeSelector : MonoBehaviour
     private void Start()
     {
         if (timeModeBut != null)
-            timeModeBut.onClick.AddListener(() => SelectMode(OrderManager.GameMode.TIME));
+            timeModeBut.onClick.AddListener(() => SelectArcadeMode(OrderManager.GameMode.TIME));
 
         if (speedModeBut != null)
-            speedModeBut.onClick.AddListener(() => SelectMode(OrderManager.GameMode.SPEED));
+            speedModeBut.onClick.AddListener(() => SelectArcadeMode(OrderManager.GameMode.SPEED));
 
         if (versusModeBut != null)
-            versusModeBut.onClick.AddListener(() => SelectMode(OrderManager.GameMode.VERSUS));
+            versusModeBut.onClick.AddListener(() => SelectArcadeMode(OrderManager.GameMode.VERSUS));
+
+        if (storyModeBut != null)
+            storyModeBut.onClick.AddListener(() =>
+            {
+                StoryMode.CurrentIndex = StoryMode.UnlockedCount - 1;
+                SelectMode(OrderManager.GameMode.TIME);
+            });
 
         FillModeDescriptions();
 
@@ -103,6 +112,15 @@ public class GameModeSelector : MonoBehaviour
 
         if (versusModeDesc != null)
             versusModeDesc.text = $"{Duration(om.versusModeDuration)} head to head. Most money wins!";
+
+        if (storyModeDesc != null)
+            storyModeDesc.text = $"2 players. Chapter {StoryMode.UnlockedCount} of {StoryMode.Chapters.Length}, {StoryMode.TotalStars}/{StoryMode.Chapters.Length * 3} stars";
+    }
+
+    private void SelectArcadeMode(OrderManager.GameMode mode)
+    {
+        StoryMode.CurrentIndex = -1;
+        SelectMode(mode);
     }
 
     private static string Duration(float seconds)
@@ -122,6 +140,10 @@ public class GameModeSelector : MonoBehaviour
     public void SelectMode(OrderManager.GameMode mode)
     {
         pendingMode = mode;
+
+        // Story chapters have fixed rules.
+        if (MatchRules.Instance != null && MatchRules.Instance.openButton != null)
+            MatchRules.Instance.openButton.gameObject.SetActive(!StoryMode.IsActive);
 
         if (controlPanel == null)
         {
@@ -275,10 +297,20 @@ public class GameModeSelector : MonoBehaviour
         if (modePanel != null)
             modePanel.SetActive(false);
 
+        // A chapter's note only plays the first time, so Retry goes straight back in.
+        if (StoryMode.IsActive && StoryScenePanel.Instance != null && !StoryScenePanel.HasSeen(StoryMode.CurrentIndex))
+        {
+            StoryScenePanel.Instance.Show(StoryMode.CurrentIndex, () => StartMode(mode));
+            return;
+        }
+
         Time.timeScale = 1f;
 
         MatchRules.Instance?.Apply(mode);
+        StoryMode.ApplyRules(OrderManager.Instance);
         OrderManager.Instance?.SetGameMode(mode);
+        if (StoryMode.IsActive && SelectFlow.Instance != null)
+            SelectFlow.Instance.PlayChapterIntro();
 
         if (PauseManager.Instance != null)
         {
@@ -304,6 +336,8 @@ public class GameModeSelector : MonoBehaviour
             }
             return;
         }
+
+        StoryMode.CurrentIndex = -1;
 
         if (controlPanel != null)
             controlPanel.SetActive(false);

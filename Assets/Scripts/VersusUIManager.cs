@@ -218,6 +218,9 @@ public class VersusUIManager : MonoBehaviour
     {
         Time.timeScale = 0f;
 
+        if (versusPanel != null)
+            versusPanel.SetActive(false); // tickets and money otherwise poke out around the end sheet
+
         if (versusEndPanel != null)
             versusEndPanel.SetActive(true);
 

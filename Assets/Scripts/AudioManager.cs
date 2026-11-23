@@ -58,6 +58,12 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioClip powerUpSFX;
     [SerializeField] private AudioClip trashSFX;
 
+    [Header("Story Mode Sounds")]
+    [SerializeField] private AudioClip chapterClearSFX;
+    [SerializeField] private AudioClip chapterUnlockSFX;
+    [SerializeField] private AudioClip storyStarSFX;
+    [SerializeField] private AudioClip chapterLockedSFX;
+
     [Header("Volume")]
     [Range(0f, 1f)] [SerializeField] private float sfxVolume = 1f;
     [Range(0f, 1f)] [SerializeField] private float musicVolume = 0.7f;
@@ -190,10 +196,17 @@ public class AudioManager : MonoBehaviour
             return;
 
         musicSource.Stop();
-        musicSource.loop = true;
+        musicSource.loop = false; // a short sting, not a track
         musicSource.clip = gameEndBGM;
         musicSource.volume = musicVolume;
         musicSource.Play();
+    }
+
+    public void StopMusic()
+    {
+        isGameplayMusicMode = false;
+        if (musicSource != null)
+            musicSource.Stop();
     }
 
     private void PlaySFX(AudioClip clip)
@@ -251,6 +264,10 @@ public class AudioManager : MonoBehaviour
     public void PlayPadSFX() => PlayVariedSFX(padWhooshSFX);
     public void PlayPowerUpSFX() => PlayVariedSFX(powerUpSFX);
     public void PlayTrashSFX() => PlayVariedSFX(trashSFX);
+    public void PlayChapterClearSFX() => PlaySFX(chapterClearSFX);
+    public void PlayChapterUnlockSFX() => PlaySFX(chapterUnlockSFX);
+    public void PlayStoryStarSFX(int star) => PlayVariedSFX(storyStarSFX, 1f + star * 0.12f);
+    public void PlayChapterLockedSFX() => PlaySFX(chapterLockedSFX);
 
     public AudioClip BurnSizzleClip => burnSizzleSFX;
 

@@ -64,9 +64,13 @@ public class MapSelector : MonoBehaviour
         int index = map != null ? System.Array.FindIndex(layouts, l => l.name == map.layoutName) : -1;
         if (index < 0)
         {
-            index = Random.Range(0, count);
-            if (count > 1 && index == lastIndex)
-                index = (index + Random.Range(1, count)) % count;
+            var open = new System.Collections.Generic.List<int>();
+            for (int i = 0; i < count; i++)
+                if (StoryMode.IsMapOpen(layouts[i].name))
+                    open.Add(i);
+            if (open.Count > 1)
+                open.Remove(lastIndex);
+            index = open.Count > 0 ? open[Random.Range(0, open.Count)] : Random.Range(0, count);
         }
         lastIndex = index;
 

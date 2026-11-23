@@ -75,7 +75,7 @@ public class DonutGlazeStation : BaseStation, IInteractable
             ? OrderManager.Instance.MostUrgentOrder(currentPlayer, dish => System.Array.IndexOf(GlazeOrders, dish) >= 0)
             : null;
         suggestedIndex = urgent != null ? System.Array.IndexOf(GlazeOrders, urgent.item.type) : -1;
-        selectedIndex = Mathf.Max(0, suggestedIndex);
+        selectedIndex = suggestedIndex >= 0 ? suggestedIndex : StoryMode.NextOnMenu(GlazeOrders, -1, 1);
 
         if (currentPlayer.emoteSelectionText != null)
             normalTextColor = currentPlayer.emoteSelectionText.color;
@@ -104,7 +104,7 @@ public class DonutGlazeStation : BaseStation, IInteractable
         int step = currentPlayer.GetMenuStep();
         if (step != 0)
         {
-            selectedIndex = (selectedIndex + step + Glazes.Length) % Glazes.Length;
+            selectedIndex = StoryMode.NextOnMenu(GlazeOrders, selectedIndex, step);
             UpdateSelectionText();
         }
     }

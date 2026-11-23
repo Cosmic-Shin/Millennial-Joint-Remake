@@ -97,7 +97,7 @@ public class IngredientBox : BaseStation, IInteractable
         {
             var available = new List<ItemType>();
             foreach (ItemType item in items)
-                if (System.Array.IndexOf(selectableIngredients, item) >= 0) available.Add(item);
+                if (Offers(item)) available.Add(item);
 
             if (available.Count > 0)
                 groups.Add((name, available));
@@ -105,7 +105,7 @@ public class IngredientBox : BaseStation, IInteractable
 
         var other = new List<ItemType>();
         foreach (ItemType item in selectableIngredients)
-            if (!groups.Exists(g => g.items.Contains(item))) other.Add(item);
+            if (Offers(item) && !groups.Exists(g => g.items.Contains(item))) other.Add(item);
         if (other.Count > 0)
             groups.Add(("Other", other));
     }
@@ -246,7 +246,7 @@ public class IngredientBox : BaseStation, IInteractable
         return null;
     }
 
-    private bool Offers(ItemType item) => System.Array.IndexOf(selectableIngredients, item) >= 0;
+    private bool Offers(ItemType item) => System.Array.IndexOf(selectableIngredients, item) >= 0 && StoryMode.Stocks(item);
 
     private ItemType? NextIngredientForNearbyPlate()
     {

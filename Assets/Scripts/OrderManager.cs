@@ -73,6 +73,7 @@ public class OrderManager : MonoBehaviour
     public float LastServeMultiplier { get; private set; } = 1f;
 
     private float elapsedTime;
+    private int lastBeepSecond;
     private readonly int[] combo = new int[3];
 
     public struct RoundStats
@@ -90,7 +91,10 @@ public class OrderManager : MonoBehaviour
     private QueuedOrder NewOrder()
     {
         float baseDuration = currentMode == GameMode.VERSUS ? QueuedOrder.VERSUS_TIMER_DURATION : QueuedOrder.TIMER_DURATION;
-        float fraction = Mathf.Max(minOrderTimeFraction, 1f - orderTimeShrinkPerMinute * elapsedTime / 60f);
+        // Story's late recipes take much longer, so its orders shrink half as fast and keep more time.
+        float shrink = StoryMode.IsActive ? orderTimeShrinkPerMinute * 0.5f : orderTimeShrinkPerMinute;
+        float floor = StoryMode.IsActive ? Mathf.Max(minOrderTimeFraction, 0.7f) : minOrderTimeFraction;
+        float fraction = Mathf.Max(floor, 1f - shrink * elapsedTime / 60f);
         return new QueuedOrder(baseDuration * fraction * MatchRules.OrderTimeMultiplier);
     }
 
@@ -123,6 +127,7 @@ public class OrderManager : MonoBehaviour
         gameEnding = false;
         state = GameState.Playing;
         elapsedTime = 0f;
+        lastBeepSecond = 0;
         System.Array.Clear(combo, 0, combo.Length);
         System.Array.Clear(stats, 0, stats.Length);
         for (int slot = 0; slot < combo.Length; slot++)
@@ -217,6 +222,14 @@ public class OrderManager : MonoBehaviour
                 return;
             }
 
+            // Story: a beep for each of the last five seconds.
+            int second = Mathf.CeilToInt(currentTime);
+            if (StoryMode.IsActive && second <= 5 && second != lastBeepSecond)
+            {
+                lastBeepSecond = second;
+                AudioManager.Instance?.PlayCountdownBeep();
+            }
+
             OrderUIManager.Instance?.UpdateGameUI();
         }
         else if (currentMode == GameMode.SPEED)
@@ -304,7 +317,11 @@ public class OrderManager : MonoBehaviour
             currentTime
         );
 
-        AudioManager.Instance?.PlayGameEndBGM();
+        // The end track is a "game over" sting, which is wrong after clearing a chapter: the win jingle plays instead.
+        if (StoryMode.IsActive && won)
+            AudioManager.Instance?.StopMusic();
+        else
+            AudioManager.Instance?.PlayGameEndBGM();
     }
 
     private void EndVersusGame()

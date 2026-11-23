@@ -65,6 +65,13 @@ public class CoffeeMachine : BaseStation, IInteractable
             return;
         }
 
+        if (!StoryMode.OnMenu(OrderItemType.Coffee))
+        {
+            Show(player, "Not on today's menu");
+            player.PlayNope();
+            return;
+        }
+
         currentPlayer = player;
         currentPlayer.currentCoffeeMachine = this;
         currentPlayer.doMove = false;

@@ -21,6 +21,9 @@ public class QueuedOrder
 
     public static OrderItemType GetRandomItemType()
     {
+        if (StoryMode.IsActive)
+            return StoryMode.RandomMeal();
+
         var types = new[]
         {
             OrderItemType.Burger,

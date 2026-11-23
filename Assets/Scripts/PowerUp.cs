@@ -233,6 +233,9 @@ public class PowerUp : MonoBehaviour
 
     private KitchenItemData GenerateRandomCompleteFood()
     {
+        if (StoryMode.IsActive)
+            return StoryMode.RandomFinishedMeal();
+
         int randomChoice = Random.Range(0, 5);
 
         KitchenItemData food = new KitchenItemData();
